@@ -13,7 +13,14 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/zouipo/yumsday/backend/internal/handlers"
 )
+
+// @title			Yumsday API
+// @version			1.0
+// @description		Yumsday is a meal-planning application that includes a menu, a collection of cooking recipes and a grocery list.
+// @host 			localhost:8080
+// @BasePath 		/api
 
 func main() {
 	/*** SET LOGGER ***/
@@ -44,7 +51,8 @@ func main() {
 	flag.Parse()
 
 	server := &http.Server{
-		Addr: fmt.Sprintf("%s:%d", *addr, *port),
+		Addr:    fmt.Sprintf("%s:%d", *addr, *port),
+		Handler: handlers.NewAPIServer(db),
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
@@ -80,6 +88,7 @@ func main() {
 		}
 	}()
 	slog.Info("HTTP server started", "addr", *addr, "port", *port)
+	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:", port, "/swagger/index.html"))
 
 	<-ctx.Done()
 }
