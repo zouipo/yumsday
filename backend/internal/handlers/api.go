@@ -8,6 +8,7 @@ import (
 	// _ "github.com/zouipo/yumsday/backend/docs"
 )
 
+// NewAPIServer registers API routes on a new ServeMux.
 func NewAPIServer(db *sql.DB) {
 	// ServeMux = HTTP request multiplexer, a router.
 	// It matches the URL of each incoming request against a list of registered patterns

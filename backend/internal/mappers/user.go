@@ -5,7 +5,7 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/models"
 )
 
-// Maps a User model to a UserDtoNoPassword DTO
+// ToUserDtoNoPassword maps a User model to a UserDto without the password field.
 func ToUserDtoNoPassword(user *models.User) *dtos.UserDto {
 	return &dtos.UserDto{
 		ID:        user.ID,
@@ -16,9 +16,9 @@ func ToUserDtoNoPassword(user *models.User) *dtos.UserDto {
 		Language:  user.Language,
 		AppTheme:  user.AppTheme,
 	}
-}
+} 
 
-// Maps a NewUserDto DTO to a User model (only received from the client when creating a new user)
+// ToModelFromNewUserDto maps a NewUserDto to a User model (used when creating a new user).
 func ToModelFromNewUserDto(newUserDto *dtos.NewUserDto) *models.User {
 	return &models.User{
 		ID:       newUserDto.ID,
@@ -29,8 +29,9 @@ func ToModelFromNewUserDto(newUserDto *dtos.NewUserDto) *models.User {
 		Language: newUserDto.Language,
 		AppTheme: newUserDto.AppTheme,
 	}
-}
+} 
 
+// ToModelFromUserDto maps a UserDto to a User model (omits password field).
 func ToModelFromUserDto(userDto *dtos.UserDto) *models.User {
 	return &models.User{
 		ID:        userDto.ID,
@@ -41,4 +42,4 @@ func ToModelFromUserDto(userDto *dtos.UserDto) *models.User {
 		Language:  userDto.Language,
 		AppTheme:  userDto.AppTheme,
 	}
-}
+} 

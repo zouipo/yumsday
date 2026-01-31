@@ -10,14 +10,15 @@ type UserRepository struct {
 	db *sql.DB
 }
 
+// NewUserRepository constructs a new UserRepository using the provided database.
 func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{
 		db: db,
 	}
 }
 
-// Fetch all users
-func (r *UserRepository) GetAllUsers() ([]models.User, error) {
+// GetAll fetches all users from the database.
+func (r *UserRepository) GetAll() ([]models.User, error) {
 	users, err := r.fetchUsers("SELECT * FROM user")
 	if err != nil {
 		return nil, err
@@ -26,8 +27,8 @@ func (r *UserRepository) GetAllUsers() ([]models.User, error) {
 	return users, nil
 }
 
-// Fetch a user by its ID
-func (r *UserRepository) GetUserByID(id int64) (*models.User, error) {
+// GetByID fetches the user by ID; returns sql.ErrNoRows if not found.
+func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	user, err := r.fetchUser("SELECT * FROM user WHERE id = ?", id)
 	if err != nil {
 		return nil, err
@@ -36,8 +37,8 @@ func (r *UserRepository) GetUserByID(id int64) (*models.User, error) {
 	return user, nil
 }
 
-// Fetch a user by its username
-func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+// GetByUsername fetches the user that matches the provided username; returns sql.ErrNoRows if not found.
+func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	user, err := r.fetchUser("SELECT * FROM user WHERE username = ?", username)
 	if err != nil {
 		return nil, err
@@ -46,8 +47,8 @@ func (r *UserRepository) GetUserByUsername(username string) (*models.User, error
 	return user, nil
 }
 
-// Create a new user
-func (r *UserRepository) CreateUser(user *models.User) (int64, error) {
+// Create inserts a new user into the database and returns the inserted ID.
+func (r *UserRepository) Create(user *models.User) (int64, error) {
 	result, err := r.db.Exec(
 		"INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		user.Username,
@@ -70,8 +71,8 @@ func (r *UserRepository) CreateUser(user *models.User) (int64, error) {
 	return id, nil
 }
 
-// Update an existing user
-func (r *UserRepository) UpdateUser(user *models.User) error {
+// Update updates an existing user; returns sql.ErrNoRows if no row was affected.
+func (r *UserRepository) Update(user *models.User) error {
 	result, err := r.db.Exec(
 		"UPDATE user SET username = ?, password = ?, app_admin = ?, avatar = ?, language = ?, app_theme = ? WHERE id = ?",
 		user.Username,
@@ -98,8 +99,8 @@ func (r *UserRepository) UpdateUser(user *models.User) error {
 	return nil
 }
 
-// Delete a user by its ID
-func (r *UserRepository) DeleteUser(id int64) error {
+// Delete removes a user by ID; returns sql.ErrNoRows if no row was deleted.
+func (r *UserRepository) Delete(id int64) error {
 	result, err := r.db.Exec("DELETE FROM user WHERE id = ?", id)
 	if err != nil {
 		return err
@@ -117,7 +118,8 @@ func (r *UserRepository) DeleteUser(id int64) error {
 	return nil
 }
 
-/*** PRIVATE METHODS ***/
+/*** PRIVATE HELPER METHODS ***/
+// fetchUsers executes the provided query and returns a slice of users.
 func (r *UserRepository) fetchUsers(query string, args ...any) ([]models.User, error) {
 	users := []models.User{}
 
@@ -157,6 +159,7 @@ func (r *UserRepository) fetchUsers(query string, args ...any) ([]models.User, e
 	return users, nil
 }
 
+// fetchUser executes the provided query and returns a single user or sql.ErrNoRows.
 func (r *UserRepository) fetchUser(query string, args ...any) (*models.User, error) {
 	user := &models.User{}
 
