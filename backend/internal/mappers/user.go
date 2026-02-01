@@ -16,10 +16,10 @@ func ToUserDtoNoPassword(user *models.User) *dtos.UserDto {
 		Language:  user.Language,
 		AppTheme:  user.AppTheme,
 	}
-} 
+}
 
 // ToModelFromNewUserDto maps a NewUserDto to a User model (used when creating a new user).
-func ToModelFromNewUserDto(newUserDto *dtos.NewUserDto) *models.User {
+func FromNewUserDtoToUser(newUserDto *dtos.NewUserDto) *models.User {
 	return &models.User{
 		ID:       newUserDto.ID,
 		Username: newUserDto.Username,
@@ -29,10 +29,10 @@ func ToModelFromNewUserDto(newUserDto *dtos.NewUserDto) *models.User {
 		Language: newUserDto.Language,
 		AppTheme: newUserDto.AppTheme,
 	}
-} 
+}
 
 // ToModelFromUserDto maps a UserDto to a User model (omits password field).
-func ToModelFromUserDto(userDto *dtos.UserDto) *models.User {
+func FromUserDtoToUser(userDto *dtos.UserDto) *models.User {
 	return &models.User{
 		ID:        userDto.ID,
 		Username:  userDto.Username,
@@ -42,4 +42,4 @@ func ToModelFromUserDto(userDto *dtos.UserDto) *models.User {
 		Language:  userDto.Language,
 		AppTheme:  userDto.AppTheme,
 	}
-} 
+}
