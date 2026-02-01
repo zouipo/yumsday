@@ -51,8 +51,8 @@ func main() {
 	flag.Parse()
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", *addr, *port),
-		Handler: handlers.NewAPIServer(db),
+		Addr:    fmt.Sprintf("%s:%d", *addr, *port), // TCP address to listen on, in the form "host:port"
+		Handler: handlers.NewAPIServer(db),          // Handler to invoke
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
