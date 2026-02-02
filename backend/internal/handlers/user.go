@@ -24,39 +24,40 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 
 // RegisterRoutes registers the user-related routes on the provided ServeMux with the given prefix.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
-	mux.HandleFunc("GET "+prefix, h.getAllUsers)
+	mux.HandleFunc("GET "+prefix, h.getUsers)
 	mux.HandleFunc("GET "+prefix+"/{id}", h.getUserByID)
-	mux.HandleFunc("GET "+prefix+"/{username}", h.GetByUsername)
-	mux.HandleFunc("POST "+prefix, h.CreateUser)
-	mux.HandleFunc("PUT "+prefix, h.UpdateUser)
-	mux.HandleFunc("PATCH "+prefix+"/{id}/role", h.UpdateUserAdminRole)
-	mux.HandleFunc("PATCH "+prefix+"/{id}/password", h.UpdateUserPassword)
-	mux.HandleFunc("DELETE "+prefix+"/{id}", h.DeleteUser)
+	mux.HandleFunc("POST "+prefix, h.createUser)
+	mux.HandleFunc("PUT "+prefix, h.updateUser)
+	mux.HandleFunc("PATCH "+prefix+"/{id}/role", h.updateUserAdminRole)
+	mux.HandleFunc("PATCH "+prefix+"/{id}/password", h.updateUserPassword)
+	mux.HandleFunc("DELETE "+prefix+"/{id}", h.deleteUser)
 }
 
-// GetAllUsers godoc
+// GetUsers godoc
 // @Summary Get users
-// @Description Get all users
+// @Description Get all users or a user by username
 // @Tags user
 // @Accept json
 // @Produce json
-// @Success 200 {object} []dtos.UserDto
-// @Failure 404 {string} string "User not found"
+// @Param username query string false "Username to filter by"
+// @Success 200 {array} dtos.UserDto
+// @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user/{id} [get]
-func (h *UserHandler) getAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userService.GetAll()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+// @Router /user [get]
+func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+	if len(queryParams) == 0 {
+		h.getAllUsers(w)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(mappers.MapList(users, mappers.ToUserDtoNoPassword))
-	if err != nil {
-		http.Error(w, "Failed to serialize users", http.StatusInternalServerError)
+	usernames := queryParams["username"]
+	if len(usernames) == 1 {
+		h.getByUsername(w, usernames[0])
 		return
 	}
+
+	http.Error(w, "Missing or invalid query parameters", http.StatusBadRequest)
 }
 
 // GetUserByID godoc
@@ -85,32 +86,6 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetUserByUsername godoc
-// @Summary Get user by username
-// @Description Get a user by their username
-// @Tags user
-// @Accept json
-// @Produce json
-// @Param username path string true "Username"
-// @Success 200 {object} dtos.UserDto
-// @Failure 404 {string} string "User not found"
-// @Failure 500 {string} string "Internal server error"
-// @Router /user/{username} [get]
-func (h *UserHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
-	user, err := h.userService.GetByUsername(r.Context().Value("username").(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user))
-	if err != nil {
-		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
-		return
-	}
-}
-
 // CreateUser godoc
 // @Summary Create a new user
 // @Description Create a new user with the provided details
@@ -122,7 +97,7 @@ func (h *UserHandler) GetByUsername(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [post]
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	var newUserDto dtos.NewUserDto
 	err := json.NewDecoder(r.Body).Decode(&newUserDto)
 	if err != nil {
@@ -153,7 +128,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {string} string "Bad request"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [put]
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	var userDto dtos.UserDto
 	err := json.NewDecoder(r.Body).Decode(&userDto)
 	if err != nil {
@@ -185,7 +160,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id}/admin [patch]
-func (h *UserHandler) UpdateUserAdminRole(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
 	err := json.NewDecoder(r.Body).Decode(&adminRolePayload)
@@ -217,7 +192,7 @@ func (h *UserHandler) UpdateUserAdminRole(w http.ResponseWriter, r *http.Request
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id}/password [patch]
-func (h *UserHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
 	err := json.NewDecoder(r.Body).Decode(&passwordPayload)
@@ -247,7 +222,7 @@ func (h *UserHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [delete]
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.Delete(r.Context().Value("id").(int64))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -266,4 +241,40 @@ var adminRolePayload struct {
 var passwordPayload struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
+}
+
+/*** NON-HANDLER PRIVATE METHODS ***/
+// getAllUsers retrieves all users and writes them to the response.
+func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
+	users, err := h.userService.GetAll()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(mappers.MapList(users, mappers.ToUserDtoNoPassword))
+	if err != nil {
+		http.Error(w, "Failed to serialize users", http.StatusInternalServerError)
+		return
+	}
+}
+
+// getByUsername retrieves a user by username and writes it to the response as an array.
+func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
+	user, err := h.userService.GetByUsername(username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Return as an array with one user to match the array response of the original handler getUsers.
+	users := []*dtos.UserDto{mappers.ToUserDtoNoPassword(user)}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(users)
+	if err != nil {
+		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		return
+	}
 }
