@@ -8,7 +8,7 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/middleware"
 	"github.com/zouipo/yumsday/backend/internal/repositories"
 	"github.com/zouipo/yumsday/backend/internal/services"
-	// _ "github.com/zouipo/yumsday/backend/docs"
+	_ "github.com/zouipo/yumsday/docs"
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
