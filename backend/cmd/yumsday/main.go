@@ -88,7 +88,7 @@ func main() {
 		}
 	}()
 	slog.Info("HTTP server started", "addr", *addr, "port", *port)
-	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:", port, "/swagger/index.html"))
+	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:%d/swagger/index.html", *port))
 
 	<-ctx.Done()
 }
