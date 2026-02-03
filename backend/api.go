@@ -1,10 +1,11 @@
-package handlers
+package backend
 
 import (
 	"database/sql"
 	"net/http"
 
 	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/zouipo/yumsday/backend/internal/handlers"
 	"github.com/zouipo/yumsday/backend/internal/middleware"
 	"github.com/zouipo/yumsday/backend/internal/repositories"
 	"github.com/zouipo/yumsday/backend/internal/services"
@@ -24,7 +25,7 @@ func NewAPIServer(db *sql.DB) http.Handler {
 	// Initializing every layers
 	userRepo := repositories.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
-	userHandler := NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService)
 	userHandler.RegisterRoutes(mux, "/api/user")
 
 	middlewareStack := middleware.Stack(

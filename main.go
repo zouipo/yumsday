@@ -13,7 +13,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/zouipo/yumsday/backend/internal/handlers"
+	"github.com/zouipo/yumsday/backend"
 )
 
 // @title			Yumsday API
@@ -52,7 +52,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", *addr, *port), // TCP address to listen on, in the form "host:port"
-		Handler: handlers.NewAPIServer(db),          // Handler to invoke
+		Handler: backend.NewAPIServer(db),           // Handler to invoke
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
