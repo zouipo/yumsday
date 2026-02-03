@@ -1,0 +1,7 @@
+CREATE TABLE user (
+    id INTEGER PRIMARY KEY NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);
