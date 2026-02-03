@@ -7,6 +7,7 @@ import (
 
 	"github.com/zouipo/yumsday/backend/internal/dtos"
 	"github.com/zouipo/yumsday/backend/internal/mappers"
+	"github.com/zouipo/yumsday/backend/internal/middleware"
 	"github.com/zouipo/yumsday/backend/internal/services"
 )
 
@@ -25,12 +26,12 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 // RegisterRoutes registers the user-related routes on the provided ServeMux with the given prefix.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.HandleFunc("GET "+prefix, h.getUsers)
-	mux.HandleFunc("GET "+prefix+"/{id}", h.getUserByID)
+	mux.Handle("GET "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.getUserByID)))
 	mux.HandleFunc("POST "+prefix, h.createUser)
 	mux.HandleFunc("PUT "+prefix, h.updateUser)
-	mux.HandleFunc("PATCH "+prefix+"/{id}/role", h.updateUserAdminRole)
-	mux.HandleFunc("PATCH "+prefix+"/{id}/password", h.updateUserPassword)
-	mux.HandleFunc("DELETE "+prefix+"/{id}", h.deleteUser)
+	mux.Handle("PATCH "+prefix+"/{id}/role", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserAdminRole)))
+	mux.Handle("PATCH "+prefix+"/{id}/password", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserPassword)))
+	mux.Handle("DELETE "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.deleteUser)))
 }
 
 // GetUsers godoc
@@ -72,13 +73,16 @@ func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [get]
 func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
+	// Get the id from the request context (set by the middleware).
 	user, err := h.userService.GetByID(r.Context().Value("id").(int64))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
+	// Setting response header.
 	w.Header().Set("Content-Type", "application/json")
+	// Encoding the user to JSON after mapping the User entity into a UserDto.
 	err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user))
 	if err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
@@ -99,6 +103,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Router /user [post]
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	var newUserDto dtos.NewUserDto
+	// Decode the request body into the NewUserDto struct.
 	err := json.NewDecoder(r.Body).Decode(&newUserDto)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -244,6 +249,7 @@ var passwordPayload struct {
 }
 
 /*** NON-HANDLER PRIVATE METHODS ***/
+
 // getAllUsers retrieves all users and writes them to the response.
 func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 	users, err := h.userService.GetAll()
