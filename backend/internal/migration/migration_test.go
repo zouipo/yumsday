@@ -5,6 +5,7 @@ import (
 	"embed"
 	"io/fs"
 	"os"
+	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -156,6 +157,27 @@ func TestPerformMigrations(t *testing.T) {
 
 	if version != 2 {
 		t.Errorf("Expected migration version 2, got %d", version)
+	}
+}
+
+func TestPerformMigrations_InvalidScript(t *testing.T) {
+	migrations := []migration{
+		{
+			version: 1,
+			name:    "test",
+			script:  "dummy",
+		},
+	}
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("Failed to open in-memory database: %v", err)
+	}
+	defer db.Close()
+
+	err = performMigrations(db, migrations, 0)
+	if err == nil || !strings.Contains(err.Error(), "Failed to apply migration") {
+		t.Errorf("Expected error")
 	}
 }
 
