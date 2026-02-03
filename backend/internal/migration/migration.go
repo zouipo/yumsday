@@ -137,8 +137,8 @@ func initializeMigrationVersion(db *sql.DB) error {
 
 	slog.Info("Initializing migration version table to -1")
 
-	_, err = db.Exec(`CREATE TABLE _migration_version (
-	version INTEGER NOT NULL UNIQUE PRIMARY KEY);`)
+	_, err = db.Exec(`CREATE TABLE _migration_version 
+	(version INTEGER NOT NULL UNIQUE PRIMARY KEY);`)
 	if err != nil {
 		return fmt.Errorf("Failed to create migration version table: %w", err)
 	}

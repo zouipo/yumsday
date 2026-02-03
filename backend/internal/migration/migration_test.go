@@ -182,6 +182,42 @@ func TestInitializeMigrationVersion(t *testing.T) {
 	}
 }
 
+func TestInitializeMigrationVersion_AlreadyInitialized(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("Failed to open in-memory database: %v", err)
+	}
+	defer db.Close()
+
+	err = initializeMigrationVersion(db)
+	if err != nil {
+		t.Fatalf("Failed to initialize migration version: %v", err)
+	}
+
+	err = initializeMigrationVersion(db)
+	if err != nil {
+		t.Fatalf("Expected no error")
+	}
+}
+
+func TestInitiliazeMigrationVersion_CreateExists(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Fatalf("Failed to open in-memory database: %v", err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec("CREATE TABLE _migration_version (aaa INTEGER)")
+	if err != nil {
+		t.Fatalf("Failed to initialize test db")
+	}
+
+	err = initializeMigrationVersion(db)
+	if err == nil {
+		t.Errorf("expected error")
+	}
+}
+
 func TestGetMigrationVersion(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
