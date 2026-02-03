@@ -18,7 +18,6 @@ type UserDto struct {
 }
 
 type NewUserDto struct {
-	ID       int64          `json:"id"`
 	Username string         `json:"username" binding:"required"`
 	Password string         `json:"password"`
 	AppAdmin bool           `json:"app_admin"`

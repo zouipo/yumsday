@@ -21,7 +21,6 @@ func ToUserDtoNoPassword(user *models.User) *dtos.UserDto {
 // ToModelFromNewUserDto maps a NewUserDto to a User model (used when creating a new user).
 func FromNewUserDtoToUser(newUserDto *dtos.NewUserDto) *models.User {
 	return &models.User{
-		ID:       newUserDto.ID,
 		Username: newUserDto.Username,
 		Password: newUserDto.Password,
 		AppAdmin: newUserDto.AppAdmin,
