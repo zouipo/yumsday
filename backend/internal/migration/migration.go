@@ -72,6 +72,7 @@ func loadMigrations(scriptsFs fs.FS) ([]migration, error) {
 
 		if file.IsDir() {
 			slog.Warn("Directory found in migrations", "directory", file.Name())
+			continue
 		}
 
 		re := regexp.MustCompile(`^(\d+)_(.+)\.sql$`)

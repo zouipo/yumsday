@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"embed"
 	"io/fs"
+	"os"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed migrations_test/valid/*.sql
+//go:embed migrations_test/valid
 var validMigrations embed.FS
 
 //go:embed migrations_test/invalid_version/*.sql
@@ -65,13 +66,24 @@ func TestLoadMigrations(t *testing.T) {
 			expectedError:  true,
 			expectedCount:  0,
 		},
+		{
+			name:           "Invalid FS",
+			scriptsFs:      os.DirFS("invalid"),
+			migrationsRoot: "",
+			expectedError:  true,
+			expectedCount:  0,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			subFs, err := fs.Sub(tt.scriptsFs, tt.migrationsRoot)
-			if err != nil {
-				t.Fatalf("Failed to create sub filesystem: %v", err)
+			subFs := tt.scriptsFs
+			var err error
+			if tt.migrationsRoot != "" {
+				subFs, err = fs.Sub(tt.scriptsFs, tt.migrationsRoot)
+				if err != nil {
+					t.Fatalf("Failed to create sub filesystem: %v", err)
+				}
 			}
 
 			migrations, err := loadMigrations(subFs)
