@@ -25,6 +25,9 @@ func IntPathValues(valueNames ...string) Middleware {
 				},
 				valueNames...,
 			)
+			if r == nil {
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -47,6 +50,9 @@ func FloatPathValues(valueNames ...string) Middleware {
 				},
 				valueNames...,
 			)
+			if r == nil {
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -65,6 +71,9 @@ func StringPathValues(valueNames ...string) Middleware {
 				},
 				valueNames...,
 			)
+			if r == nil {
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
