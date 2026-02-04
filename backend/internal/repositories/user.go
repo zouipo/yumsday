@@ -143,6 +143,7 @@ func (r *UserRepository) fetchUsers(query string, args ...any) ([]models.User, e
 			&user.Avatar,
 			&user.Language,
 			&user.AppTheme,
+			&user.LastVisitedGroup,
 		); err != nil {
 			return nil, err
 		}
@@ -174,6 +175,7 @@ func (r *UserRepository) fetchUser(query string, args ...any) (*models.User, err
 		&user.Avatar,
 		&user.Language,
 		&user.AppTheme,
+		&user.LastVisitedGroup,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return user, err
