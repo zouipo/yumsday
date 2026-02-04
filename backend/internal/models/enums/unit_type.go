@@ -4,8 +4,9 @@ type UnitType string
 
 const (
 	Volume    UnitType = "VOLUME"
-	Mass      UnitType = "MASS"
+	Weight    UnitType = "WEIGHT"
 	Numeric   UnitType = "NUMERIC"
+	Piece     UnitType = "PIECE"
 	Bag       UnitType = "BAG"
 	Undefined UnitType = "UNDEFINED"
 )
