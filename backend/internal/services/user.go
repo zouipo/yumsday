@@ -122,8 +122,7 @@ func (s *UserService) Update(user *models.User) error {
 		currentUser.AppTheme = user.AppTheme
 	}
 
-	err = s.repo.Update(currentUser)
-	if err != nil {
+	if err = s.repo.Update(currentUser); err != nil {
 		return fmt.Errorf("Failed to update user %v: %v", user.Username, err.Error())
 	}
 
@@ -140,8 +139,7 @@ func (s *UserService) UpdateAdminRole(userID int64, role bool) error {
 
 	currentUser.AppAdmin = role
 
-	err = s.repo.Update(currentUser)
-	if err != nil {
+	if err = s.repo.Update(currentUser); err != nil {
 		return fmt.Errorf("Failed to update user %v: %v", currentUser.Username, err.Error())
 	}
 
@@ -166,8 +164,7 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 
 	currentUser.Password = newPassword // TODO: Hash the new password before saving
 
-	err = s.repo.Update(currentUser)
-	if err != nil {
+	if err = s.repo.Update(currentUser); err != nil {
 		return fmt.Errorf("Failed to update password for user %v: %v", currentUser.Username, err.Error())
 	}
 
@@ -185,8 +182,7 @@ func (s *UserService) Delete(id int64) error {
 		return err
 	}
 
-	err = s.repo.Delete(id)
-	if err != nil {
+	if err = s.repo.Delete(id); err != nil {
 		return fmt.Errorf("Failed to delete user %v: %v", id, err.Error())
 	}
 

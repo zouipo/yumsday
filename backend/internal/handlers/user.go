@@ -83,8 +83,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Setting response header.
 	w.Header().Set("Content-Type", "application/json")
 	// Encoding the user to JSON after mapping the User entity into a UserDto.
-	err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user))
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user)); err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
 		return
 	}
@@ -135,15 +134,13 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Router /user [put]
 func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	var userDto dtos.UserDto
-	err := json.NewDecoder(r.Body).Decode(&userDto)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&userDto); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	user := mappers.FromUserDtoToUser(&userDto)
-	err = h.userService.Update(user)
-	if err != nil {
+	if err := h.userService.Update(user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -168,14 +165,12 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
-	err := json.NewDecoder(r.Body).Decode(&adminRolePayload)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&adminRolePayload); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err = h.userService.UpdateAdminRole(userID, adminRolePayload.AppAdmin)
-	if err != nil {
+	if err := h.userService.UpdateAdminRole(userID, adminRolePayload.AppAdmin); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -200,14 +195,12 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
-	err := json.NewDecoder(r.Body).Decode(&passwordPayload)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&passwordPayload); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err = h.userService.UpdatePassword(userID, passwordPayload.OldPassword, passwordPayload.NewPassword)
-	if err != nil {
+	if err := h.userService.UpdatePassword(userID, passwordPayload.OldPassword, passwordPayload.NewPassword); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -228,8 +221,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	err := h.userService.Delete(r.Context().Value("id").(int64))
-	if err != nil {
+	if err := h.userService.Delete(r.Context().Value("id").(int64)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
