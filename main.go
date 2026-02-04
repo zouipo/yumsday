@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,8 +15,11 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/zouipo/yumsday/backend/internal/handlers"
+	"github.com/zouipo/yumsday/backend"
 )
+
+//go:embed backend/data/migrations
+var migrationsFs embed.FS
 
 // @title			Yumsday API
 // @version			1.0
@@ -50,9 +55,15 @@ func main() {
 	port := flag.Int("port", 8080, "Port to listen on")
 	flag.Parse()
 
+	migrationsFs, err := fs.Sub(migrationsFs, "backend/data/migrations")
+	if err != nil {
+		slog.Error("Failed to load migrations filesystem", "error", err)
+		return
+	}
+
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", *addr, *port), // TCP address to listen on, in the form "host:port"
-		Handler: handlers.NewAPIServer(db),          // Handler to invoke
+		Addr:    fmt.Sprintf("%s:%d", *addr, *port),     // TCP address to listen on, in the form "host:port"
+		Handler: backend.NewAPIServer(db, migrationsFs), // Handler to invoke
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
