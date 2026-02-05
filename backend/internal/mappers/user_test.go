@@ -14,13 +14,15 @@ import (
 
 var creationTime = time.Now()
 
+var avatar1 = enums.Avatar1
+
 var user = models.User{
 	ID:        1,
 	Username:  "testuser",
 	Password:  "securepassword",
 	AppAdmin:  false,
 	CreatedAt: creationTime,
-	Avatar:    enums.Avatar1,
+	Avatar:    &avatar1,
 	Language:  enums.English,
 	AppTheme:  enums.Light,
 }
@@ -30,7 +32,7 @@ var userDtoNoPassword = dtos.UserDto{
 	Username:  "testuser",
 	AppAdmin:  false,
 	CreatedAt: creationTime,
-	Avatar:    enums.Avatar1,
+	Avatar:    &avatar1,
 	Language:  enums.English,
 	AppTheme:  enums.Light,
 }
@@ -39,7 +41,7 @@ var newUserDto = dtos.NewUserDto{
 	Username: "testuser",
 	Password: "securepassword",
 	AppAdmin: false,
-	Avatar:   enums.Avatar1,
+	Avatar:   &avatar1,
 	Language: enums.English,
 	AppTheme: enums.Light,
 }
@@ -113,8 +115,11 @@ func compareUserNoID(actual, expected *models.User) (bool, string) {
 	if !actual.CreatedAt.Equal(*new(time.Time)) {
 		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt).Error()
 	}
-	if actual.Avatar != expected.Avatar {
+	if (actual.Avatar == nil && expected.Avatar != nil) || (actual.Avatar != nil && expected.Avatar == nil) {
 		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar).Error()
+	}
+	if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar).Error()
 	}
 	if actual.Language != expected.Language {
 		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language).Error()
@@ -138,8 +143,11 @@ func compareUserNoPassword(actual, expected *models.User) (bool, string) {
 	if !actual.CreatedAt.Equal(expected.CreatedAt) {
 		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt).Error()
 	}
-	if actual.Avatar != expected.Avatar {
+	if (actual.Avatar == nil && expected.Avatar != nil) || (actual.Avatar != nil && expected.Avatar == nil) {
 		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar).Error()
+	}
+	if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar).Error()
 	}
 	if actual.Language != expected.Language {
 		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language).Error()
