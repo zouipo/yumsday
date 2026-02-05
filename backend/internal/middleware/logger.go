@@ -20,9 +20,13 @@ func Logger(next http.Handler) http.Handler {
 
 		// Post-processing: after each middleware/handler has processed the request,
 		// the logger middleware get the result back and logs the completion.
+		status := http.StatusOK
+		if statusPtr, ok := r.Context().Value("status").(*int); ok && statusPtr != nil {
+			status = *statusPtr
+		}
 		slog.Info(
 			"Processed HTTP request",
-			"status", r.Context().Value("status"), // captured by the custom ResponseWriter middleware
+			"status", status, // captured by the custom ResponseWriter middleware
 			"method", r.Method,
 			"path", r.URL.Path,
 			"duration", time.Since(start),

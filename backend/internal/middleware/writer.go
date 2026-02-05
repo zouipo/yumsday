@@ -43,7 +43,8 @@ func ResponseWritter(next http.Handler) http.Handler {
 			ResponseWriter: w,
 			status:         http.StatusOK,
 		}
-		r = r.WithContext(context.WithValue(r.Context(), "status", writer.status))
+		// Store a pointer to the status so the logger can read the updated value
+		r = r.WithContext(context.WithValue(r.Context(), "status", &writer.status))
 		next.ServeHTTP(writer, r)
 	})
 }
