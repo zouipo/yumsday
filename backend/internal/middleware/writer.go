@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 )
@@ -42,6 +43,7 @@ func ResponseWritter(next http.Handler) http.Handler {
 			ResponseWriter: w,
 			status:         http.StatusOK,
 		}
+		r = r.WithContext(context.WithValue(r.Context(), "status", writer.status))
 		next.ServeHTTP(writer, r)
 	})
 }

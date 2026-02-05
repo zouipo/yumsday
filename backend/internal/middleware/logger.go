@@ -22,7 +22,7 @@ func Logger(next http.Handler) http.Handler {
 		// the logger middleware get the result back and logs the completion.
 		slog.Info(
 			"Processed HTTP request",
-			"status", w.(*ResponseWriter).status, // captured by the custom ResponseWriter middleware
+			"status", r.Context().Value("status"), // captured by the custom ResponseWriter middleware
 			"method", r.Method,
 			"path", r.URL.Path,
 			"duration", time.Since(start),
