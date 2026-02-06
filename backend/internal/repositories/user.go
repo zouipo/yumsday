@@ -6,6 +6,16 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/models"
 )
 
+// UserRepositoryInterface defines the contract for user data operations
+type UserRepositoryInterface interface {
+	GetAll() ([]models.User, error)
+	GetByID(id int64) (*models.User, error)
+	GetByUsername(username string) (*models.User, error)
+	Create(user *models.User) (int64, error)
+	Update(user *models.User) error
+	Delete(id int64) error
+}
+
 type UserRepository struct {
 	db *sql.DB
 }

@@ -14,11 +14,11 @@ import (
 var ErrUserNotFound = errors.New("user not found")
 
 type UserService struct {
-	repo *repositories.UserRepository
+	repo repositories.UserRepositoryInterface
 }
 
 // NewUserService creates a new UserService using the provided UserRepository.
-func NewUserService(repo *repositories.UserRepository) *UserService {
+func NewUserService(repo repositories.UserRepositoryInterface) *UserService {
 	return &UserService{
 		repo: repo,
 	}
