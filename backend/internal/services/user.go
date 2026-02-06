@@ -13,6 +13,18 @@ import (
 // ErrUserNotFound is returned when a user with the given ID doesn't exist
 var ErrUserNotFound = errors.New("user not found")
 
+// UserServiceInterface defines the contract for user service operations
+type UserServiceInterface interface {
+	GetAll() ([]models.User, error)
+	GetByID(id int64) (*models.User, error)
+	GetByUsername(username string) (*models.User, error)
+	Create(user *models.User) (int64, error)
+	Update(user *models.User) error
+	UpdateAdminRole(userID int64, role bool) error
+	UpdatePassword(userID int64, oldPassword string, newPassword string) error
+	Delete(id int64) error
+}
+
 type UserService struct {
 	repo repositories.UserRepositoryInterface
 }
