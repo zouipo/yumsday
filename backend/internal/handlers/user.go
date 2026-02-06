@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -221,7 +222,14 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	if err := h.userService.Delete(r.Context().Value("id").(int64)); err != nil {
+	err := h.userService.Delete(r.Context().Value("id").(int64))
+
+	if err != nil {
+		if errors.Is(err, services.ErrUserNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

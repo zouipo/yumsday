@@ -10,6 +10,9 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repositories"
 )
 
+// ErrUserNotFound is returned when a user with the given ID doesn't exist
+var ErrUserNotFound = errors.New("user not found")
+
 type UserService struct {
 	repo *repositories.UserRepository
 }
@@ -148,6 +151,10 @@ func (s *UserService) UpdateAdminRole(userID int64, role bool) error {
 
 // UpdatePassword verifies the old password and updates to the new password after validation.
 func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPassword string) error {
+	if oldPassword == "" || newPassword == "" {
+		return fmt.Errorf("Old and new passwords must be provided")
+	}
+
 	// Fetch the current user data in database
 	currentUser, err := s.GetByID(userID)
 	if err != nil {
@@ -156,6 +163,10 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 
 	if currentUser.Password != oldPassword { // TODO: Hash the old password before comparing
 		return fmt.Errorf("Old password is incorrect for user %v", currentUser.Username)
+	}
+
+	if oldPassword == newPassword {
+		return nil // No update needed if the old and new passwords are the same
 	}
 
 	if !validation.IsPasswordValid(newPassword) {
@@ -177,7 +188,7 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 func (s *UserService) Delete(id int64) error {
 	userExists, err := s.userExists(id)
 	if userExists == false && err == nil {
-		return fmt.Errorf("User ID %v doesn't exist", id)
+		return fmt.Errorf("%w: User ID %v doesn't exist", ErrUserNotFound, id)
 	} else if err != nil {
 		return err
 	}
