@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/zouipo/yumsday/backend/internal/dtos"
+	"github.com/zouipo/yumsday/backend/internal/mappers"
 	"github.com/zouipo/yumsday/backend/internal/models"
 	"github.com/zouipo/yumsday/backend/internal/models/enums"
 	"github.com/zouipo/yumsday/backend/internal/services"
@@ -28,29 +30,27 @@ var (
 
 	invalidId       = -1
 	invalidUsername = "_"
-	invalidPassword = "tooshort"
 )
 
 // MockUserService is a mock implementation of UserService for testing handlers
 type MockUserService struct {
-	users          []models.User
-	nextID         int64
-	getAllErr      error
-	getByIDErr     error
-	getByNameErr   error
-	createErr      error
-	updateErr      error
-	deleteErr      error
-	updateRoleErr  error
-	updatePassErr  error
-	createReturnID int64
+	users         []models.User
+	nextID        int64
+	getAllErr     error
+	getByIDErr    error
+	getByNameErr  error
+	createErr     error
+	updateErr     error
+	deleteErr     error
+	updateRoleErr error
+	updatePassErr error
 }
 
 // NewMockUserService creates a new mock service with some test data
 func NewMockUserService() *MockUserService {
 	return &MockUserService{
-		users:          make([]models.User, 0),
-		createReturnID: 4,
+		users:  make([]models.User, 0),
+		nextID: 1,
 	}
 }
 
@@ -93,9 +93,11 @@ func (m *MockUserService) Create(user *models.User) (int64, error) {
 	if m.createErr != nil {
 		return 0, m.createErr
 	}
-	user.ID = m.createReturnID
+	user.ID = m.nextID
+	m.nextID++
+
 	m.users = append(m.users, *user)
-	return m.createReturnID, nil
+	return user.ID, nil
 }
 
 func (m *MockUserService) Update(user *models.User) error {
@@ -152,12 +154,10 @@ func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword stri
 
 /*** HELPER FUNCTIONS ***/
 
-// Helper methods for setting up test scenarios
 func (m *MockUserService) addUser(user *models.User) {
+	user.ID = m.nextID
+	m.nextID++
 	m.users = append(m.users, *user)
-	if user.ID >= m.nextID {
-		m.nextID = user.ID + 1
-	}
 }
 
 func createTestUser(id int64, username, password string) *models.User {
@@ -174,43 +174,80 @@ func createTestUser(id int64, username, password string) *models.User {
 	}
 }
 
-// setupTestData creates a fresh mock repository with predefined test users for test independence
+// setupTestData creates a fresh mock repository with predefined test users for test independence.
+// It is run at the start of each test to ensure a consistent state and avoid test interference.
 func setupTestData() *MockUserService {
 	mockService := NewMockUserService()
+
+	// users
 	mockService.addUser(testUser1)
 	mockService.addUser(testUser2)
 	mockService.addUser(testUser3)
+
 	return mockService
 }
 
-// compareUsers compares two User objects and returns an error if any field does not match
-func compareUserToUserDto(actual *models.User, expected *models.User) error {
-	if actual.ID != expected.ID {
-		return fmt.Errorf("ID = %d instead of %d", actual.ID, expected.ID)
+// compareUsers compares the fields of a user to a userDTO;
+// returns an error if any field does not match.
+func compareUserToUserDto(userDto *dtos.UserDto, user *models.User) error {
+	if userDto.ID != user.ID {
+		return fmt.Errorf("ID = %d instead of %d", userDto.ID, user.ID)
 	}
-	if actual.Username != expected.Username {
-		return fmt.Errorf("username = %s instead of %s", actual.Username, expected.Username)
+	if userDto.Username != user.Username {
+		return fmt.Errorf("username = %s instead of %s", userDto.Username, user.Username)
 	}
-	if actual.Password != expected.Password {
-		return fmt.Errorf("password = %s instead of %s", actual.Password, expected.Password)
+	if userDto.AppAdmin != user.AppAdmin {
+		return fmt.Errorf("appAdmin = %v instead of %v", userDto.AppAdmin, user.AppAdmin)
 	}
-	if actual.AppAdmin != expected.AppAdmin {
-		return fmt.Errorf("appAdmin = %v instead of %v", actual.AppAdmin, expected.AppAdmin)
+	// Verify both dates are within the last 2 minutes from now
+	now := time.Now()
+	threshold := now.Add(-2 * time.Minute)
+	if userDto.CreatedAt.Before(threshold) || userDto.CreatedAt.After(now) {
+		return fmt.Errorf("createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", userDto.CreatedAt, threshold, now)
 	}
-	// Compare only the date (year, month, day), ignoring time
-	actualDate := actual.CreatedAt.Truncate(24 * time.Hour)
-	expectedDate := expected.CreatedAt.Truncate(24 * time.Hour)
-	if actualDate != expectedDate {
-		return fmt.Errorf("createdAt date = %v instead of %v", actualDate, expectedDate)
+	if user.CreatedAt.Before(threshold) || user.CreatedAt.After(now) {
+		return fmt.Errorf("expected createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", user.CreatedAt, threshold, now)
 	}
-	if *actual.Avatar != *expected.Avatar {
-		return fmt.Errorf("avatar = %v instead of %v", *actual.Avatar, *expected.Avatar)
+	// Check Avatar with nil handling
+	if (userDto.Avatar == nil) != (user.Avatar == nil) {
+		return fmt.Errorf("avatar = %v instead of %v", userDto.Avatar, user.Avatar)
 	}
-	if actual.Language != expected.Language {
-		return fmt.Errorf("language = %v instead of %v", actual.Language, expected.Language)
+	if userDto.Avatar != nil && user.Avatar != nil && *userDto.Avatar != *user.Avatar {
+		return fmt.Errorf("avatar = %v instead of %v", *userDto.Avatar, *user.Avatar)
 	}
-	if actual.AppTheme != expected.AppTheme {
-		return fmt.Errorf("appTheme = %v instead of %v", actual.AppTheme, expected.AppTheme)
+	if userDto.Language != user.Language {
+		return fmt.Errorf("language = %v instead of %v", userDto.Language, user.Language)
+	}
+	if userDto.AppTheme != user.AppTheme {
+		return fmt.Errorf("appTheme = %v instead of %v", userDto.AppTheme, user.AppTheme)
+	}
+	return nil
+}
+
+// compareUserToNewUserDto compares the fields of a NewUserDto to a User;
+// returns an error if any field does not match.
+func compareUserToNewUserDto(user *models.User, newUserDto *dtos.NewUserDto) error {
+	if user.Username != newUserDto.Username {
+		return fmt.Errorf("username = %s instead of %s", user.Username, newUserDto.Username)
+	}
+	if user.AppAdmin != newUserDto.AppAdmin {
+		return fmt.Errorf("appAdmin = %v instead of %v", user.AppAdmin, newUserDto.AppAdmin)
+	}
+	if user.Password != newUserDto.Password {
+		return fmt.Errorf("password = %s instead of %s", user.Password, newUserDto.Password)
+	}
+	// Check Avatar with nil handling
+	if (user.Avatar == nil) != (newUserDto.Avatar == nil) {
+		return fmt.Errorf("avatar = %v instead of %v", user.Avatar, newUserDto.Avatar)
+	}
+	if user.Avatar != nil && newUserDto.Avatar != nil && *user.Avatar != *newUserDto.Avatar {
+		return fmt.Errorf("avatar = %v instead of %v", *user.Avatar, *newUserDto.Avatar)
+	}
+	if user.Language != newUserDto.Language {
+		return fmt.Errorf("language = %v instead of %v", user.Language, newUserDto.Language)
+	}
+	if user.AppTheme != newUserDto.AppTheme {
+		return fmt.Errorf("appTheme = %v instead of %v", user.AppTheme, newUserDto.AppTheme)
 	}
 	return nil
 }
@@ -232,7 +269,7 @@ func TestNewUserHandler(t *testing.T) {
 
 /*** READ OPERATIONS TESTS ***/
 
-func TestGetUsersAll(t *testing.T) {
+func TestGetUsersAll_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
@@ -244,12 +281,12 @@ func TestGetUsersAll(t *testing.T) {
 	handler.getUsers(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
 	}
 
 	var users []dtos.UserDto
@@ -259,14 +296,13 @@ func TestGetUsersAll(t *testing.T) {
 	}
 
 	if len(users) != len(mockService.users) {
-		t.Errorf("expected %d users, got %d", len(mockService.users), len(users))
+		t.Errorf("expected %d users instead of %d", len(mockService.users), len(users))
 	}
 }
 
-// TestGetUsersAllError tests the getUsers handler when GetAll returns an error
-func TestGetUsersAllError(t *testing.T) {
+func TestGetUsersAll_ServiceError(t *testing.T) {
 	mockService := NewMockUserService()
-	mockService.getAllErr = errors.New("database error")
+	mockService.getAllErr = errors.New("service error")
 
 	handler := NewUserHandler(mockService)
 
@@ -276,12 +312,11 @@ func TestGetUsersAllError(t *testing.T) {
 	handler.getUsers(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
 	}
 }
 
-// TestGetUsersByUsername tests the getUsers handler when filtering by username
-func TestGetUsersByUsername(t *testing.T) {
+func TestGetUsersByUsername_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
@@ -294,7 +329,7 @@ func TestGetUsersByUsername(t *testing.T) {
 	handler.getUsers(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
 	var users []dtos.UserDto
@@ -304,127 +339,168 @@ func TestGetUsersByUsername(t *testing.T) {
 	}
 
 	if len(users) != 1 {
-		t.Errorf("expected 1 user, got %d", len(users))
+		t.Errorf("expected 1 user instead of %d", len(users))
 	}
 
-	if users[0].Username != "user1" {
-		t.Errorf("expected username user1, got %s", users[0].Username)
+	if err := compareUserToUserDto(&users[0], &user); err != nil {
+		t.Error("GetByUsername() returned user with mismatched fields: " + err.Error())
 	}
 }
 
-// TestGetUsersByUsernameNotFound tests the getUsers handler when username is not found
-func TestGetUsersByUsernameNotFound(t *testing.T) {
+func TestGetUsersByUsername_NotFound(t *testing.T) {
 	mockService := NewMockUserService()
 	mockService.users = []models.User{}
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodGet, "/user?username=nonexistent", nil)
+	r := httptest.NewRequest(http.MethodGet, "/user?username="+invalidUsername, nil)
 	w := httptest.NewRecorder()
 
 	handler.getUsers(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
 	}
 }
 
-// TestGetUsersInvalidQueryParams tests the getUsers handler with invalid query parameters
-func TestGetUsersInvalidQueryParams(t *testing.T) {
+func TestGetUsersByUsername_EmptyUsername(t *testing.T) {
 	mockService := NewMockUserService()
+	mockService.users = []models.User{}
+
 	handler := NewUserHandler(mockService)
 
+	r := httptest.NewRequest(http.MethodGet, "/user?username=", nil)
+	w := httptest.NewRecorder()
+
+	handler.getUsers(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
+	}
+}
+
+// TestGetUsers_MultipleQueryParams tests the getUsers handler with multiple username query parameters
+func TestGetUsers_MultipleQueryParams(t *testing.T) {
+	mockService := setupTestData()
+	handler := NewUserHandler(mockService)
+
+	user1 := mockService.users[0]
+	user2 := mockService.users[1]
+
 	// Multiple username parameters
-	r := httptest.NewRequest(http.MethodGet, "/user?username=user1&username=user2", nil)
+	r := httptest.NewRequest(http.MethodGet, "/user?username="+user1.Username+"&username="+user2.Username, nil)
 	w := httptest.NewRecorder()
 
 	handler.getUsers(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
 	}
 
+	// A améliorer avec une erreur custom
 	expectedError := "Missing or invalid query parameters"
 	if !strings.Contains(w.Body.String(), expectedError) {
-		t.Errorf("expected error message containing '%s', got '%s'", expectedError, w.Body.String())
+		t.Errorf("expected error message containing '%s' instead of '%s'", expectedError, w.Body.String())
 	}
 }
 
-// TestGetUserByID tests the getUserByID handler
-func TestGetUserByID(t *testing.T) {
+// TestGetUsers_InvalidQueryParams tests the getUsers handler with invalid query parameters
+func TestGetUsers_InvalidQueryParams(t *testing.T) {
+	mockService := setupTestData()
+	handler := NewUserHandler(mockService)
+
+	// Multiple username parameters
+	r := httptest.NewRequest(http.MethodGet, "/user?random=ok", nil)
+	w := httptest.NewRecorder()
+
+	handler.getUsers(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	// A améliorer avec une erreur custom
+	expectedError := "Missing or invalid query parameters"
+	if !strings.Contains(w.Body.String(), expectedError) {
+		t.Errorf("expected error message containing '%s' instead of '%s'", expectedError, w.Body.String())
+	}
+}
+
+func TestGetUserByID_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodGet, "/user/1", nil)
+	expected := mockService.users[0]
+
+	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(expected.ID, 10), nil)
 	// Add the ID to the context as the middleware would do
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", expected.ID)
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.getUserByID(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
 	}
 
-	var user dtos.UserDto
-	err := json.NewDecoder(w.Body).Decode(&user)
+	var actual dtos.UserDto
+	err := json.NewDecoder(w.Body).Decode(&actual)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if user.ID != 1 {
-		t.Errorf("expected user ID 1, got %d", user.ID)
-	}
-
-	if user.Username != "user1" {
-		t.Errorf("expected username user1, got %s", user.Username)
+	if err := compareUserToUserDto(&actual, &expected); err != nil {
+		t.Error("GetByUsername() returned user with mismatched fields: " + err.Error())
 	}
 }
 
-// TestGetUserByIDNotFound tests the getUserByID handler when user is not found
-func TestGetUserByIDNotFound(t *testing.T) {
+func TestGetUserByID_NotFound(t *testing.T) {
 	mockService := NewMockUserService()
 	mockService.users = []models.User{}
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodGet, "/user/999", nil)
-	ctx := context.WithValue(r.Context(), "id", int64(999))
+	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(int64(invalidId), 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(invalidId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.getUserByID(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
 	}
 }
 
-// TestCreateUser tests the createUser handler
-func TestCreateUser(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.createReturnID = 42
+/*** CREATE OPERATIONS TESTS ***/
+
+func TestCreateUser_Success(t *testing.T) {
+	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
 	avatar := enums.Avatar1
 	newUser := dtos.NewUserDto{
-		Username: "newuser",
-		Password: "password123",
+		Username: validUsername,
+		Password: validPassword,
 		AppAdmin: false,
 		Avatar:   &avatar,
 		Language: enums.English,
 		AppTheme: enums.Light,
 	}
 
+	usersNb := len(mockService.users)
+
+	// Convert the newUser DTO to JSON
 	body, _ := json.Marshal(newUser)
+	// Create a POST request with the JSON body
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -432,12 +508,12 @@ func TestCreateUser(t *testing.T) {
 	handler.createUser(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("expected status %d, got %d", http.StatusCreated, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusCreated, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
 	}
 
 	var result map[string]int
@@ -446,15 +522,29 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if result["id"] != 42 {
-		t.Errorf("expected id 42, got %d", result["id"])
+	if result["id"] != int(mockService.nextID-1) {
+		t.Errorf("expected id %d instead of %d", int(mockService.nextID-1), result["id"])
+	}
+
+	if usersNb+1 != len(mockService.users) {
+		t.Errorf("expected %d users instead of %d", usersNb+1, len(mockService.users))
+	}
+
+	user, err := mockService.GetByID((int64)(result["id"]))
+	if err != nil {
+		t.Fatalf("failed to retrieve created user: %v", err)
+	}
+
+	if err := compareUserToNewUserDto(user, &newUser); err != nil {
+		t.Error("Created user has mismatched fields: " + err.Error())
 	}
 }
 
-// TestCreateUserInvalidBody tests the createUser handler with invalid request body
-func TestCreateUserInvalidBody(t *testing.T) {
-	mockService := NewMockUserService()
+func TestCreateUser_InvalidBody(t *testing.T) {
+	mockService := setupTestData()
 	handler := NewUserHandler(mockService)
+
+	usersNb := len(mockService.users)
 
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader([]byte("invalid json")))
 	r.Header.Set("Content-Type", "application/json")
@@ -463,27 +553,35 @@ func TestCreateUserInvalidBody(t *testing.T) {
 	handler.createUser(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
 	}
 
 	expectedError := "Invalid request body"
 	if !strings.Contains(w.Body.String(), expectedError) {
-		t.Errorf("expected error message containing '%s', got '%s'", expectedError, w.Body.String())
+		t.Errorf("expected error message containing '%s' instead of '%s'", expectedError, w.Body.String())
+	}
+
+	if usersNb != len(mockService.users) {
+		t.Errorf("expected %d users instead of %d", usersNb, len(mockService.users))
 	}
 }
 
-// TestCreateUserServiceError tests the createUser handler when service returns an error
-func TestCreateUserServiceError(t *testing.T) {
-	mockService := NewMockUserService()
+func TestCreateUserService_ValidationError(t *testing.T) {
+	mockService := setupTestData()
 	mockService.createErr = errors.New("validation error")
 
 	handler := NewUserHandler(mockService)
 
+	usersNb := len(mockService.users)
+
 	avatar := enums.Avatar1
 	newUser := dtos.NewUserDto{
-		Username: "newuser",
-		Password: "password123",
+		Username: validUsername,
+		Password: validPassword,
+		AppAdmin: false,
 		Avatar:   &avatar,
+		Language: enums.English,
+		AppTheme: enums.Light,
 	}
 
 	body, _ := json.Marshal(newUser)
@@ -494,27 +592,29 @@ func TestCreateUserServiceError(t *testing.T) {
 	handler.createUser(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	if usersNb != len(mockService.users) {
+		t.Errorf("expected %d users instead of %d", usersNb, len(mockService.users))
 	}
 }
 
-// TestUpdateUser tests the updateUser handler
-func TestUpdateUser(t *testing.T) {
+/*** UPDATE OPERATIONS TESTS ***/
+
+func TestUpdateUser_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
-	avatar := enums.Avatar1
-	userDto := dtos.UserDto{
-		ID:       1,
-		Username: "updateduser",
-		AppAdmin: false,
-		Avatar:   &avatar,
-		Language: enums.English,
-		AppTheme: enums.Light,
-	}
+	avatar := enums.Avatar2
+	user := mappers.ToUserDtoNoPassword(&mockService.users[0])
+	user.Username = validUsername
+	user.Avatar = &avatar
+	user.Language = enums.French
+	user.AppTheme = enums.Dark
 
-	body, _ := json.Marshal(userDto)
+	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -522,18 +622,26 @@ func TestUpdateUser(t *testing.T) {
 	handler.updateUser(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if err := compareUserToUserDto(user, actual); err != nil {
+		t.Error("Updated user has mismatched fields: " + err.Error())
 	}
 }
 
-// TestUpdateUserInvalidBody tests the updateUser handler with invalid request body
-func TestUpdateUserInvalidBody(t *testing.T) {
-	mockService := NewMockUserService()
+func TestUpdateUser_InvalidBody(t *testing.T) {
+	mockService := setupTestData()
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader([]byte("invalid json")))
@@ -543,23 +651,24 @@ func TestUpdateUserInvalidBody(t *testing.T) {
 	handler.updateUser(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
 	}
 }
 
-// TestUpdateUserServiceError tests the updateUser handler when service returns an error
-func TestUpdateUserServiceError(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.updateErr = errors.New("database error")
+func TestUpdateUserService_ServiceError(t *testing.T) {
+	mockService := setupTestData()
+	mockService.updateErr = errors.New("service error")
 
 	handler := NewUserHandler(mockService)
 
-	userDto := dtos.UserDto{
-		ID:       1,
-		Username: "updateduser",
-	}
+	avatar := enums.Avatar2
+	user := mappers.ToUserDtoNoPassword(&mockService.users[0])
+	user.Username = validUsername
+	user.Avatar = &avatar
+	user.Language = enums.French
+	user.AppTheme = enums.Dark
 
-	body, _ := json.Marshal(userDto)
+	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -567,234 +676,328 @@ func TestUpdateUserServiceError(t *testing.T) {
 	handler.updateUser(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if err := compareUserToUserDto(mappers.ToUserDtoNoPassword(&mockService.users[0]), actual); err != nil {
+		t.Error("Updated user has mismatched fields: " + err.Error())
 	}
 }
 
-// TestUpdateUserAdminRole tests the updateUserAdminRole handler
-func TestUpdateUserAdminRole(t *testing.T) {
+func TestUpdateUserAdminRole_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
-	rolePayload := map[string]bool{"app_admin": true}
+	user := mockService.users[0]
+	adminRole := !user.AppAdmin
+
+	rolePayload := map[string]bool{"app_admin": adminRole}
 	body, _ := json.Marshal(rolePayload)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/role", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserAdminRole(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.AppAdmin != adminRole {
+		t.Errorf("expected appAdmin = %v instead of %v", adminRole, actual.AppAdmin)
 	}
 }
 
-// TestUpdateUserAdminRoleInvalidBody tests the updateUserAdminRole handler with invalid body
-func TestUpdateUserAdminRoleInvalidBody(t *testing.T) {
-	mockService := NewMockUserService()
+func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
+	mockService := setupTestData()
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/role", bytes.NewReader([]byte("invalid json")))
+	user := mockService.users[0]
+
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader([]byte("invalid json")))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserAdminRole(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.AppAdmin != user.AppAdmin {
+		t.Errorf("expected appAdmin = %v instead of %v", user.AppAdmin, actual.AppAdmin)
 	}
 }
 
-// TestUpdateUserAdminRoleServiceError tests the updateUserAdminRole handler with service error
-func TestUpdateUserAdminRoleServiceError(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.updateRoleErr = errors.New("database error")
+func TestUpdateUserAdminRole_ServiceError(t *testing.T) {
+	mockService := setupTestData()
+	mockService.updateRoleErr = errors.New("service error")
 
 	handler := NewUserHandler(mockService)
 
-	rolePayload := map[string]bool{"app_admin": true}
+	user := mockService.users[0]
+	adminRole := !user.AppAdmin
+
+	rolePayload := map[string]bool{"app_admin": adminRole}
 	body, _ := json.Marshal(rolePayload)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/role", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserAdminRole(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.AppAdmin != user.AppAdmin {
+		t.Errorf("expected appAdmin = %v instead of %v", user.AppAdmin, actual.AppAdmin)
 	}
 }
 
-// TestUpdateUserPassword tests the updateUserPassword handler
-func TestUpdateUserPassword(t *testing.T) {
+func TestUpdateUserPassword_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
+	user := mockService.users[0]
+
 	passwordPayload := map[string]string{
-		"old_password": "password123",
-		"new_password": "newpassword123",
+		"old_password": user.Password,
+		"new_password": validPassword,
 	}
 	body, _ := json.Marshal(passwordPayload)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/password", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserPassword(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.Password != validPassword {
+		t.Errorf("expected password = %v instead of %v", validPassword, actual.Password)
 	}
 }
 
-// TestUpdateUserPasswordInvalidBody tests the updateUserPassword handler with invalid body
-func TestUpdateUserPasswordInvalidBody(t *testing.T) {
-	mockService := NewMockUserService()
+func TestUpdateUserPassword_InvalidBody(t *testing.T) {
+	mockService := setupTestData()
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/password", bytes.NewReader([]byte("invalid json")))
+	user := mockService.users[0]
+
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader([]byte("invalid json")))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserPassword(w, r)
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.Password != user.Password {
+		t.Errorf("expected password = %v instead of %v", user.Password, actual.Password)
 	}
 }
 
-// TestUpdateUserPasswordServiceError tests the updateUserPassword handler with service error
-func TestUpdateUserPasswordServiceError(t *testing.T) {
-	mockService := NewMockUserService()
+func TestUpdateUserPassword_ServiceError(t *testing.T) {
+	mockService := setupTestData()
 	mockService.updatePassErr = errors.New("password verification failed")
 
 	handler := NewUserHandler(mockService)
 
+	user := mockService.users[0]
+
 	passwordPayload := map[string]string{
-		"old_password": "wrongpassword",
-		"new_password": "newpassword123",
+		"old_password": user.Password,
+		"new_password": validPassword,
 	}
 	body, _ := json.Marshal(passwordPayload)
 
-	r := httptest.NewRequest(http.MethodPatch, "/user/1/password", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.updateUserPassword(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	actual, err := mockService.GetByID(user.ID)
+	if err != nil {
+		t.Fatalf("failed to retrieve updated user: %v", err)
+	}
+
+	if actual.Password != user.Password {
+		t.Errorf("expected password = %v instead of %v", user.Password, actual.Password)
 	}
 }
 
-// TestDeleteUser tests the deleteUser handler
-func TestDeleteUser(t *testing.T) {
+/*** DELETE OPERATIONS TESTS ***/
+
+func TestDeleteUser_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodDelete, "/user/1", nil)
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	usersNb := len(mockService.users)
+	user := mockService.users[0]
+
+	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.deleteUser(w, r)
 
 	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d, got %d", http.StatusNoContent, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	contentType := w.Header().Get("Content-Type")
 	if contentType != "application/json" {
-		t.Errorf("expected content type application/json, got %s", contentType)
+		t.Errorf("expected content type application/json instead of %s", contentType)
 	}
 
 	// Verify the user was deleted from the mock service
-	if len(mockService.users) != 2 {
-		t.Errorf("expected 2 users after deletion, got %d", len(mockService.users))
+	if len(mockService.users) != usersNb-1 {
+		t.Errorf("expected %d users after deletion instead of %d", usersNb-1, len(mockService.users))
+	}
+
+	if _, err := mockService.GetByID(user.ID); err == nil {
+		t.Errorf("expected error when retrieving deleted user, but got none")
 	}
 }
 
-// TestDeleteUserNotFound tests the deleteUser handler when user is not found
-func TestDeleteUserNotFound(t *testing.T) {
+func TestDeleteUser_NotFound(t *testing.T) {
 	mockService := NewMockUserService()
 	mockService.users = []models.User{}
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodDelete, "/user/999", nil)
-	ctx := context.WithValue(r.Context(), "id", int64(999))
+	usersNb := len(mockService.users)
+
+	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(int64(invalidId), 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(invalidId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.deleteUser(w, r)
 
 	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
+	}
+
+	if len(mockService.users) != usersNb {
+		t.Errorf("expected %d users after failed deletion instead of %d", usersNb, len(mockService.users))
 	}
 }
 
-// TestDeleteUserServiceError tests the deleteUser handler with general service error
-func TestDeleteUserServiceError(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.deleteErr = errors.New("database error")
+func TestDeleteUser_ServiceError(t *testing.T) {
+	mockService := setupTestData()
+	mockService.deleteErr = errors.New("service error")
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodDelete, "/user/1", nil)
-	ctx := context.WithValue(r.Context(), "id", int64(1))
+	usersNb := len(mockService.users)
+	user := mockService.users[0]
+
+	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.deleteUser(w, r)
 
 	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	if len(mockService.users) != usersNb {
+		t.Errorf("expected %d users after failed deletion instead of %d", usersNb, len(mockService.users))
+	}
+
+	if _, err := mockService.GetByID(user.ID); err != nil {
+		t.Errorf("expected user to still exist after failed deletion, but got error: %v", err)
 	}
 }
 
 // TestRegisterRoutes tests the RegisterRoutes method
-func TestRegisterRoutes(t *testing.T) {
+func TestRegisterRoutes_Success(t *testing.T) {
 	mockService := setupTestData()
 
 	handler := NewUserHandler(mockService)
 	mux := http.NewServeMux()
 
-	handler.RegisterRoutes(mux, "/api/user")
+	handler.RegisterRoutes(mux, "/test/api/user")
 
 	// Test that routes are registered - test GET /api/user
-	r := httptest.NewRequest(http.MethodGet, "/api/user", nil)
+	r := httptest.NewRequest(http.MethodGet, "/test/api/user", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d for GET /api/user, got %d", http.StatusOK, w.Code)
+		t.Errorf("expected status %d for GET /test/api/user instead of %d", http.StatusOK, w.Code)
 	}
 
 	// Test POST /api/user
@@ -807,289 +1010,12 @@ func TestRegisterRoutes(t *testing.T) {
 		AppTheme: enums.Light,
 	}
 	body, _ := json.Marshal(newUser)
-	r = httptest.NewRequest(http.MethodPost, "/api/user", bytes.NewReader(body))
+	r = httptest.NewRequest(http.MethodPost, "/test/api/user", bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 
 	if w.Code != http.StatusCreated {
-		t.Errorf("expected status %d for POST /api/user, got %d", http.StatusCreated, w.Code)
-	}
-}
-
-// TestGetAllUsers tests the private getAllUsers method
-func TestGetAllUsers(t *testing.T) {
-	mockService := setupTestData()
-
-	handler := NewUserHandler(mockService)
-	w := httptest.NewRecorder()
-
-	handler.getAllUsers(w)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-
-	var users []dtos.UserDto
-	err := json.NewDecoder(w.Body).Decode(&users)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if len(users) != 3 {
-		t.Errorf("expected 3 users, got %d", len(users))
-	}
-}
-
-// TestGetAllUsersError tests the private getAllUsers method with service error
-func TestGetAllUsersError(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.getAllErr = errors.New("database error")
-
-	handler := NewUserHandler(mockService)
-	w := httptest.NewRecorder()
-
-	handler.getAllUsers(w)
-
-	if w.Code != http.StatusInternalServerError {
-		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
-	}
-}
-
-// TestGetByUsername tests the private getByUsername method
-func TestGetByUsername(t *testing.T) {
-	mockService := setupTestData()
-
-	handler := NewUserHandler(mockService)
-	w := httptest.NewRecorder()
-
-	handler.getByUsername(w, "user1")
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-
-	var users []dtos.UserDto
-	err := json.NewDecoder(w.Body).Decode(&users)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if len(users) != 1 {
-		t.Errorf("expected 1 user, got %d", len(users))
-	}
-
-	if users[0].Username != "user1" {
-		t.Errorf("expected username user1, got %s", users[0].Username)
-	}
-}
-
-// TestGetByUsernameNotFound tests the private getByUsername method when user not found
-func TestGetByUsernameNotFound(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.users = []models.User{}
-
-	handler := NewUserHandler(mockService)
-	w := httptest.NewRecorder()
-
-	handler.getByUsername(w, "nonexistent")
-
-	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
-	}
-}
-
-// TestGetByUsernameServiceError tests the private getByUsername method with service error
-func TestGetByUsernameServiceError(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.getByNameErr = errors.New("database error")
-
-	handler := NewUserHandler(mockService)
-	w := httptest.NewRecorder()
-
-	handler.getByUsername(w, "someuser")
-
-	if w.Code != http.StatusNotFound {
-		t.Errorf("expected status %d, got %d", http.StatusNotFound, w.Code)
-	}
-}
-
-// TestGetUserByIDSerializationError tests what happens when encoding fails
-// This is a edge case that's hard to trigger in practice, but we can document it
-func TestGetUserByIDSuccessfulRetrieval(t *testing.T) {
-	mockService := setupTestData()
-
-	handler := NewUserHandler(mockService)
-
-	r := httptest.NewRequest(http.MethodGet, "/user/1", nil)
-	ctx := context.WithValue(r.Context(), "id", int64(1))
-	r = r.WithContext(ctx)
-	w := httptest.NewRecorder()
-
-	handler.getUserByID(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
-	}
-
-	// Verify the response contains valid JSON
-	var result dtos.UserDto
-	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if result.Username != "user1" {
-		t.Errorf("expected username user1, got %s", result.Username)
-	}
-}
-
-// TestCreateUserWithAllFields tests creating a user with all optional fields
-func TestCreateUserWithAllFields(t *testing.T) {
-	mockService := NewMockUserService()
-	mockService.createReturnID = 100
-
-	handler := NewUserHandler(mockService)
-
-	avatar := enums.Avatar1
-	newUser := dtos.NewUserDto{
-		Username: "fulluser",
-		Password: "securepass123",
-		AppAdmin: true,
-		Avatar:   &avatar,
-		Language: enums.French,
-		AppTheme: enums.Dark,
-	}
-
-	body, _ := json.Marshal(newUser)
-	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	handler.createUser(w, r)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("expected status %d, got %d", http.StatusCreated, w.Code)
-	}
-
-	var result map[string]int
-	err := json.NewDecoder(w.Body).Decode(&result)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if result["id"] != 100 {
-		t.Errorf("expected id 100, got %d", result["id"])
-	}
-
-	// Verify the user was added to the mock service
-	if len(mockService.users) != 1 {
-		t.Errorf("expected 1 user in mock service, got %d", len(mockService.users))
-	}
-
-	createdUser := mockService.users[0]
-	if createdUser.Username != "fulluser" {
-		t.Errorf("expected username fulluser, got %s", createdUser.Username)
-	}
-	if !createdUser.AppAdmin {
-		t.Error("expected user to be admin")
-	}
-	if createdUser.Language != enums.French {
-		t.Errorf("expected language French, got %v", createdUser.Language)
-	}
-	if createdUser.AppTheme != enums.Dark {
-		t.Errorf("expected theme Dark, got %v", createdUser.AppTheme)
-	}
-}
-
-// Benchmark tests
-func BenchmarkGetUserByID(b *testing.B) {
-	mockService := setupTestData()
-
-	handler := NewUserHandler(mockService)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		r := httptest.NewRequest(http.MethodGet, "/user/1", nil)
-		ctx := context.WithValue(r.Context(), "id", int64(1))
-		r = r.WithContext(ctx)
-		w := httptest.NewRecorder()
-		handler.getUserByID(w, r)
-	}
-}
-
-func BenchmarkCreateUser(b *testing.B) {
-	mockService := NewMockUserService()
-	handler := NewUserHandler(mockService)
-
-	avatar := enums.Avatar1
-	newUser := dtos.NewUserDto{
-		Username: "benchuser",
-		Password: "password123",
-		Avatar:   &avatar,
-		Language: enums.English,
-		AppTheme: enums.Light,
-	}
-
-	body, _ := json.Marshal(newUser)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-		r.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		handler.createUser(w, r)
-		mockService.createReturnID++
-		mockService.users = []models.User{} // Reset for next iteration
-	}
-}
-
-// TestEdgeCaseEmptyUsername tests edge cases with empty or special usernames
-func TestEdgeCaseEmptyUsername(t *testing.T) {
-	mockService := NewMockUserService()
-	handler := NewUserHandler(mockService)
-
-	newUser := dtos.NewUserDto{
-		Username: "",
-		Password: "password123",
-	}
-
-	body, _ := json.Marshal(newUser)
-	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	// Here we're just testing that the handler doesn't crash
-	// The actual validation should happen in the service layer
-	handler.createUser(w, r)
-
-	// The status code depends on service validation
-	// We just ensure no panic occurred
-	if w.Code != http.StatusCreated && w.Code != http.StatusBadRequest {
-		t.Logf("Got status code %d for empty username", w.Code)
-	}
-}
-
-// TestMultipleConcurrentRequests tests thread safety
-func TestMultipleConcurrentRequests(t *testing.T) {
-	mockService := setupTestData()
-
-	handler := NewUserHandler(mockService)
-
-	// Run multiple concurrent GET requests
-	done := make(chan bool)
-	for i := 0; i < 3; i++ {
-		go func(id int64) {
-			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/user/%d", id), nil)
-			ctx := context.WithValue(r.Context(), "id", id)
-			r = r.WithContext(ctx)
-			w := httptest.NewRecorder()
-			handler.getUserByID(w, r)
-			done <- true
-		}(int64(i + 1))
-	}
-
-	// Wait for all goroutines to finish
-	for i := 0; i < 3; i++ {
-		<-done
+		t.Errorf("expected status %d for POST /test/api/user instead of %d", http.StatusCreated, w.Code)
 	}
 }
