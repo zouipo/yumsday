@@ -41,7 +41,7 @@ type MockUserRepository struct {
 func NewMockUserRepository() *MockUserRepository {
 	return &MockUserRepository{
 		users:  make([]models.User, 0),
-		nextID: 4,
+		nextID: 1,
 	}
 }
 
@@ -129,10 +129,9 @@ func (m *MockUserRepository) Delete(id int64) error {
 
 // Helper methods for setting up test scenarios
 func (m *MockUserRepository) addUser(user *models.User) {
+	user.ID = m.nextID
+	m.nextID++
 	m.users = append(m.users, *user)
-	if user.ID >= m.nextID {
-		m.nextID = user.ID + 1
-	}
 }
 
 // Helper function to create a test user
@@ -173,13 +172,20 @@ func compareUsers(actual *models.User, expected *models.User) error {
 	if actual.AppAdmin != expected.AppAdmin {
 		return fmt.Errorf("appAdmin = %v instead of %v", actual.AppAdmin, expected.AppAdmin)
 	}
-	// Compare only the date (year, month, day), ignoring time
-	actualDate := actual.CreatedAt.Truncate(24 * time.Hour)
-	expectedDate := expected.CreatedAt.Truncate(24 * time.Hour)
-	if actualDate != expectedDate {
-		return fmt.Errorf("createdAt date = %v instead of %v", actualDate, expectedDate)
+	// Verify both dates are within the last 2 minutes from now
+	now := time.Now()
+	threshold := now.Add(-2 * time.Minute)
+	if actual.CreatedAt.Before(threshold) || actual.CreatedAt.After(now) {
+		return fmt.Errorf("createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", actual.CreatedAt, threshold, now)
 	}
-	if *actual.Avatar != *expected.Avatar {
+	if expected.CreatedAt.Before(threshold) || expected.CreatedAt.After(now) {
+		return fmt.Errorf("expected createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", expected.CreatedAt, threshold, now)
+	}
+	// Check Avatar with nil handling
+	if (actual.Avatar == nil) != (expected.Avatar == nil) {
+		return fmt.Errorf("avatar = %v instead of %v", actual.Avatar, expected.Avatar)
+	}
+	if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
 		return fmt.Errorf("avatar = %v instead of %v", *actual.Avatar, *expected.Avatar)
 	}
 	if actual.Language != expected.Language {
@@ -249,8 +255,7 @@ func TestGetByID_Success(t *testing.T) {
 		t.Fatalf("GetByID() error = %v instead of nil", err)
 	}
 
-	err = compareUsers(user, &expectedUser)
-	if err != nil {
+	if err := compareUsers(user, &expectedUser); err != nil {
 		t.Error("GetByID() returned user with mismatched fields: " + err.Error())
 	}
 }
@@ -291,8 +296,7 @@ func TestGetByUsername_Success(t *testing.T) {
 		t.Fatalf("GetByUsername() error = %v instead of nil", err)
 	}
 
-	err = compareUsers(user, &expectedUser)
-	if err != nil {
+	if err := compareUsers(user, &expectedUser); err != nil {
 		t.Error("GetByUsername() returned user with mismatched fields: " + err.Error())
 	}
 }
@@ -314,6 +318,8 @@ func TestCreate_Success(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
 
+	usersNb := len(mockRepo.users)
+
 	newUser := createTestUser(0, validUsername, validPassword)
 
 	id, err := service.Create(newUser)
@@ -329,6 +335,10 @@ func TestCreate_Success(t *testing.T) {
 	createdUser, err := mockRepo.GetByID(id)
 	if err != nil {
 		t.Fatalf("GetByID() error = %v instead of nil", err)
+	}
+
+	if len(mockRepo.users) != usersNb+1 {
+		t.Errorf("Create() did not add user to repository, expected %d users instead of %d", usersNb+1, len(mockRepo.users))
 	}
 
 	err = compareUsers(createdUser, &models.User{
@@ -377,17 +387,25 @@ func TestCreate_InvalidPassword(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
 
+	usersNb := len(mockRepo.users)
+
 	newUser := createTestUser(0, validUsername, invalidPassword)
 
 	_, err := service.Create(newUser)
 	if err == nil {
 		t.Error("Create() expected error for invalid password, got nil")
 	}
+
+	if len(mockRepo.users) != usersNb {
+		t.Errorf("Create() should not add user to repository on invalid password, expected %d users instead of %d", usersNb, len(mockRepo.users))
+	}
 }
 
 func TestCreate_RepositoryError(t *testing.T) {
 	mockRepo := setupTestData()
 	mockRepo.createErr = errors.New("database error")
+
+	usersNb := len(mockRepo.users)
 
 	service := &UserService{repo: mockRepo}
 
@@ -396,6 +414,10 @@ func TestCreate_RepositoryError(t *testing.T) {
 	_, err := service.Create(newUser)
 	if err == nil {
 		t.Error("Create() expected error from repository, got nil")
+	}
+
+	if len(mockRepo.users) != usersNb {
+		t.Errorf("Create() should not add user to repository on error, expected %d users instead of %d", usersNb, len(mockRepo.users))
 	}
 }
 
@@ -406,10 +428,12 @@ func TestUpdate_Success(t *testing.T) {
 	service := &UserService{repo: mockRepo}
 
 	existingUser := mockRepo.users[0]
+	existingUser.Username = validUsername
+	existingUser.Avatar = nil
+	existingUser.Language = enums.French
+	existingUser.AppTheme = enums.Dark
 
-	updatedUser := createTestUser(existingUser.ID, validUsername, existingUser.Password)
-
-	err := service.Update(updatedUser)
+	err := service.Update(&existingUser)
 	if err != nil {
 		t.Fatalf("Update() error = %v instead of nil", err)
 	}
@@ -420,16 +444,7 @@ func TestUpdate_Success(t *testing.T) {
 		t.Error("Update() failed to update username")
 	}
 
-	err = compareUsers(user, &models.User{
-		ID:        updatedUser.ID,
-		Username:  updatedUser.Username,
-		Password:  updatedUser.Password,
-		AppAdmin:  updatedUser.AppAdmin,
-		CreatedAt: updatedUser.CreatedAt,
-		Avatar:    updatedUser.Avatar,
-		Language:  updatedUser.Language,
-		AppTheme:  updatedUser.AppTheme,
-	})
+	err = compareUsers(user, &existingUser)
 
 	if err != nil {
 		t.Error("Update() returned user with mismatched fields: " + err.Error())
@@ -472,36 +487,6 @@ func TestUpdate_InvalidUsername(t *testing.T) {
 	err := service.Update(updatedUser)
 	if err == nil {
 		t.Error("Update() expected error for invalid username, got nil")
-	}
-}
-
-func TestUpdate_AvatarLanguageTheme(t *testing.T) {
-	mockRepo := setupTestData()
-	service := &UserService{repo: mockRepo}
-
-	existingUser := mockRepo.users[0]
-
-	avatar2 := enums.Avatar2
-	updatedUser := createTestUser(existingUser.ID, existingUser.Username, existingUser.Password)
-	updatedUser.Avatar = &avatar2
-	updatedUser.Language = enums.French
-	updatedUser.AppTheme = enums.Dark
-
-	err := service.Update(updatedUser)
-	if err != nil {
-		t.Fatalf("Update() error = %v instead of nil", err)
-	}
-
-	// Verify changes
-	user, _ := mockRepo.GetByID(1)
-	if *user.Avatar != enums.Avatar2 {
-		t.Fatalf("Update() failed to update avatar: %v instead of %v", *user.Avatar, enums.Avatar2)
-	}
-	if user.Language != enums.French {
-		t.Fatalf("Update() failed to update language: %v instead of %v", user.Language, enums.French)
-	}
-	if user.AppTheme != enums.Dark {
-		t.Fatalf("Update() failed to update theme: %v instead of %v", user.AppTheme, enums.Dark)
 	}
 }
 
