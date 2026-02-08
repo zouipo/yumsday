@@ -138,8 +138,6 @@ func (r *UserRepository) fetchUsers(query string, args ...any) ([]models.User, e
 	if err != nil {
 		return nil, err
 	}
-	// Not mandatory
-	defer rows.Close()
 
 	for rows.Next() {
 		var user models.User
@@ -155,6 +153,8 @@ func (r *UserRepository) fetchUsers(query string, args ...any) ([]models.User, e
 			&user.AppTheme,
 			&user.LastVisitedGroup,
 		); err != nil {
+			// Close rows before returning to prevent resource leaks.
+			rows.Close()
 			return nil, err
 		}
 		users = append(users, user)
