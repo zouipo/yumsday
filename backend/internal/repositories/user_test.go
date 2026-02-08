@@ -2,10 +2,15 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
+	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
+
+	"github.com/mattn/go-sqlite3"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/models"
@@ -14,11 +19,187 @@ import (
 
 var (
 	yesterday = time.Now().AddDate(0, 0, -1)
-	minTime   = yesterday.Add(-1 * time.Minute)
-	maxTime   = yesterday.Add(1 * time.Minute)
+
+	nextId = int64(5)
+
+	invalidId       = int64(-1)
+	invalidUsername = "invalidUsername"
+
+	expectedUsers = []models.User{
+		{
+			ID:               1,
+			Username:         "testuser1",
+			Password:         "password123",
+			AppAdmin:         false,
+			CreatedAt:        yesterday,
+			Avatar:           func() *enums.Avatar { a := enums.Avatar1; return &a }(),
+			Language:         enums.English,
+			AppTheme:         enums.Light,
+			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
+		},
+		{
+			ID:               2,
+			Username:         "testuser2",
+			Password:         "password456",
+			AppAdmin:         true,
+			CreatedAt:        yesterday,
+			Avatar:           func() *enums.Avatar { a := enums.Avatar2; return &a }(),
+			Language:         enums.French,
+			AppTheme:         enums.Dark,
+			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
+		},
+		{
+			ID:               3,
+			Username:         "testuser3",
+			Password:         "password789",
+			AppAdmin:         false,
+			CreatedAt:        yesterday,
+			Avatar:           func() *enums.Avatar { a := enums.Avatar3; return &a }(),
+			Language:         enums.English,
+			AppTheme:         enums.System,
+			LastVisitedGroup: func() *int64 { v := int64(2); return &v }(),
+		},
+		{
+			ID:               4,
+			Username:         "testuser4",
+			Password:         "password000",
+			AppAdmin:         false,
+			CreatedAt:        yesterday,
+			Avatar:           nil,
+			Language:         enums.English,
+			AppTheme:         enums.Light,
+			LastVisitedGroup: nil,
+		},
+	}
 )
 
-// setupTestDB initializes an in-memory SQLite database for testing.
+func compareListUsers(actual, expected []models.User) error {
+	if len(actual) != len(expected) {
+		return fmt.Errorf("user list length mismatch: actual is %d instead of %d", len(actual), len(expected))
+	}
+
+	// Sort both lists by ID to ensure consistent comparison
+	sortList(actual)
+	sortList(expected)
+
+	for i := range expected {
+		actualUser := actual[i]
+		expectedUser := expected[i]
+
+		if err := compareUsers(&actualUser, &expectedUser); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func compareUsers(actual, expected *models.User) error {
+	if actual.ID != expected.ID {
+		return fmt.Errorf("ID = %d instead of %d", actual.ID, expected.ID)
+	}
+
+	if actual.Username != expected.Username {
+		return fmt.Errorf("Username = %s instead of %s", actual.Username, expected.Username)
+	}
+
+	if actual.Password != expected.Password {
+		return fmt.Errorf("Password = %s instead of %s", actual.Password, expected.Password)
+	}
+
+	if actual.AppAdmin != expected.AppAdmin {
+		return fmt.Errorf("AppAdmin = %v instead of %v", actual.AppAdmin, expected.AppAdmin)
+	}
+
+	// allows a small time difference (±1 minute) to account for timing variations
+	minTime := expected.CreatedAt.Add(-1 * time.Minute)
+	maxTime := expected.CreatedAt.Add(1 * time.Minute)
+	if actual.CreatedAt.Before(minTime) || actual.CreatedAt.After(maxTime) {
+		return fmt.Errorf("CreatedAt = %v instead of around %v (±1min)", actual.CreatedAt, expected.CreatedAt)
+	}
+
+	// Compare Avatar pointers
+	if (actual.Avatar == nil) != (expected.Avatar == nil) {
+		return fmt.Errorf("Avatar nil mismatch: got %v instead of %v", actual.Avatar, expected.Avatar)
+	} else if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
+		return fmt.Errorf("Avatar = %v instead of %v", *actual.Avatar, *expected.Avatar)
+	}
+
+	if actual.Language != expected.Language {
+		return fmt.Errorf("Language = %s instead of %s", actual.Language, expected.Language)
+	}
+
+	if actual.AppTheme != expected.AppTheme {
+		return fmt.Errorf("AppTheme = %s instead of %s", actual.AppTheme, expected.AppTheme)
+	}
+
+	// Compare LastVisitedGroup pointers
+	if (actual.LastVisitedGroup == nil) != (expected.LastVisitedGroup == nil) {
+		return fmt.Errorf("LastVisitedGroup nil mismatch: got %v instead of %v", actual.LastVisitedGroup, expected.LastVisitedGroup)
+	} else if actual.LastVisitedGroup != nil && expected.LastVisitedGroup != nil && *actual.LastVisitedGroup != *expected.LastVisitedGroup {
+		return fmt.Errorf("LastVisitedGroup = %d instead of %d", *actual.LastVisitedGroup, *expected.LastVisitedGroup)
+	}
+	return nil
+}
+
+func sortList(users []models.User) {
+	sort.Slice(users, func(i, j int) bool {
+		return users[i].ID < users[j].ID
+	})
+}
+
+func resetNextId() {
+	nextId = int64(5)
+}
+
+// compareErrors compares two errors to check if they are equivalent AppErrors.
+// It compares the Message, StatusCode, and underlying Err fields.
+func compareErrors(actual, expected error) bool {
+	if actual == nil && expected == nil {
+		return true
+	}
+
+	if (actual == nil) != (expected == nil) {
+		return false
+	}
+
+	// Cast both to *AppError
+	actualAppErr, actualIsAppErr := actual.(*customErrors.AppError)
+	expectedAppErr, expectedIsAppErr := expected.(*customErrors.AppError)
+
+	if actualIsAppErr && expectedIsAppErr {
+		if actualAppErr.Code != expectedAppErr.Code && actualAppErr.Message != expectedAppErr.Message && actualAppErr.StatusCode != expectedAppErr.StatusCode {
+			return false
+		}
+
+		// Cast both into sqlite3.Error to compare their ExtendedCode if possible
+		actualSQLErr, actualIsSQLErr := actualAppErr.Err.(sqlite3.Error)
+		expectedSQLErr, expectedIsSQLErr := expectedAppErr.Err.(sqlite3.Error)
+
+		if actualIsSQLErr && expectedIsSQLErr {
+			return actualSQLErr.ExtendedCode == expectedSQLErr.ExtendedCode
+		}
+
+		// If actual is sqlite3.Error but expected is an error code constant (ErrNoExtended or ErrNo),
+		// compare the actual error's ExtendedCode with the expected constant
+		if actualIsSQLErr {
+			if errNoExt, ok := expectedAppErr.Err.(sqlite3.ErrNoExtended); ok {
+				return actualSQLErr.ExtendedCode == errNoExt
+			}
+			if errNo, ok := expectedAppErr.Err.(sqlite3.ErrNo); ok {
+				return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
+			}
+		}
+
+		// non-SQLite errors
+		return actualAppErr.Err == expectedAppErr.Err
+	}
+
+	// If not AppErrors, compare their error messages
+	return actual.Error() == expected.Error()
+}
+
+// setupTestDB initializes an in-memory SQLite database with test data for testing.
 func setupTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
@@ -51,6 +232,8 @@ func teardownTestDB(db *sql.DB) {
 	db.Close()
 }
 
+/*** TEST CONSTRUCTOR ***/
+
 func TestNewUserRepository(t *testing.T) {
 	db := setupTestDB(t)
 	defer teardownTestDB(db)
@@ -66,6 +249,8 @@ func TestNewUserRepository(t *testing.T) {
 	}
 }
 
+/*** READ OPERATIONS TESTS ***/
+
 func TestGetAll(t *testing.T) {
 	db := setupTestDB(t)
 	defer teardownTestDB(db)
@@ -77,38 +262,8 @@ func TestGetAll(t *testing.T) {
 		t.Fatalf("GetAll() error = %v", err)
 	}
 
-	expectedCount := 4
-	if len(users) != expectedCount {
-		t.Errorf("GetAll() returned %d users, expected %d", len(users), expectedCount)
-	}
-
-	if len(users) > 0 {
-		user := users[0]
-		if user.ID != 1 {
-			t.Errorf("expected user ID 1, got %d", user.ID)
-		}
-		if user.Username != "testuser1" {
-			t.Errorf("expected username 'testuser1', got '%s'", user.Username)
-		}
-		if user.Password != "password123" {
-			t.Errorf("expected password 'password123', got '%s'", user.Password)
-		}
-		if user.AppAdmin {
-			t.Errorf("expected testuser1 to not be admin")
-		}
-		// Check that CreatedAt is approximately yesterday (within ±1 minute)
-		if user.CreatedAt.Before(minTime) || user.CreatedAt.After(maxTime) {
-			t.Errorf("expected creation date around %v (±1min), got '%v'", yesterday, user.CreatedAt)
-		}
-		if user.Avatar == nil || *user.Avatar != enums.Avatar1 {
-			t.Errorf("expected avatar 'AVATAR_1', got '%v'", user.Avatar)
-		}
-		if user.Language != enums.English {
-			t.Errorf("expected language 'EN', got '%s'", user.Language)
-		}
-		if user.AppTheme != enums.Light {
-			t.Errorf("expected app theme 'LIGHT', got '%s'", user.AppTheme)
-		}
+	if err := compareListUsers(users, expectedUsers); err != nil {
+		t.Error("GetAll() returned users with mismatched fields: " + err.Error())
 	}
 }
 
@@ -119,39 +274,27 @@ func TestGetByID(t *testing.T) {
 	repo := NewUserRepository(db)
 
 	tests := []struct {
-		name       string
-		id         int64
-		wantErr    error
-		wantUser   string
-		wantAdmin  bool
-		wantAvatar *enums.Avatar
-		wantLang   enums.Language
-		wantTheme  enums.AppTheme
+		name     string
+		id       int64
+		wantErr  error
+		wantUser models.User
 	}{
 		{
-			name:       "existing user 1",
-			id:         1,
-			wantErr:    nil,
-			wantUser:   "testuser1",
-			wantAdmin:  false,
-			wantAvatar: func() *enums.Avatar { a := enums.Avatar1; return &a }(),
-			wantLang:   enums.English,
-			wantTheme:  enums.Light,
+			name:     "existing user 1",
+			id:       expectedUsers[0].ID,
+			wantErr:  nil,
+			wantUser: expectedUsers[0],
 		},
 		{
-			name:       "existing user 2",
-			id:         2,
-			wantErr:    nil,
-			wantUser:   "testuser2",
-			wantAdmin:  true,
-			wantAvatar: func() *enums.Avatar { a := enums.Avatar2; return &a }(),
-			wantLang:   enums.French,
-			wantTheme:  enums.Dark,
+			name:     "existing user 2",
+			id:       expectedUsers[1].ID,
+			wantErr:  nil,
+			wantUser: expectedUsers[1],
 		},
 		{
 			name:    "non-existing user",
-			id:      999,
-			wantErr: sql.ErrNoRows,
+			id:      invalidId,
+			wantErr: customErrors.NewEntityNotFoundError("User", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
 		},
 	}
 
@@ -160,8 +303,8 @@ func TestGetByID(t *testing.T) {
 			user, err := repo.GetByID(tt.id)
 
 			if tt.wantErr != nil {
-				if err != tt.wantErr {
-					t.Errorf("GetByID() error = %v, wantErr %v", err, tt.wantErr)
+				if !compareErrors(err, tt.wantErr) {
+					t.Errorf("GetByID() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
 			}
@@ -170,32 +313,8 @@ func TestGetByID(t *testing.T) {
 				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if user.ID != tt.id {
-				t.Errorf("GetByID() ID = %d, want %d", user.ID, tt.id)
-			}
-			if user.Username != tt.wantUser {
-				t.Errorf("GetByID() Username = %s, want %s", user.Username, tt.wantUser)
-			}
-			if user.Password == "" {
-				t.Errorf("GetByID() Password should not be empty")
-			}
-			if user.AppAdmin != tt.wantAdmin {
-				t.Errorf("GetByID() AppAdmin = %v, want %v", user.AppAdmin, tt.wantAdmin)
-			}
-			yesterday := time.Now().AddDate(0, 0, -1)
-			minTime := yesterday.Add(-1 * time.Minute)
-			maxTime := yesterday.Add(1 * time.Minute)
-			if user.CreatedAt.Before(minTime) || user.CreatedAt.After(maxTime) {
-				t.Errorf("GetByID() CreatedAt = %v, expected around %v (±1min)", user.CreatedAt, yesterday)
-			}
-			if tt.wantAvatar != nil && (user.Avatar == nil || *user.Avatar != *tt.wantAvatar) {
-				t.Errorf("GetByID() Avatar = %v, want %v", user.Avatar, tt.wantAvatar)
-			}
-			if user.Language != tt.wantLang {
-				t.Errorf("GetByID() Language = %s, want %s", user.Language, tt.wantLang)
-			}
-			if user.AppTheme != tt.wantTheme {
-				t.Errorf("GetByID() AppTheme = %s, want %s", user.AppTheme, tt.wantTheme)
+			if err := compareUsers(user, &tt.wantUser); err != nil {
+				t.Errorf("GetByID() returned user does not match expected user: %v", err.Error())
 			}
 		})
 	}
@@ -208,39 +327,27 @@ func TestGetByUsername(t *testing.T) {
 	repo := NewUserRepository(db)
 
 	tests := []struct {
-		name       string
-		username   string
-		wantErr    error
-		wantID     int64
-		wantAdmin  bool
-		wantAvatar *enums.Avatar
-		wantLang   enums.Language
-		wantTheme  enums.AppTheme
+		name     string
+		username string
+		wantErr  error
+		wantUser models.User
 	}{
 		{
-			name:       "existing user testuser1",
-			username:   "testuser1",
-			wantErr:    nil,
-			wantID:     1,
-			wantAdmin:  false,
-			wantAvatar: func() *enums.Avatar { a := enums.Avatar1; return &a }(),
-			wantLang:   enums.English,
-			wantTheme:  enums.Light,
+			name:     "existing user 1",
+			username: expectedUsers[0].Username,
+			wantErr:  nil,
+			wantUser: expectedUsers[0],
 		},
 		{
-			name:       "existing user testuser2",
-			username:   "testuser2",
-			wantErr:    nil,
-			wantID:     2,
-			wantAdmin:  true,
-			wantAvatar: func() *enums.Avatar { a := enums.Avatar2; return &a }(),
-			wantLang:   enums.French,
-			wantTheme:  enums.Dark,
+			name:     "existing user 2",
+			username: expectedUsers[1].Username,
+			wantErr:  nil,
+			wantUser: expectedUsers[1],
 		},
 		{
 			name:     "non-existing user",
-			username: "nonexistent",
-			wantErr:  sql.ErrNoRows,
+			username: invalidUsername,
+			wantErr:  customErrors.NewEntityNotFoundError("User", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
 		},
 	}
 
@@ -249,46 +356,24 @@ func TestGetByUsername(t *testing.T) {
 			user, err := repo.GetByUsername(tt.username)
 
 			if tt.wantErr != nil {
-				if err != tt.wantErr {
-					t.Errorf("GetByUsername() error = %v, wantErr %v", err, tt.wantErr)
+				if !compareErrors(err, tt.wantErr) {
+					t.Errorf("GetByID() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Fatalf("GetByUsername() unexpected error = %v", err)
+				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if user.ID != tt.wantID {
-				t.Errorf("GetByUsername() ID = %d, want %d", user.ID, tt.wantID)
-			}
-			if user.Username != tt.username {
-				t.Errorf("GetByUsername() Username = %s, want %s", user.Username, tt.username)
-			}
-			if user.Password == "" {
-				t.Errorf("GetByUsername() Password should not be empty")
-			}
-			if user.AppAdmin != tt.wantAdmin {
-				t.Errorf("GetByUsername() AppAdmin = %v, want %v", user.AppAdmin, tt.wantAdmin)
-			}
-			yesterday := time.Now().AddDate(0, 0, -1)
-			minTime := yesterday.Add(-1 * time.Minute)
-			maxTime := yesterday.Add(1 * time.Minute)
-			if user.CreatedAt.Before(minTime) || user.CreatedAt.After(maxTime) {
-				t.Errorf("GetByUsername() CreatedAt = %v, expected around %v (±1min)", user.CreatedAt, yesterday)
-			}
-			if tt.wantAvatar != nil && (user.Avatar == nil || *user.Avatar != *tt.wantAvatar) {
-				t.Errorf("GetByID() Avatar = %v, want %v", user.Avatar, tt.wantAvatar)
-			}
-			if user.Language != tt.wantLang {
-				t.Errorf("GetByUsername() Language = %s, want %s", user.Language, tt.wantLang)
-			}
-			if user.AppTheme != tt.wantTheme {
-				t.Errorf("GetByUsername() AppTheme = %s, want %s", user.AppTheme, tt.wantTheme)
+			if err := compareUsers(user, &tt.wantUser); err != nil {
+				t.Errorf("GetByID() returned user does not match expected user: %v", err.Error())
 			}
 		})
 	}
 }
+
+/*** CREATE OPERATIONS TESTS ***/
 
 func TestCreate(t *testing.T) {
 	db := setupTestDB(t)
@@ -296,49 +381,44 @@ func TestCreate(t *testing.T) {
 
 	repo := NewUserRepository(db)
 
+	avatar1 := enums.Avatar1
+	avatar2 := enums.Avatar2
+
 	tests := []struct {
 		name    string
 		user    *models.User
-		wantErr bool
+		wantErr error
 	}{
 		{
 			name: "create new user",
 			user: &models.User{
 				Username:  "newuser",
-				Password:  "newpass123",
+				Password:  "newpassword",
 				AppAdmin:  false,
-				CreatedAt: time.Now(),
-				Avatar:    func() *enums.Avatar { a := enums.Avatar1; return &a }(),
+				Avatar:    &avatar1,
 				Language:  enums.English,
 				AppTheme:  enums.Light,
+				CreatedAt: time.Now(),
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
 			name: "create admin user",
 			user: &models.User{
-				Username:  "adminuser",
-				Password:  "adminpass456",
+				Username:  "newuser2",
+				Password:  "newpassword",
 				AppAdmin:  true,
-				CreatedAt: time.Now(),
-				Avatar:    func() *enums.Avatar { a := enums.Avatar3; return &a }(),
+				Avatar:    &avatar2,
 				Language:  enums.French,
 				AppTheme:  enums.Dark,
+				CreatedAt: time.Now(),
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
-			name: "create duplicate username",
-			user: &models.User{
-				Username:  "testuser1", // Already exists
-				Password:  "password",
-				AppAdmin:  false,
-				CreatedAt: time.Now(),
-				Avatar:    func() *enums.Avatar { a := enums.Avatar1; return &a }(),
-				Language:  enums.English,
-				AppTheme:  enums.Light,
-			},
-			wantErr: true, // Should fail due to unique constraint
+			name:    "create duplicate username",
+			user:    &expectedUsers[0],
+			wantErr: customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique),
 		},
 	}
 
@@ -346,9 +426,9 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			id, err := repo.Create(tt.user)
 
-			if tt.wantErr {
-				if err == nil {
-					t.Error("Create() expected error, got nil")
+			if tt.wantErr != nil {
+				if !compareErrors(err, tt.wantErr) {
+					t.Errorf("Create() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
 			}
@@ -357,9 +437,10 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() unexpected error = %v", err)
 			}
 
-			if id <= 0 {
+			if id != nextId {
 				t.Errorf("Create() returned invalid ID = %d", id)
 			}
+			nextId += 1
 
 			// Verify the user was actually created
 			createdUser, err := repo.GetByID(id)
@@ -367,27 +448,18 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("failed to fetch created user: %v", err)
 			}
 
-			if createdUser.Username != tt.user.Username {
-				t.Errorf("created user Username = %s, want %s", createdUser.Username, tt.user.Username)
-			}
-			if createdUser.Password != tt.user.Password {
-				t.Errorf("created user Password = %s, want %s", createdUser.Password, tt.user.Password)
-			}
-			if createdUser.AppAdmin != tt.user.AppAdmin {
-				t.Errorf("created user AppAdmin = %v, want %v", createdUser.AppAdmin, tt.user.AppAdmin)
-			}
-			if tt.user.Avatar != nil && (createdUser.Avatar == nil || *createdUser.Avatar != *tt.user.Avatar) {
-				t.Errorf("created user Avatar = %v, want %v", createdUser.Avatar, tt.user.Avatar)
-			}
-			if createdUser.Language != tt.user.Language {
-				t.Errorf("created user Language = %s, want %s", createdUser.Language, tt.user.Language)
-			}
-			if createdUser.AppTheme != tt.user.AppTheme {
-				t.Errorf("created user AppTheme = %s, want %s", createdUser.AppTheme, tt.user.AppTheme)
+			tt.user.ID = id
+
+			if err := compareUsers(createdUser, tt.user); err != nil {
+				t.Errorf("Actual created user does not match expected user: %v", err.Error())
 			}
 		})
 	}
+
+	resetNextId()
 }
+
+/*** UPDATE OPERATIONS TESTS ***/
 
 func TestUpdate(t *testing.T) {
 	db := setupTestDB(t)
@@ -395,36 +467,71 @@ func TestUpdate(t *testing.T) {
 
 	repo := NewUserRepository(db)
 
+	avatar1 := enums.Avatar1
+	avatar2 := enums.Avatar2
+
 	tests := []struct {
 		name    string
 		user    *models.User
 		wantErr error
 	}{
 		{
-			name: "update existing user",
+			name: "duplicate username update",
 			user: &models.User{
-				ID:       1,
-				Username: "updateduser1",
-				Password: "newpassword",
-				AppAdmin: true, // Changed from false
-				Avatar:   func() *enums.Avatar { a := enums.Avatar2; return &a }(),
-				Language: enums.French, // Changed from English
-				AppTheme: enums.Dark,   // Changed from Light
+				ID:               expectedUsers[1].ID,
+				Username:         expectedUsers[0].Username,
+				Password:         expectedUsers[1].Password + "_updated",
+				AppAdmin:         true,
+				CreatedAt:        expectedUsers[1].CreatedAt,
+				Avatar:           &avatar2,
+				Language:         enums.French,
+				AppTheme:         enums.Dark,
+				LastVisitedGroup: expectedUsers[1].LastVisitedGroup,
 			},
-			wantErr: nil,
+			wantErr: customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique),
 		},
 		{
 			name: "update non-existing user",
 			user: &models.User{
-				ID:       999,
+				ID:       invalidId,
 				Username: "nonexistent",
 				Password: "password",
 				AppAdmin: false,
-				Avatar:   func() *enums.Avatar { a := enums.Avatar1; return &a }(),
+				Avatar:   &avatar1,
 				Language: enums.English,
 				AppTheme: enums.Light,
 			},
-			wantErr: sql.ErrNoRows,
+			wantErr: customErrors.NewInternalServerError("Failed to update user", nil),
+		},
+		{
+			name: "no field updated",
+			user: &models.User{
+				ID:               expectedUsers[0].ID,
+				Username:         expectedUsers[0].Username,
+				Password:         expectedUsers[0].Password,
+				AppAdmin:         expectedUsers[0].AppAdmin,
+				CreatedAt:        expectedUsers[0].CreatedAt,
+				Avatar:           expectedUsers[0].Avatar,
+				Language:         expectedUsers[0].Language,
+				AppTheme:         expectedUsers[0].AppTheme,
+				LastVisitedGroup: expectedUsers[0].LastVisitedGroup,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "update existing user",
+			user: &models.User{
+				ID:               expectedUsers[0].ID,
+				Username:         expectedUsers[0].Username + "_updated",
+				Password:         expectedUsers[0].Password + "_updated",
+				AppAdmin:         true,
+				CreatedAt:        expectedUsers[0].CreatedAt,
+				Avatar:           &avatar2,
+				Language:         enums.French,
+				AppTheme:         enums.Dark,
+				LastVisitedGroup: expectedUsers[0].LastVisitedGroup,
+			},
+			wantErr: nil,
 		},
 	}
 
@@ -433,8 +540,8 @@ func TestUpdate(t *testing.T) {
 			err := repo.Update(tt.user)
 
 			if tt.wantErr != nil {
-				if err != tt.wantErr {
-					t.Errorf("Update() error = %v, wantErr %v", err, tt.wantErr)
+				if !compareErrors(err, tt.wantErr) {
+					t.Errorf("Update() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
 			}
@@ -449,23 +556,8 @@ func TestUpdate(t *testing.T) {
 				t.Fatalf("failed to fetch updated user: %v", err)
 			}
 
-			if updatedUser.Username != tt.user.Username {
-				t.Errorf("updated user Username = %s, want %s", updatedUser.Username, tt.user.Username)
-			}
-			if updatedUser.Password != tt.user.Password {
-				t.Errorf("updated user Password = %s, want %s", updatedUser.Password, tt.user.Password)
-			}
-			if updatedUser.AppAdmin != tt.user.AppAdmin {
-				t.Errorf("updated user AppAdmin = %v, want %v", updatedUser.AppAdmin, tt.user.AppAdmin)
-			}
-			if tt.user.Avatar != nil && (updatedUser.Avatar == nil || *updatedUser.Avatar != *tt.user.Avatar) {
-				t.Errorf("updated user Avatar = %v, want %v", updatedUser.Avatar, tt.user.Avatar)
-			}
-			if updatedUser.Language != tt.user.Language {
-				t.Errorf("updated user Language = %s, want %s", updatedUser.Language, tt.user.Language)
-			}
-			if updatedUser.AppTheme != tt.user.AppTheme {
-				t.Errorf("updated user AppTheme = %s, want %s", updatedUser.AppTheme, tt.user.AppTheme)
+			if err := compareUsers(updatedUser, tt.user); err != nil {
+				t.Errorf("Actual updated user does not match expected user: %v", err.Error())
 			}
 		})
 	}
@@ -484,18 +576,18 @@ func TestDelete(t *testing.T) {
 	}{
 		{
 			name:    "delete existing user",
-			id:      1,
+			id:      expectedUsers[0].ID,
 			wantErr: nil,
 		},
 		{
 			name:    "delete another existing user",
-			id:      2,
+			id:      expectedUsers[1].ID,
 			wantErr: nil,
 		},
 		{
 			name:    "delete non-existing user",
-			id:      999,
-			wantErr: sql.ErrNoRows,
+			id:      invalidId,
+			wantErr: customErrors.NewInternalServerError("Failed to delete user", nil),
 		},
 	}
 
@@ -504,7 +596,7 @@ func TestDelete(t *testing.T) {
 			err := repo.Delete(tt.id)
 
 			if tt.wantErr != nil {
-				if err != tt.wantErr {
+				if !compareErrors(err, tt.wantErr) {
 					t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				return
@@ -516,8 +608,10 @@ func TestDelete(t *testing.T) {
 
 			// Verify the user was actually deleted
 			_, err = repo.GetByID(tt.id)
-			if err != sql.ErrNoRows {
-				t.Errorf("expected user to be deleted, but GetByID() error = %v", err)
+			if err == nil {
+				t.Errorf("expected user to be deleted, but GetByID() returned no error")
+			} else if appErr, ok := err.(*customErrors.AppError); !ok || appErr.StatusCode != 404 {
+				t.Errorf("expected NotFound error, but GetByID() error = %v", err)
 			}
 		})
 	}
@@ -529,20 +623,17 @@ func TestDeleteThenGetAll(t *testing.T) {
 
 	repo := NewUserRepository(db)
 
-	// Get initial count
 	users, err := repo.GetAll()
 	if err != nil {
 		t.Fatalf("GetAll() error = %v", err)
 	}
 	initialCount := len(users)
 
-	// Delete one user
 	err = repo.Delete(1)
 	if err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 
-	// Verify count decreased
 	users, err = repo.GetAll()
 	if err != nil {
 		t.Fatalf("GetAll() after delete error = %v", err)
@@ -552,7 +643,6 @@ func TestDeleteThenGetAll(t *testing.T) {
 		t.Errorf("after delete, GetAll() returned %d users, expected %d", len(users), initialCount-1)
 	}
 
-	// Verify the deleted user is not in the list
 	for _, user := range users {
 		if user.ID == 1 {
 			t.Error("deleted user still appears in GetAll() results")
