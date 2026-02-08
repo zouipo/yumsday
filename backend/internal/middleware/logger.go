@@ -18,15 +18,12 @@ func Logger(next http.Handler) http.Handler {
 		// Call the next handler in the chain (could be another middleware or the final handler)
 		next.ServeHTTP(w, r)
 
-		// Post-processing: after each middleware/handler has processed the request,
+		// Post-processing: after each nested middleware/handler has processed the request,
 		// the logger middleware get the result back and logs the completion.
-		status := http.StatusOK
-		if statusPtr, ok := r.Context().Value("status").(*int); ok && statusPtr != nil {
-			status = *statusPtr
-		}
+		status := r.Context().Value("status").(*int)
 		slog.Info(
 			"Processed HTTP request",
-			"status", status, // captured by the custom ResponseWriter middleware
+			"status", *status, // captured by the custom ResponseWriter middleware
 			"method", r.Method,
 			"path", r.URL.Path,
 			"duration", time.Since(start),
