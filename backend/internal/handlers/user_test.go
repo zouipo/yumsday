@@ -556,9 +556,9 @@ func TestCreateUser_InvalidBody(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
 	}
 
-	expectedError := "Invalid request body"
-	if !strings.Contains(w.Body.String(), expectedError) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", expectedError, w.Body.String())
+	// Check that the error message contains the JSON decode error
+	if !strings.Contains(w.Body.String(), "invalid character") {
+		t.Errorf("expected error message containing JSON decode error, got: %s", w.Body.String())
 	}
 
 	if usersNb != len(mockService.users) {
@@ -653,6 +653,11 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
 	}
+
+	// Check that the error message contains the JSON decode error
+	if !strings.Contains(w.Body.String(), "invalid character") {
+		t.Errorf("expected error message containing JSON decode error, got: %s", w.Body.String())
+	}
 }
 
 func TestUpdateUserService_ServiceError(t *testing.T) {
@@ -743,6 +748,11 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	// Check that the error message contains the JSON decode error
+	if !strings.Contains(w.Body.String(), "invalid character") {
+		t.Errorf("expected error message containing JSON decode error, got: %s", w.Body.String())
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -845,6 +855,11 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
+	}
+
+	// Check that the error message contains the JSON decode error
+	if !strings.Contains(w.Body.String(), "invalid character") {
+		t.Errorf("expected error message containing JSON decode error, got: %s", w.Body.String())
 	}
 
 	actual, err := mockService.GetByID(user.ID)

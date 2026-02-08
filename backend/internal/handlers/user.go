@@ -106,7 +106,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	// Decode the request body into the NewUserDto struct.
 	err := json.NewDecoder(r.Body).Decode(&newUserDto)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -136,7 +136,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	var userDto dtos.UserDto
 	if err := json.NewDecoder(r.Body).Decode(&userDto); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -167,7 +167,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 	userID := r.Context().Value("id").(int64)
 
 	if err := json.NewDecoder(r.Body).Decode(&adminRolePayload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 	userID := r.Context().Value("id").(int64)
 
 	if err := json.NewDecoder(r.Body).Decode(&passwordPayload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
