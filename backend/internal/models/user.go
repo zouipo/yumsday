@@ -14,6 +14,6 @@ type User struct {
 	CreatedAt        time.Time      `json:"created_at"`
 	Avatar           *enums.Avatar  `json:"avatar"`
 	Language         enums.Language `json:"language"`
-	AppTheme         enums.AppTheme `json:"app_theme"`
+	AppTheme         enums.AppTheme `json:"theme"`
 	LastVisitedGroup *int64         `json:"last_visited_group"`
 }
