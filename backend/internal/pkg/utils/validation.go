@@ -12,6 +12,8 @@ func IsUsernameValid(username string) bool {
 }
 
 // isPasswordValid returns true if the password length is within configured bounds (12-72).
+// The lower bound is to ensure a somewhat strong password.
+// The upper bound is because the bcrypt algoritm can't process strings with more than 72 chars.
 func IsPasswordValid(password string) bool {
 	return len(password) >= 12 && len(password) <= 72
 }
