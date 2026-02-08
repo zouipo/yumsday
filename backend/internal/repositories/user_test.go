@@ -208,25 +208,34 @@ func TestGetByUsername(t *testing.T) {
 	repo := NewUserRepository(db)
 
 	tests := []struct {
-		name      string
-		username  string
-		wantErr   error
-		wantID    int64
-		wantAdmin bool
+		name       string
+		username   string
+		wantErr    error
+		wantID     int64
+		wantAdmin  bool
+		wantAvatar *enums.Avatar
+		wantLang   enums.Language
+		wantTheme  enums.AppTheme
 	}{
 		{
-			name:      "existing user testuser1",
-			username:  "testuser1",
-			wantErr:   nil,
-			wantID:    1,
-			wantAdmin: false,
+			name:       "existing user testuser1",
+			username:   "testuser1",
+			wantErr:    nil,
+			wantID:     1,
+			wantAdmin:  false,
+			wantAvatar: func() *enums.Avatar { a := enums.Avatar1; return &a }(),
+			wantLang:   enums.English,
+			wantTheme:  enums.Light,
 		},
 		{
-			name:      "existing user testuser2",
-			username:  "testuser2",
-			wantErr:   nil,
-			wantID:    2,
-			wantAdmin: true,
+			name:       "existing user testuser2",
+			username:   "testuser2",
+			wantErr:    nil,
+			wantID:     2,
+			wantAdmin:  true,
+			wantAvatar: func() *enums.Avatar { a := enums.Avatar2; return &a }(),
+			wantLang:   enums.French,
+			wantTheme:  enums.Dark,
 		},
 		{
 			name:     "non-existing user",
@@ -268,14 +277,14 @@ func TestGetByUsername(t *testing.T) {
 			if user.CreatedAt.Before(minTime) || user.CreatedAt.After(maxTime) {
 				t.Errorf("GetByUsername() CreatedAt = %v, expected around %v (±1min)", user.CreatedAt, yesterday)
 			}
-			if user.Avatar == nil {
-				t.Errorf("GetByUsername() Avatar should not be nil for test users 1 and 2")
+			if tt.wantAvatar != nil && (user.Avatar == nil || *user.Avatar != *tt.wantAvatar) {
+				t.Errorf("GetByID() Avatar = %v, want %v", user.Avatar, tt.wantAvatar)
 			}
-			if user.Language == "" {
-				t.Errorf("GetByUsername() Language should not be empty")
+			if user.Language != tt.wantLang {
+				t.Errorf("GetByUsername() Language = %s, want %s", user.Language, tt.wantLang)
 			}
-			if user.AppTheme == "" {
-				t.Errorf("GetByUsername() AppTheme should not be empty")
+			if user.AppTheme != tt.wantTheme {
+				t.Errorf("GetByUsername() AppTheme = %s, want %s", user.AppTheme, tt.wantTheme)
 			}
 		})
 	}
