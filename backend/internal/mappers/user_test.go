@@ -77,83 +77,83 @@ func TestFromUserDtoToUser(t *testing.T) {
 
 /*** HELPERS ***/
 
-func compareUserDtos(actual, expected *dtos.UserDto) (bool, string) {
+func compareUserDtos(actual, expected *dtos.UserDto) (bool, error) {
 	if actual.ID != expected.ID {
-		return false, fmt.Errorf("ID mismatch: actual %d !=  expected %d", actual.ID, expected.ID).Error()
+		return false, fmt.Errorf("ID mismatch: actual %d !=  expected %d", actual.ID, expected.ID)
 	}
 	if actual.Username != expected.Username {
-		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username).Error()
+		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username)
 	}
 	if actual.AppAdmin != expected.AppAdmin {
-		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin).Error()
+		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin)
 	}
 	if !actual.CreatedAt.Equal(expected.CreatedAt) {
-		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt).Error()
+		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt)
 	}
 	if actual.Avatar != expected.Avatar {
-		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar).Error()
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar)
 	}
 	if actual.Language != expected.Language {
-		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language).Error()
+		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language)
 	}
 	if actual.AppTheme != expected.AppTheme {
-		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme).Error()
+		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme)
 	}
-	return true, ""
+	return true, nil
 }
 
-func compareUserNoID(actual, expected *models.User) (bool, string) {
+func compareUserNoID(actual, expected *models.User) (bool, error) {
 	if actual.Username != expected.Username {
-		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username).Error()
+		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username)
 	}
 	if actual.Password != expected.Password {
-		return false, fmt.Errorf("Password mismatch: actual %s != expected %s", actual.Password, expected.Password).Error()
+		return false, fmt.Errorf("Password mismatch: actual %s != expected %s", actual.Password, expected.Password)
 	}
 	if actual.AppAdmin != expected.AppAdmin {
-		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin).Error()
+		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin)
 	}
 	if !actual.CreatedAt.Equal(*new(time.Time)) {
-		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt).Error()
+		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt)
 	}
 	if (actual.Avatar == nil && expected.Avatar != nil) || (actual.Avatar != nil && expected.Avatar == nil) {
-		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar).Error()
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar)
 	}
 	if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
-		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar).Error()
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar)
 	}
 	if actual.Language != expected.Language {
-		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language).Error()
+		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language)
 	}
 	if actual.AppTheme != expected.AppTheme {
-		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme).Error()
+		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme)
 	}
-	return true, ""
+	return true, nil
 }
 
-func compareUserNoPassword(actual, expected *models.User) (bool, string) {
+func compareUserNoPassword(actual, expected *models.User) (bool, error) {
 	if actual.ID != expected.ID {
-		return false, fmt.Errorf("ID mismatch: actual %d !=  expected %d", actual.ID, expected.ID).Error()
+		return false, fmt.Errorf("ID mismatch: actual %d !=  expected %d", actual.ID, expected.ID)
 	}
 	if actual.Username != expected.Username {
-		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username).Error()
+		return false, fmt.Errorf("Username mismatch: actual %s != expected %s", actual.Username, expected.Username)
 	}
 	if actual.AppAdmin != expected.AppAdmin {
-		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin).Error()
+		return false, fmt.Errorf("AppAdmin mismatch: actual %v != expected %v", actual.AppAdmin, expected.AppAdmin)
 	}
 	if !actual.CreatedAt.Equal(expected.CreatedAt) {
-		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt).Error()
+		return false, fmt.Errorf("CreatedAt mismatch: actual %v != expected %v", actual.CreatedAt, expected.CreatedAt)
 	}
 	if (actual.Avatar == nil && expected.Avatar != nil) || (actual.Avatar != nil && expected.Avatar == nil) {
-		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar).Error()
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", actual.Avatar, expected.Avatar)
 	}
 	if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
-		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar).Error()
+		return false, fmt.Errorf("Avatar mismatch: actual %v != expected %v", *actual.Avatar, *expected.Avatar)
 	}
 	if actual.Language != expected.Language {
-		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language).Error()
+		return false, fmt.Errorf("Language mismatch: actual %v != expected %v", actual.Language, expected.Language)
 	}
 	if actual.AppTheme != expected.AppTheme {
-		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme).Error()
+		return false, fmt.Errorf("AppTheme mismatch: actual %v != expected %v", actual.AppTheme, expected.AppTheme)
 	}
-	return true, ""
+	return true, nil
 }
