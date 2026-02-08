@@ -7,6 +7,9 @@ import (
 
 // Tests for IsUsernameValid
 func TestIsUsernameValid(t *testing.T) {
+	// build a string of a specific length (indifferent character)
+	make := func(n int) string { return "A" + strings.Repeat("a", n-1) }
+
 	tests := []struct {
 		name  string
 		input string
@@ -18,11 +21,13 @@ func TestIsUsernameValid(t *testing.T) {
 		{"valid-starts with uppercase", "Popo", true},
 		{"valid-alphanumeric", "PoPo123", true},
 		{"valid-symbols", "A.2_b-", true},
+		{"valid-max length (1000)", make(1000), true},
 		{"invalid-empty", "", false},
 		{"invalid-starts with digit", "1popo", false},
 		{"invalid-starts with valid symbol", "_popo", false},
 		{"invalid-contains space", "Popo Zoui", false},
 		{"invalid-invalid char", "Po!po.", false},
+		{"invalid-too long (1001)", make(1001), false},
 	}
 
 	for _, tt := range tests {

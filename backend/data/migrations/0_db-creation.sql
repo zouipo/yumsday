@@ -1,8 +1,11 @@
 -- Yumsday database schema
+
 -- user_group
+-- Arbitrary limit of 1000 characters to ensure no excessively long names are added to the DB
+-- that could cause performance issues or be used for malicious purposes.
 CREATE TABLE IF NOT EXISTS user_group (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
+    name VARCHAR(1000) NOT NULL,
     image_url VARCHAR,
     created_at TIMESTAMP NOT NULL
 );
@@ -10,7 +13,7 @@ CREATE TABLE IF NOT EXISTS user_group (
 -- USER
 CREATE TABLE IF NOT EXISTS user (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    username VARCHAR UNIQUE NOT NULL,
+    username VARCHAR(1000) UNIQUE NOT NULL,
     password VARCHAR NOT NULL,
     app_admin BOOLEAN NOT NULL,
     created_at TIMESTAMP NOT NULL,
@@ -49,7 +52,7 @@ CREATE TABLE IF NOT EXISTS session (
 -- UNIT
 CREATE TABLE IF NOT EXISTS unit (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
+    name VARCHAR(1000) NOT NULL,
     factor FLOAT NOT NULL,
     unit_type VARCHAR NOT NULL
 );
@@ -57,8 +60,8 @@ CREATE TABLE IF NOT EXISTS unit (
 -- ITEM
 CREATE TABLE IF NOT EXISTS item (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
-    description VARCHAR,
+    name VARCHAR(1000) NOT NULL,
+    description VARCHAR(1000000),
     average_market_price FLOAT,
     unit_type VARCHAR NOT NULL,
     category VARCHAR
@@ -67,17 +70,17 @@ CREATE TABLE IF NOT EXISTS item (
 -- RECIPE
 CREATE TABLE IF NOT EXISTS recipe (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
-    description VARCHAR,
+    name VARCHAR(1000) NOT NULL,
+    description VARCHAR(1000000),
     image_url VARCHAR,
     original_link VARCHAR,
     preparation_time INTEGER,
     cooking_time INTEGER,
     servings INTEGER,
-    instructions VARCHAR,
+    instructions VARCHAR(1000000),
     created_at TIMESTAMP NOT NULL,
     public BOOLEAN NOT NULL,
-    comment VARCHAR,
+    comment VARCHAR(1000000),
     user_group_id INTEGER NOT NULL,
     FOREIGN KEY (user_group_id) REFERENCES user_group(id)
 );
@@ -85,7 +88,7 @@ CREATE TABLE IF NOT EXISTS recipe (
 -- CATEGORY
 CREATE TABLE IF NOT EXISTS category (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
+    name VARCHAR(1000) NOT NULL,
     user_group_id INTEGER NOT NULL,
     FOREIGN KEY (user_group_id) REFERENCES user_group(id)
 );
