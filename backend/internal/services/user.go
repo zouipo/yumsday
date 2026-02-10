@@ -1,17 +1,14 @@
 package services
 
 import (
-	"errors"
-	"fmt"
 	"time"
+
+	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
 
 	"github.com/zouipo/yumsday/backend/internal/models"
 	validation "github.com/zouipo/yumsday/backend/internal/pkg/utils"
 	"github.com/zouipo/yumsday/backend/internal/repositories"
 )
-
-// ErrUserNotFound is returned when a user with the given ID doesn't exist
-var ErrUserNotFound = errors.New("user not found")
 
 // UserServiceInterface defines the contract for user service operations
 type UserServiceInterface interface {
@@ -42,7 +39,7 @@ func NewUserService(repo repositories.UserRepositoryInterface) *UserService {
 func (s *UserService) GetAll() ([]models.User, error) {
 	users, err := s.repo.GetAll()
 	if err != nil {
-		return nil, errors.New("Failed to fetch users: " + err.Error())
+		return nil, err
 	}
 
 	return users, nil
@@ -51,10 +48,8 @@ func (s *UserService) GetAll() ([]models.User, error) {
 // GetByID returns the user identified by id or an error if not found.
 func (s *UserService) GetByID(id int64) (*models.User, error) {
 	user, err := s.repo.GetByID(id)
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		return nil, fmt.Errorf("User ID %v doesn't exist: %v", id, err.Error())
-	} else if err != nil {
-		return nil, fmt.Errorf("Failed to fetch user by ID %v: %v", id, err.Error())
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil
@@ -64,7 +59,7 @@ func (s *UserService) GetByID(id int64) (*models.User, error) {
 func (s *UserService) GetByUsername(username string) (*models.User, error) {
 	user, err := s.repo.GetByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch user by username %v: %v", username, err.Error())
+		return nil, err
 	}
 
 	return user, nil
@@ -76,24 +71,18 @@ func (s *UserService) GetByUsername(username string) (*models.User, error) {
 func (s *UserService) Create(user *models.User) (int64, error) {
 	user.CreatedAt = time.Now()
 
-	usernameExists, err := s.usernameExists(user.Username)
-	if usernameExists == true && err == nil {
-		return 0, fmt.Errorf("Username %v already exists", user.Username)
-	} else if err != nil {
-		return 0, err
-	}
 	if !validation.IsUsernameValid(user.Username) {
-		return 0, fmt.Errorf("Invalid username format")
+		return 0, customErrors.NewValidationError("username", "Invalid username format", nil)
 	}
 
 	if !validation.IsPasswordValid(user.Password) {
-		return 0, fmt.Errorf("Invalid password length")
+		return 0, customErrors.NewValidationError("password", "Invalid password length", nil)
 	}
 	// TODO: Hash password before saving user in database
 
 	id, err := s.repo.Create(user)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to create user %v: %v", user.Username, err.Error())
+		return 0, err
 	}
 
 	return id, nil
@@ -103,7 +92,6 @@ func (s *UserService) Create(user *models.User) (int64, error) {
 
 // Update updates mutable fields (username, avatar, language, theme) of the given user after validation.
 func (s *UserService) Update(user *models.User) error {
-	// Fetch the current user data in database
 	currentUser, err := s.GetByID(user.ID)
 	if err != nil {
 		return err
@@ -111,15 +99,8 @@ func (s *UserService) Update(user *models.User) error {
 
 	// Check if the username is being updated to an already existing one
 	if user.Username != currentUser.Username {
-		usernameExists, err := s.usernameExists(user.Username)
-		if err != nil {
-			return err
-		}
-		if usernameExists == true {
-			return fmt.Errorf("Username %v already exists", user.Username)
-		}
 		if !validation.IsUsernameValid(user.Username) {
-			return fmt.Errorf("Invalid username format")
+			return customErrors.NewValidationError("username", "Invalid username format", nil)
 		}
 
 		currentUser.Username = user.Username
@@ -138,7 +119,7 @@ func (s *UserService) Update(user *models.User) error {
 	}
 
 	if err = s.repo.Update(currentUser); err != nil {
-		return fmt.Errorf("Failed to update user %v: %v", user.Username, err.Error())
+		return err
 	}
 
 	return nil
@@ -146,16 +127,8 @@ func (s *UserService) Update(user *models.User) error {
 
 // UpdateAdminRole sets or clears the admin flag for the user with the given ID.
 func (s *UserService) UpdateAdminRole(userID int64, role bool) error {
-	// Fetch the current user data in database
-	currentUser, err := s.GetByID(userID)
-	if err != nil {
+	if err := s.repo.UpdateAdminRole(userID, role); err != nil {
 		return err
-	}
-
-	currentUser.AppAdmin = role
-
-	if err = s.repo.Update(currentUser); err != nil {
-		return fmt.Errorf("Failed to update user %v: %v", currentUser.Username, err.Error())
 	}
 
 	return nil
@@ -163,32 +136,31 @@ func (s *UserService) UpdateAdminRole(userID int64, role bool) error {
 
 // UpdatePassword verifies the old password and updates to the new password after validation.
 func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPassword string) error {
-	if oldPassword == "" || newPassword == "" {
-		return fmt.Errorf("Old and new passwords must be provided")
+	if oldPassword == newPassword {
+		return nil
 	}
 
-	// Fetch the current user data in database
+	if oldPassword == "" || newPassword == "" {
+		return customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
+	}
+
 	currentUser, err := s.GetByID(userID)
 	if err != nil {
 		return err
 	}
 
 	if currentUser.Password != oldPassword { // TODO: Hash the old password before comparing
-		return fmt.Errorf("Old password is incorrect for user %v", currentUser.Username)
-	}
-
-	if oldPassword == newPassword {
-		return nil // No update needed if the old and new passwords are the same
+		return customErrors.NewValidationError("password", "Old password is incorrect for user "+currentUser.Username, nil)
 	}
 
 	if !validation.IsPasswordValid(newPassword) {
-		return fmt.Errorf("Invalid password length")
+		return customErrors.NewValidationError("password", "Invalid password length", nil)
 	}
 
 	currentUser.Password = newPassword // TODO: Hash the new password before saving
 
 	if err = s.repo.Update(currentUser); err != nil {
-		return fmt.Errorf("Failed to update password for user %v: %v", currentUser.Username, err.Error())
+		return err
 	}
 
 	return nil
@@ -198,44 +170,9 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 
 // Delete removes the user with the specified ID from the repository.
 func (s *UserService) Delete(id int64) error {
-	userExists, err := s.userExists(id)
-	if userExists == false && err == nil {
-		return fmt.Errorf("%w: User ID %v doesn't exist", ErrUserNotFound, id)
-	} else if err != nil {
+	if err := s.repo.Delete(id); err != nil {
 		return err
 	}
 
-	if err = s.repo.Delete(id); err != nil {
-		return fmt.Errorf("Failed to delete user %v: %v", id, err.Error())
-	}
-
 	return nil
-}
-
-/*** HELPER FUNCTIONS ***/
-
-// userExists checks whether a user with the given id exists in the repository.
-func (s *UserService) userExists(id int64) (bool, error) {
-	user, err := s.repo.GetByID(id)
-	if err != nil && err.Error() == "sql: no rows in result set" {
-		return false, nil
-	} else if err != nil {
-		return false, fmt.Errorf("Failed to check if user %v exists: %v", id, err.Error())
-	}
-
-	return user != nil, nil
-}
-
-// usernameExists checks whether the provided username is already taken.
-func (s *UserService) usernameExists(username string) (bool, error) {
-	userByUsername, err := s.repo.GetByUsername(username)
-	// TODO: implement a custom error "already existing username"
-	// and check if the function correctly returns this specific error
-	if err == nil && userByUsername != nil {
-		return true, nil
-	} else if err != nil && err.Error() != "sql: no rows in result set" {
-		return false, fmt.Errorf("Failed to check existing username %v: %v", username, err.Error())
-	}
-
-	return false, nil
 }
