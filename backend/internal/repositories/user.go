@@ -19,6 +19,7 @@ type UserRepositoryInterface interface {
 	GetByUsername(username string) (*models.User, error)
 	Create(user *models.User) (int64, error)
 	Update(user *models.User) error
+	UpdateAdminRole(userID int64, role bool) error
 	Delete(id int64) error
 }
 
@@ -131,8 +132,32 @@ func (r *UserRepository) Update(user *models.User) error {
 		return customErrors.NewInternalServerError("Failed to retrieve updated user", err)
 	}
 
+	// If no row was updated (because the resource was not found), return an EntityNotFoundError
 	if updatedRow == 0 {
-		return customErrors.NewInternalServerError("Failed to update user", err)
+		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), err)
+	}
+
+	return nil
+}
+
+// UpdateAdminRole sets or clears the admin flag for the user with the given ID.
+func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
+	result, err := r.db.Exec(
+		"UPDATE user SET app_admin = ? WHERE id = ?",
+		role,
+		id,
+	)
+	if err != nil {
+		return customErrors.NewInternalServerError("Failed to update user admin role", err)
+	}
+
+	updatedRow, err := result.RowsAffected()
+	if err != nil {
+		return customErrors.NewInternalServerError("Failed to retrieve updated user", err)
+	}
+
+	if updatedRow == 0 {
+		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil
@@ -151,7 +176,7 @@ func (r *UserRepository) Delete(id int64) error {
 	}
 
 	if deletedRow == 0 {
-		return customErrors.NewInternalServerError("Failed to delete user", err)
+		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil

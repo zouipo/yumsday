@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"testing"
 	"time"
 
@@ -501,7 +502,7 @@ func TestUpdate(t *testing.T) {
 				Language: enums.English,
 				AppTheme: enums.Light,
 			},
-			wantErr: customErrors.NewInternalServerError("Failed to update user", nil),
+			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name: "no field updated",
@@ -563,6 +564,68 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdateAdminRole(t *testing.T) {
+	db := setupTestDB(t)
+	defer teardownTestDB(db)
+
+	repo := NewUserRepository(db)
+
+	tests := []struct {
+		name    string
+		userID  int64
+		role    bool
+		wantErr error
+	}{
+		{
+			name:    "update admin role for non-existing user",
+			userID:  invalidId,
+			role:    true,
+			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+		},
+		{
+			name:    "set admin role for existing user",
+			userID:  expectedUsers[0].ID,
+			role:    true,
+			wantErr: nil,
+		},
+		{
+			name:    "clear admin role for existing user",
+			userID:  expectedUsers[1].ID,
+			role:    false,
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := repo.UpdateAdminRole(tt.userID, tt.role)
+
+			if tt.wantErr != nil {
+				if !compareErrors(err, tt.wantErr) {
+					t.Errorf("UpdateAdminRole() error = '%v' instead of '%v'", err, tt.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("UpdateAdminRole() unexpected error = %v", err)
+			}
+
+			// Verify the user's admin role was actually updated
+			updatedUser, err := repo.GetByID(tt.userID)
+			if err != nil {
+				t.Fatalf("failed to fetch updated user: %v", err)
+			}
+
+			if updatedUser.AppAdmin != tt.role {
+				t.Errorf("user admin role not updated: got %v, want %v", updatedUser.AppAdmin, tt.role)
+			}
+		})
+	}
+}
+
+/*** DELETE OPERATIONS TESTS ***/
+
 func TestDelete(t *testing.T) {
 	db := setupTestDB(t)
 	defer teardownTestDB(db)
@@ -575,6 +638,11 @@ func TestDelete(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name:    "delete non-existing user",
+			id:      invalidId,
+			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+		},
+		{
 			name:    "delete existing user",
 			id:      expectedUsers[0].ID,
 			wantErr: nil,
@@ -583,11 +651,6 @@ func TestDelete(t *testing.T) {
 			name:    "delete another existing user",
 			id:      expectedUsers[1].ID,
 			wantErr: nil,
-		},
-		{
-			name:    "delete non-existing user",
-			id:      invalidId,
-			wantErr: customErrors.NewInternalServerError("Failed to delete user", nil),
 		},
 	}
 

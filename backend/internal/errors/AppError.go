@@ -22,16 +22,6 @@ func (e *AppError) Error() string {
 
 /*** COMMON ERRORS CONSTRUCTORS ***/
 
-// NewInvalidIDError creates an error indicating that the provided ID is invalid.
-func NewInvalidIDError(id int64, err error) error {
-	return &AppError{
-		Code:       "Invalid ID",
-		Message:    fmt.Sprintf("Invalid ID: %d", id),
-		StatusCode: http.StatusBadRequest,
-		Err:        err,
-	}
-}
-
 // NewEntityNotFoundError creates an error indicating that a specific entity was not found.
 func NewEntityNotFoundError(entityType string, identifier string, err error) error {
 	return &AppError{
