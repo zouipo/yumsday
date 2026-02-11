@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
+
 	"github.com/zouipo/yumsday/backend/internal/dtos"
 	"github.com/zouipo/yumsday/backend/internal/mappers"
 	"github.com/zouipo/yumsday/backend/internal/models"
@@ -73,7 +75,7 @@ func (m *MockUserService) GetByID(id int64) (*models.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, services.ErrUserNotFound
+	return nil, customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), nil)
 }
 
 func (m *MockUserService) GetByUsername(username string) (*models.User, error) {
@@ -86,7 +88,7 @@ func (m *MockUserService) GetByUsername(username string) (*models.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, services.ErrUserNotFound
+	return nil, customErrors.NewEntityNotFoundError("User", username, nil)
 }
 
 func (m *MockUserService) Create(user *models.User) (int64, error) {
@@ -110,7 +112,7 @@ func (m *MockUserService) Update(user *models.User) error {
 			return nil
 		}
 	}
-	return services.ErrUserNotFound
+	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), nil)
 }
 
 func (m *MockUserService) Delete(id int64) error {
@@ -123,7 +125,7 @@ func (m *MockUserService) Delete(id int64) error {
 			return nil
 		}
 	}
-	return services.ErrUserNotFound
+	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), nil)
 }
 
 func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
@@ -136,7 +138,7 @@ func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
 			return nil
 		}
 	}
-	return services.ErrUserNotFound
+	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), nil)
 }
 
 func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword string) error {
@@ -197,29 +199,29 @@ func compareUserToUserDto(userDto *dtos.UserDto, user *models.User) error {
 		return fmt.Errorf("username = %s instead of %s", userDto.Username, user.Username)
 	}
 	if userDto.AppAdmin != user.AppAdmin {
-		return fmt.Errorf("appAdmin = %v instead of %v", userDto.AppAdmin, user.AppAdmin)
+		return fmt.Errorf("appAdmin ='%v'instead of %v", userDto.AppAdmin, user.AppAdmin)
 	}
 	// Verify both dates are within the last 2 minutes from now
 	now := time.Now()
 	threshold := now.Add(-2 * time.Minute)
 	if userDto.CreatedAt.Before(threshold) || userDto.CreatedAt.After(now) {
-		return fmt.Errorf("createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", userDto.CreatedAt, threshold, now)
+		return fmt.Errorf("createdAt ='%v'is not within the last 2 minutes (threshold: %v, now: %v)", userDto.CreatedAt, threshold, now)
 	}
 	if user.CreatedAt.Before(threshold) || user.CreatedAt.After(now) {
-		return fmt.Errorf("expected createdAt = %v is not within the last 2 minutes (threshold: %v, now: %v)", user.CreatedAt, threshold, now)
+		return fmt.Errorf("expected createdAt ='%v'is not within the last 2 minutes (threshold: %v, now: %v)", user.CreatedAt, threshold, now)
 	}
 	// Check Avatar with nil handling
 	if (userDto.Avatar == nil) != (user.Avatar == nil) {
-		return fmt.Errorf("avatar = %v instead of %v", userDto.Avatar, user.Avatar)
+		return fmt.Errorf("avatar ='%v'instead of %v", userDto.Avatar, user.Avatar)
 	}
 	if userDto.Avatar != nil && user.Avatar != nil && *userDto.Avatar != *user.Avatar {
-		return fmt.Errorf("avatar = %v instead of %v", *userDto.Avatar, *user.Avatar)
+		return fmt.Errorf("avatar ='%v'instead of %v", *userDto.Avatar, *user.Avatar)
 	}
 	if userDto.Language != user.Language {
-		return fmt.Errorf("language = %v instead of %v", userDto.Language, user.Language)
+		return fmt.Errorf("language ='%v'instead of %v", userDto.Language, user.Language)
 	}
 	if userDto.AppTheme != user.AppTheme {
-		return fmt.Errorf("appTheme = %v instead of %v", userDto.AppTheme, user.AppTheme)
+		return fmt.Errorf("appTheme ='%v'instead of %v", userDto.AppTheme, user.AppTheme)
 	}
 	return nil
 }
@@ -231,23 +233,23 @@ func compareUserToNewUserDto(user *models.User, newUserDto *dtos.NewUserDto) err
 		return fmt.Errorf("username = %s instead of %s", user.Username, newUserDto.Username)
 	}
 	if user.AppAdmin != newUserDto.AppAdmin {
-		return fmt.Errorf("appAdmin = %v instead of %v", user.AppAdmin, newUserDto.AppAdmin)
+		return fmt.Errorf("appAdmin ='%v'instead of %v", user.AppAdmin, newUserDto.AppAdmin)
 	}
 	if user.Password != newUserDto.Password {
 		return fmt.Errorf("password = %s instead of %s", user.Password, newUserDto.Password)
 	}
 	// Check Avatar with nil handling
 	if (user.Avatar == nil) != (newUserDto.Avatar == nil) {
-		return fmt.Errorf("avatar = %v instead of %v", user.Avatar, newUserDto.Avatar)
+		return fmt.Errorf("avatar ='%v'instead of %v", user.Avatar, newUserDto.Avatar)
 	}
 	if user.Avatar != nil && newUserDto.Avatar != nil && *user.Avatar != *newUserDto.Avatar {
-		return fmt.Errorf("avatar = %v instead of %v", *user.Avatar, *newUserDto.Avatar)
+		return fmt.Errorf("avatar ='%v'instead of %v", *user.Avatar, *newUserDto.Avatar)
 	}
 	if user.Language != newUserDto.Language {
-		return fmt.Errorf("language = %v instead of %v", user.Language, newUserDto.Language)
+		return fmt.Errorf("language ='%v'instead of %v", user.Language, newUserDto.Language)
 	}
 	if user.AppTheme != newUserDto.AppTheme {
-		return fmt.Errorf("appTheme = %v instead of %v", user.AppTheme, newUserDto.AppTheme)
+		return fmt.Errorf("appTheme ='%v'instead of %v", user.AppTheme, newUserDto.AppTheme)
 	}
 	return nil
 }
@@ -728,7 +730,7 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 	}
 
 	if actual.AppAdmin != adminRole {
-		t.Errorf("expected appAdmin = %v instead of %v", adminRole, actual.AppAdmin)
+		t.Errorf("expected appAdmin ='%v'instead of %v", adminRole, actual.AppAdmin)
 	}
 }
 
@@ -761,7 +763,7 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 	}
 
 	if actual.AppAdmin != user.AppAdmin {
-		t.Errorf("expected appAdmin = %v instead of %v", user.AppAdmin, actual.AppAdmin)
+		t.Errorf("expected appAdmin ='%v'instead of %v", user.AppAdmin, actual.AppAdmin)
 	}
 }
 
@@ -795,7 +797,7 @@ func TestUpdateUserAdminRole_ServiceError(t *testing.T) {
 	}
 
 	if actual.AppAdmin != user.AppAdmin {
-		t.Errorf("expected appAdmin = %v instead of %v", user.AppAdmin, actual.AppAdmin)
+		t.Errorf("expected appAdmin ='%v'instead of %v", user.AppAdmin, actual.AppAdmin)
 	}
 }
 
@@ -835,7 +837,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 	}
 
 	if actual.Password != validPassword {
-		t.Errorf("expected password = %v instead of %v", validPassword, actual.Password)
+		t.Errorf("expected password ='%v'instead of %v", validPassword, actual.Password)
 	}
 }
 
@@ -868,7 +870,7 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 	}
 
 	if actual.Password != user.Password {
-		t.Errorf("expected password = %v instead of %v", user.Password, actual.Password)
+		t.Errorf("expected password ='%v'instead of %v", user.Password, actual.Password)
 	}
 }
 
@@ -904,7 +906,7 @@ func TestUpdateUserPassword_ServiceError(t *testing.T) {
 	}
 
 	if actual.Password != user.Password {
-		t.Errorf("expected password = %v instead of %v", user.Password, actual.Password)
+		t.Errorf("expected password ='%v'instead of %v", user.Password, actual.Password)
 	}
 }
 

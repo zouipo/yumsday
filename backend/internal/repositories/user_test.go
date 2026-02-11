@@ -109,21 +109,21 @@ func compareUsers(actual, expected *models.User) error {
 	}
 
 	if actual.AppAdmin != expected.AppAdmin {
-		return fmt.Errorf("AppAdmin = %v instead of %v", actual.AppAdmin, expected.AppAdmin)
+		return fmt.Errorf("AppAdmin ='%v'instead of %v", actual.AppAdmin, expected.AppAdmin)
 	}
 
 	// allows a small time difference (±1 minute) to account for timing variations
 	minTime := expected.CreatedAt.Add(-1 * time.Minute)
 	maxTime := expected.CreatedAt.Add(1 * time.Minute)
 	if actual.CreatedAt.Before(minTime) || actual.CreatedAt.After(maxTime) {
-		return fmt.Errorf("CreatedAt = %v instead of around %v (±1min)", actual.CreatedAt, expected.CreatedAt)
+		return fmt.Errorf("CreatedAt ='%v'instead of around'%v'(±1min)", actual.CreatedAt, expected.CreatedAt)
 	}
 
 	// Compare Avatar pointers
 	if (actual.Avatar == nil) != (expected.Avatar == nil) {
-		return fmt.Errorf("Avatar nil mismatch: got %v instead of %v", actual.Avatar, expected.Avatar)
+		return fmt.Errorf("Avatar nil mismatch: got'%v'instead of %v", actual.Avatar, expected.Avatar)
 	} else if actual.Avatar != nil && expected.Avatar != nil && *actual.Avatar != *expected.Avatar {
-		return fmt.Errorf("Avatar = %v instead of %v", *actual.Avatar, *expected.Avatar)
+		return fmt.Errorf("Avatar ='%v'instead of %v", *actual.Avatar, *expected.Avatar)
 	}
 
 	if actual.Language != expected.Language {
@@ -136,7 +136,7 @@ func compareUsers(actual, expected *models.User) error {
 
 	// Compare LastVisitedGroup pointers
 	if (actual.LastVisitedGroup == nil) != (expected.LastVisitedGroup == nil) {
-		return fmt.Errorf("LastVisitedGroup nil mismatch: got %v instead of %v", actual.LastVisitedGroup, expected.LastVisitedGroup)
+		return fmt.Errorf("LastVisitedGroup nil mismatch: got'%v'instead of %v", actual.LastVisitedGroup, expected.LastVisitedGroup)
 	} else if actual.LastVisitedGroup != nil && expected.LastVisitedGroup != nil && *actual.LastVisitedGroup != *expected.LastVisitedGroup {
 		return fmt.Errorf("LastVisitedGroup = %d instead of %d", *actual.LastVisitedGroup, *expected.LastVisitedGroup)
 	}
