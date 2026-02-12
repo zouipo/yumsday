@@ -24,7 +24,7 @@ func (e *AppError) Error() string {
 // NewEntityNotFoundError creates an error indicating that a specific entity was not found.
 func NewEntityNotFoundError(entityType string, identifier string, err error) error {
 	return &AppError{
-		Message:    fmt.Sprintf("%s with ID %s not found", entityType, identifier),
+		Message:    fmt.Sprintf("%s %s not found", entityType, identifier),
 		StatusCode: http.StatusNotFound,
 		Err:        err,
 	}
