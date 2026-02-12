@@ -169,7 +169,7 @@ func compareErrors(actual, expected error) bool {
 	expectedAppErr, expectedIsAppErr := expected.(*customErrors.AppError)
 
 	if actualIsAppErr && expectedIsAppErr {
-		if actualAppErr.Code != expectedAppErr.Code && actualAppErr.Message != expectedAppErr.Message && actualAppErr.StatusCode != expectedAppErr.StatusCode {
+		if actualAppErr.Message != expectedAppErr.Message && actualAppErr.StatusCode != expectedAppErr.StatusCode {
 			return false
 		}
 
