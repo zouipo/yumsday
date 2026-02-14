@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
+
+	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
 
 	"github.com/zouipo/yumsday/backend/internal/dtos"
 	"github.com/zouipo/yumsday/backend/internal/mappers"
@@ -44,6 +45,8 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 // @Param username query string false "Username to filter by"
 // @Success 200 {array} dtos.UserDto
 // @Failure 400 {string} string "Bad request"
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [get]
 func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +80,15 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the request context (set by the middleware).
 	user, err := h.userService.GetByID(r.Context().Value("id").(int64))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Setting response header.
 	w.Header().Set("Content-Type", "application/json")
-	// Encoding the user to JSON after mapping the User entity into a UserDto.
 	if err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user)); err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
 		return
@@ -99,11 +104,11 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Param user body dtos.NewUserDto true "New User Data"
 // @Success 201 {object} map[string]int "Returns the new user ID"
 // @Failure 400 {string} string "Bad request"
+// @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [post]
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	var newUserDto dtos.NewUserDto
-	// Decode the request body into the NewUserDto struct.
 	err := json.NewDecoder(r.Body).Decode(&newUserDto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -113,7 +118,11 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	user := mappers.FromNewUserDtoToUser(&newUserDto)
 	id, err := h.userService.Create(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -131,6 +140,8 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Param user body dtos.UserDto true "User Data to Update"
 // @Success 204 {string} string "No Content"
 // @Failure 400 {string} string "Bad request"
+// @Failure 404 {string} string "User not found"
+// @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [put]
 func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +153,10 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 
 	user := mappers.FromUserDtoToUser(&userDto)
 	if err := h.userService.Update(user); err != nil {
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -159,7 +174,6 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Param id path int true "User ID"
 // @Param role body map[string]bool true "Admin Role Status"
 // @Success 204 {string} string "No Content"
-// @Failure 400 {string} string "Bad request"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id}/admin [patch]
@@ -172,6 +186,10 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.userService.UpdateAdminRole(userID, adminRolePayload.AppAdmin); err != nil {
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -202,6 +220,10 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.userService.UpdatePassword(userID, passwordPayload.OldPassword, passwordPayload.NewPassword); err != nil {
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -225,11 +247,10 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.Delete(r.Context().Value("id").(int64))
 
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			http.Error(w, err.Error(), http.StatusNotFound)
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
 			return
 		}
-
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -254,6 +275,11 @@ var passwordPayload struct {
 func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 	users, err := h.userService.GetAll()
 	if err != nil {
+		// If the error is one of the custom type AppError
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -270,7 +296,11 @@ func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
 	user, err := h.userService.GetByUsername(username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		if err, isAppErr := err.(*customErrors.AppError); isAppErr {
+			http.Error(w, err.Error(), err.StatusCode)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
