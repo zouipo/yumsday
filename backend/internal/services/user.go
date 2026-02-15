@@ -144,6 +144,10 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 		return customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
 	}
 
+	if !validation.IsPasswordValid(newPassword) {
+		return customErrors.NewValidationError("password", "Invalid password length", nil)
+	}
+
 	currentUser, err := s.GetByID(userID)
 	if err != nil {
 		return err
@@ -151,10 +155,6 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 
 	if currentUser.Password != oldPassword { // TODO: Hash the old password before comparing
 		return customErrors.NewValidationError("password", "Old password is incorrect for user "+currentUser.Username, nil)
-	}
-
-	if !validation.IsPasswordValid(newPassword) {
-		return customErrors.NewValidationError("password", "Invalid password length", nil)
 	}
 
 	currentUser.Password = newPassword // TODO: Hash the new password before saving
