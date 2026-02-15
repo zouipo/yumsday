@@ -6,6 +6,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
+	golang.org/x/crypto v0.47.0
 )
 
 require (

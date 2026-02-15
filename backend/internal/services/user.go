@@ -1,12 +1,15 @@
 package services
 
 import (
+	"errors"
+	"log/slog"
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/zouipo/yumsday/backend/internal/models"
-	validation "github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 	"github.com/zouipo/yumsday/backend/internal/repositories"
 )
 
@@ -71,14 +74,22 @@ func (s *UserService) GetByUsername(username string) (*models.User, error) {
 func (s *UserService) Create(user *models.User) (int64, error) {
 	user.CreatedAt = time.Now()
 
-	if !validation.IsUsernameValid(user.Username) {
+	if !utils.IsUsernameValid(user.Username) {
+		slog.Debug("Invalid username format", "username", user.Username)
 		return 0, customErrors.NewValidationError("username", "Invalid username format", nil)
 	}
 
-	if !validation.IsPasswordValid(user.Password) {
+	if !utils.IsPasswordValid(user.Password) {
+		slog.Debug("Invalid password length")
 		return 0, customErrors.NewValidationError("password", "Invalid password length", nil)
 	}
-	// TODO: Hash password before saving user in database
+
+	var err error
+	user.Password, err = utils.HashPassword(user.Password)
+	if err != nil {
+		slog.Error("CreateUser: failed to hash password", "error", err)
+		return 0, customErrors.NewInternalServerError("Failed to hash password", err)
+	}
 
 	id, err := s.repo.Create(user)
 	if err != nil {
@@ -99,7 +110,7 @@ func (s *UserService) Update(user *models.User) error {
 
 	// Check if the username is being updated to an already existing one
 	if user.Username != currentUser.Username {
-		if !validation.IsUsernameValid(user.Username) {
+		if !utils.IsUsernameValid(user.Username) {
 			return customErrors.NewValidationError("username", "Invalid username format", nil)
 		}
 
@@ -137,14 +148,17 @@ func (s *UserService) UpdateAdminRole(userID int64, role bool) error {
 // UpdatePassword verifies the old password and updates to the new password after validation.
 func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPassword string) error {
 	if oldPassword == newPassword {
+		slog.Debug("Same old and new passwords")
 		return nil
 	}
 
 	if oldPassword == "" || newPassword == "" {
+		slog.Debug("Old or new password empty")
 		return customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
 	}
 
-	if !validation.IsPasswordValid(newPassword) {
+	if !utils.IsPasswordValid(newPassword) {
+		slog.Debug("Invalid password length")
 		return customErrors.NewValidationError("password", "Invalid password length", nil)
 	}
 
@@ -153,11 +167,20 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 		return err
 	}
 
-	if currentUser.Password != oldPassword { // TODO: Hash the old password before comparing
-		return customErrors.NewValidationError("password", "Old password is incorrect for user "+currentUser.Username, nil)
+	// Comparing actual old password with the one provided by the user
+	if err := bcrypt.CompareHashAndPassword([]byte(currentUser.Password), []byte(oldPassword)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			slog.Debug("Wrong old password")
+			return customErrors.NewValidationError("password", "Old password is incorrect for user "+currentUser.Username, err)
+		}
+		return err
 	}
 
-	currentUser.Password = newPassword // TODO: Hash the new password before saving
+	currentUser.Password, err = utils.HashPassword(newPassword)
+	if err != nil {
+		slog.Error("UpdatePassword: failed to hash new password", "error", err)
+		return customErrors.NewInternalServerError("Failed to hash new password", err)
+	}
 
 	if err = s.repo.Update(currentUser); err != nil {
 		return err
