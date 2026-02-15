@@ -29,7 +29,14 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-# .vscode/
+.vscode/
 
-# Custom
-reminder.md
+# Swagger
+docs
+
+# DB files
+*.db
+
+# Debug files
+*.log
+__debug_*
