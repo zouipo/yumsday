@@ -45,7 +45,7 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 }
 
 // GetByID fetches the user by ID.
-// Returns NewEntityNotFoundError if not found.
+// Returns an AppError if not found.
 func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	user, err := r.fetchUser("id", id)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 }
 
 // GetByUsername fetches the user that matches the provided username.
-// Returns NewEntityNotFoundError if not found.
+// Returns an AppError if not found.
 func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	user, err := r.fetchUser("username", username)
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 }
 
 // Create inserts a new user into the database and returns the inserted ID.
-// Returns NewConflictError if a user with the same username already exists, or NewInternalError for other database errors.
+// Returns an AppError if creation fails.
 func (r *UserRepository) Create(user *models.User) (int64, error) {
 	result, err := r.db.Exec(
 		"INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -102,8 +102,8 @@ func (r *UserRepository) Create(user *models.User) (int64, error) {
 	return id, nil
 }
 
-// Update updates an existing user.
-// Returns NewInternalError if no row was affected.
+// Update updates an existing user, except the the createdAt field.
+// Returns an AppError if update fails.
 func (r *UserRepository) Update(user *models.User) error {
 	existingUser, err := r.GetByID(user.ID)
 	slog.Debug("Existing user before update", "user", existingUser, "error", err)
@@ -132,7 +132,7 @@ func (r *UserRepository) Update(user *models.User) error {
 		return customErrors.NewInternalServerError("Failed to retrieve updated user", err)
 	}
 
-	// If no row was updated (because the resource was not found), return an EntityNotFoundError
+	// If no row was updated (because the resource was not found), returns an AppError of type EntityNotFoundError
 	if updatedRow == 0 {
 		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), err)
 	}
@@ -141,6 +141,7 @@ func (r *UserRepository) Update(user *models.User) error {
 }
 
 // UpdateAdminRole sets or clears the admin flag for the user with the given ID.
+// Returns an AppError if update fails.
 func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 	result, err := r.db.Exec(
 		"UPDATE user SET app_admin = ? WHERE id = ?",
@@ -163,7 +164,8 @@ func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 	return nil
 }
 
-// Delete removes a user by ID; returns sql.ErrNoRows if no row was deleted.
+// Delete removes a user by its ID.
+// Returns an AppError if deletion fails.
 func (r *UserRepository) Delete(id int64) error {
 	result, err := r.db.Exec("DELETE FROM user WHERE id = ?", id)
 	if err != nil {
@@ -183,7 +185,7 @@ func (r *UserRepository) Delete(id int64) error {
 }
 
 /*** PRIVATE HELPER METHODS ***/
-// fetchUsers executes the provided query and returns a slice of users.
+// fetchUsers returns a slice of all the users in the database.
 func (r *UserRepository) fetchUsers() ([]models.User, error) {
 	users := []models.User{}
 

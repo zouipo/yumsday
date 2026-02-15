@@ -21,7 +21,6 @@ func (e *AppError) Error() string {
 
 /*** COMMON ERRORS CONSTRUCTORS ***/
 
-// NewEntityNotFoundError creates an error indicating that a specific entity was not found.
 func NewEntityNotFoundError(entityType string, identifier string, err error) error {
 	return &AppError{
 		Message:    fmt.Sprintf("%s %s not found", entityType, identifier),
@@ -30,7 +29,6 @@ func NewEntityNotFoundError(entityType string, identifier string, err error) err
 	}
 }
 
-// NewValidationError creates an error indicating that a validation error occurred on a specific field with a message describing the issue.
 func NewValidationError(field string, message string, err error) error {
 	return &AppError{
 		Message:    fmt.Sprintf("Validation error on field '%s': %s", field, message),
@@ -39,7 +37,6 @@ func NewValidationError(field string, message string, err error) error {
 	}
 }
 
-// NewUnauthorizedError creates an error indicating that the user is not authenticated.
 func NewUnauthorizedError(err error) error {
 	return &AppError{
 		Message:    "Unauthorized: authentication required",
@@ -48,7 +45,6 @@ func NewUnauthorizedError(err error) error {
 	}
 }
 
-// NewForbiddenError creates an error indicating that the user is authenticated but does not have permission to perform the action.
 func NewForbiddenError(err error) error {
 	return &AppError{
 		Message:    "Forbidden: user not allowed to perform this action",
@@ -57,7 +53,6 @@ func NewForbiddenError(err error) error {
 	}
 }
 
-// NewConflictError creates an error indicating that there is a conflict with the current state of the resource, such as a duplicate entry or a version mismatch.
 func NewConflictError(resource, conflict string, err error) error {
 	return &AppError{
 		Message:    fmt.Sprintf("Conflict with %s: %s", resource, conflict),
@@ -66,7 +61,6 @@ func NewConflictError(resource, conflict string, err error) error {
 	}
 }
 
-// NewInternalServerError creates an error indicating that an unexpected internal error occurred, with a message describing the issue.
 func NewInternalServerError(message string, err error) error {
 	return &AppError{
 		Message:    message,
