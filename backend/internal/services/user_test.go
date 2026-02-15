@@ -8,6 +8,8 @@ import (
 
 	"github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/zouipo/yumsday/backend/internal/models"
 	"github.com/zouipo/yumsday/backend/internal/models/enums"
@@ -15,9 +17,13 @@ import (
 
 // Variables for test data
 var (
-	testUser1 = createTestUser(1, "user1", "password123")
-	testUser2 = createTestUser(2, "user2", "password456")
-	testUser3 = createTestUser(3, "user3", "password789")
+	password1 = "password123"
+	password2 = "password456"
+	password3 = "password789"
+
+	testUser1 = createTestUser(1, "user1", password1)
+	testUser2 = createTestUser(2, "user2", password2)
+	testUser3 = createTestUser(3, "user3", password3)
 
 	validUsername = "validuser"
 	validPassword = "ValidPass123"
@@ -117,7 +123,6 @@ func (m *MockUserRepository) Update(user *models.User) error {
 		}
 	}
 
-	// Find and update the user
 	for i, existingUser := range m.users {
 		if existingUser.ID == user.ID {
 			m.users[i] = *user
@@ -159,20 +164,23 @@ func (m *MockUserRepository) Delete(id int64) error {
 
 /*** HELPER FUNCTIONS ***/
 
-// Helper methods for setting up test scenarios
 func (m *MockUserRepository) addUser(user *models.User) {
 	user.ID = m.nextID
 	m.nextID++
 	m.users = append(m.users, *user)
 }
 
-// Helper function to create a test user
 func createTestUser(id int64, username string, password string) *models.User {
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to hash password for test user: %v", err))
+	}
+
 	avatar := enums.Avatar1
 	return &models.User{
 		ID:        id,
 		Username:  username,
-		Password:  password,
+		Password:  hashedPassword,
 		AppAdmin:  false,
 		CreatedAt: time.Now(),
 		Avatar:    &avatar,
@@ -211,6 +219,7 @@ func compareUsers(actual, expected *models.User) error {
 	if actual.Username != expected.Username {
 		return fmt.Errorf("username = %s instead of %s", actual.Username, expected.Username)
 	}
+	// Compare hashed passwords directly (both are already hashed)
 	if actual.Password != expected.Password {
 		return fmt.Errorf("password = %s instead of %s", actual.Password, expected.Password)
 	}
@@ -405,7 +414,16 @@ func TestCreate_Success(t *testing.T) {
 
 	usersNb := len(mockRepo.users)
 
-	newUser := createTestUser(0, validUsername, validPassword)
+	avatar := enums.Avatar1
+	newUser := &models.User{
+		ID:       0,
+		Username: validUsername,
+		Password: validPassword,
+		AppAdmin: false,
+		Avatar:   &avatar,
+		Language: enums.English,
+		AppTheme: enums.Light,
+	}
 
 	id, err := service.Create(newUser)
 	if err != nil {
@@ -447,8 +465,15 @@ func TestCreate_DuplicateUsername(t *testing.T) {
 	service := &UserService{repo: mockRepo}
 
 	existingUser := mockRepo.users[0]
-
-	newUser := createTestUser(0, existingUser.Username, validPassword)
+	newUser := &models.User{
+		ID:       0,
+		Username: existingUser.Username,
+		Password: validPassword,
+		AppAdmin: false,
+		Avatar:   nil,
+		Language: enums.English,
+		AppTheme: enums.Light,
+	}
 
 	id, err := service.Create(newUser)
 
@@ -468,7 +493,15 @@ func TestCreate_InvalidUsername(t *testing.T) {
 
 	usersNb := len(mockRepo.users)
 
-	newUser := createTestUser(0, invalidUsername, validPassword)
+	newUser := &models.User{
+		ID:       0,
+		Username: invalidUsername,
+		Password: validPassword,
+		AppAdmin: false,
+		Avatar:   nil,
+		Language: enums.English,
+		AppTheme: enums.Light,
+	}
 
 	id, err := service.Create(newUser)
 	if id != 0 {
@@ -491,7 +524,15 @@ func TestCreate_InvalidPassword(t *testing.T) {
 
 	usersNb := len(mockRepo.users)
 
-	newUser := createTestUser(0, validUsername, invalidPassword)
+	newUser := &models.User{
+		ID:       0,
+		Username: validUsername,
+		Password: invalidPassword,
+		AppAdmin: false,
+		Avatar:   nil,
+		Language: enums.English,
+		AppTheme: enums.Light,
+	}
 
 	id, err := service.Create(newUser)
 	if id != 0 {
@@ -516,7 +557,15 @@ func TestCreate_RepositoryError(t *testing.T) {
 
 	service := &UserService{repo: mockRepo}
 
-	newUser := createTestUser(0, validUsername, validPassword)
+	newUser := &models.User{
+		ID:       0,
+		Username: validUsername,
+		Password: validPassword,
+		AppAdmin: false,
+		Avatar:   nil,
+		Language: enums.English,
+		AppTheme: enums.Light,
+	}
 
 	id, err := service.Create(newUser)
 	if id != 0 {
@@ -651,15 +700,14 @@ func TestUpdatePassword_Success(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, user.Password, validPassword)
+	err := service.UpdatePassword(user.ID, password1, validPassword)
 	if err != nil {
 		t.Fatalf("UpdatePassword() error ='%v'instead of nil", err)
 	}
 
-	// Verify password was updated
 	updatedUser, _ := mockRepo.GetByID(user.ID)
-	if updatedUser.Password != validPassword {
-		t.Error("UpdatePassword() failed to update password")
+	if err := bcrypt.CompareHashAndPassword([]byte(updatedUser.Password), []byte(validPassword)); err != nil {
+		t.Fatalf("UpdatePassword() failed to update password: %v", err)
 	}
 }
 
@@ -758,7 +806,7 @@ func TestUpdatePassword_RepositoryError(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, user.Password, validPassword)
+	err := service.UpdatePassword(user.ID, password1, validPassword)
 	if !compareErrors(err, mockRepo.updateErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for repository error instead of '%v'", mockRepo.updateErr, err)
 	}
