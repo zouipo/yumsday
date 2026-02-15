@@ -751,6 +751,19 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 	}
 }
 
+func TestUpdatePassword_RepositoryError(t *testing.T) {
+	mockRepo := setupTestData()
+	service := &UserService{repo: mockRepo}
+	mockRepo.updateErr = customErrors.NewInternalServerError("Failed to update user", nil)
+
+	user := mockRepo.users[0]
+
+	err := service.UpdatePassword(user.ID, user.Password, validPassword)
+	if !compareErrors(err, mockRepo.updateErr) {
+		t.Errorf("UpdatePassword() expected error '%v' for repository error instead of '%v'", mockRepo.updateErr, err)
+	}
+}
+
 /*** DELETE OPERATIONS TESTS ***/
 
 func TestDelete_Success(t *testing.T) {
