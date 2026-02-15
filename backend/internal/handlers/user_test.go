@@ -945,7 +945,7 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 	user := mockService.users[0]
 	adminRole := !user.AppAdmin
 
-	rolePayload := map[string]bool{"app_admin": adminRole}
+	rolePayload := dtos.AdminRolePayload{AppAdmin: adminRole}
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
@@ -1017,7 +1017,7 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 	user := mockService.users[0]
 	adminRole := !user.AppAdmin
 
-	rolePayload := map[string]bool{"app_admin": adminRole}
+	rolePayload := dtos.AdminRolePayload{AppAdmin: adminRole}
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
@@ -1054,9 +1054,9 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 
 	user := mockService.users[0]
 
-	passwordPayload := map[string]string{
-		"old_password": user.Password,
-		"new_password": validPassword,
+	passwordPayload := dtos.PasswordPayload{
+		OldPassword: user.Password,
+		NewPassword: validPassword,
 	}
 	body, _ := json.Marshal(passwordPayload)
 
@@ -1127,9 +1127,9 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 
 	user := mockService.users[0]
 
-	passwordPayload := map[string]string{
-		"old_password": user.Password,
-		"new_password": invalidPassword,
+	passwordPayload := dtos.PasswordPayload{
+		OldPassword: user.Password,
+		NewPassword: invalidPassword,
 	}
 	body, _ := json.Marshal(passwordPayload)
 
@@ -1170,9 +1170,9 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 
 	user := mockService.users[0]
 
-	passwordPayload := map[string]string{
-		"old_password": user.Password,
-		"new_password": validPassword,
+	passwordPayload := dtos.PasswordPayload{
+		OldPassword: user.Password,
+		NewPassword: validPassword,
 	}
 	body, _ := json.Marshal(passwordPayload)
 

@@ -184,12 +184,13 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
-	if err := json.NewDecoder(r.Body).Decode(&adminRolePayload); err != nil {
+	var payload dtos.AdminRolePayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := h.userService.UpdateAdminRole(userID, adminRolePayload.AppAdmin); err != nil {
+	if err := h.userService.UpdateAdminRole(userID, payload.AppAdmin); err != nil {
 		var appErr *customErrors.AppError
 		if errors.As(err, &appErr) {
 			http.Error(w, err.Error(), appErr.StatusCode)
@@ -219,12 +220,13 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
-	if err := json.NewDecoder(r.Body).Decode(&passwordPayload); err != nil {
+	var payload dtos.PasswordPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := h.userService.UpdatePassword(userID, passwordPayload.OldPassword, passwordPayload.NewPassword); err != nil {
+	if err := h.userService.UpdatePassword(userID, payload.OldPassword, payload.NewPassword); err != nil {
 		var appErr *customErrors.AppError
 		if errors.As(err, &appErr) {
 			http.Error(w, err.Error(), appErr.StatusCode)
@@ -264,16 +266,6 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
-}
-
-/*** PRIVATE STRUCT ***/
-var adminRolePayload struct {
-	AppAdmin bool `json:"app_admin"`
-}
-
-var passwordPayload struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
 }
 
 /*** NON-HANDLER PRIVATE METHODS ***/
