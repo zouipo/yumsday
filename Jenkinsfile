@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        GOCACHE="${WORKSPACE}"
+    }
+
     stages {
         stage('Run tests') {
             steps {
