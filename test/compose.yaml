@@ -7,3 +7,5 @@ services:
     image: zouipo/yumsday:latest
     ports:
       - 8080:8080
+    volumes:
+      - ./data:/data
