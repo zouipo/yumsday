@@ -7,7 +7,7 @@ pipeline {
                 script {
                     def img = docker.build('zouipo/yumsday:base', '--target base .')
                     img.inside {
-                        make test-cicd
+                        sh("make test-cicd")
                     }
                 }
             }
