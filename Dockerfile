@@ -1,5 +1,6 @@
 FROM golang:1.25-alpine AS base
-RUN apk add --no-cache gcc=15.2.0-r2 make=4.4.1-r3 musl-dev=1.2.5-r21
+RUN apk add --no-cache gcc=15.2.0-r2 make=4.4.1-r3 musl-dev=1.2.5-r21 && \
+    go install github.com/swaggo/swag/cmd/swag@latest
 WORKDIR /app
 COPY go.mod go.sum* ./
 RUN go mod download
