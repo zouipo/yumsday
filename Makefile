@@ -4,8 +4,12 @@ OUT=bin/yumsday
 .PHONY: all
 all: build
 
+.PHONY: swagger
+swagger:
+	@swag init
+
 .PHONY: build
-build:
+build: swagger
 	@go build -ldflags="-s -w" -o $(OUT) main.go
 
 .PHONY: image
@@ -13,12 +17,8 @@ image:
 	@docker build --target runtime -t zouipo/yumsday:latest .
 
 .PHONY: run
-run: build
+run: swagger
 	@go run .
-
-.PHONY: run-race
-run-race: build-race
-	@$(OUT) -v
 
 .PHONY: test
 test:
