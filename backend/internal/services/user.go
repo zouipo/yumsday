@@ -167,7 +167,7 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 		return err
 	}
 
-	// Comparing actual old password with the one provided by the user
+	// Comparing current old password with the one provided by the user
 	if err := bcrypt.CompareHashAndPassword([]byte(currentUser.Password), []byte(oldPassword)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			slog.Debug("Wrong old password")
