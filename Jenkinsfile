@@ -5,7 +5,7 @@ pipeline {
         stage('Run tests') {
             steps {
                 script {
-                    def img = docker.build('zouipo/yumsday:base', '--target base')
+                    def img = docker.build('zouipo/yumsday:base', '--target base .')
                     img.inside {
                         make test-cicd
                     }
