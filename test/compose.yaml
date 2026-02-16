@@ -1,0 +1,9 @@
+services:
+  yumsday:
+    build:
+      context: ..
+      target: runtime
+    container_name: yumsday
+    image: zouipo/yumsday:latest
+    ports:
+      - 8080:8080
