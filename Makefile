@@ -21,11 +21,11 @@ run: swagger
 	@go run .
 
 .PHONY: test
-test:
+test: swagger
 	@go test -cover -coverprofile=$(COVERAGE_FILE) ./...
 
 .PHONY: test-cicd
-test-cicd:
+test-cicd: swagger
 	@go test -race ./...
 
 .PHONY: benchmark
