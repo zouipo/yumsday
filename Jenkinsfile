@@ -1,3 +1,5 @@
+def img
+
 pipeline {
     agent any
 
@@ -6,12 +8,29 @@ pipeline {
     }
 
     stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    img = docker.build('zouipo/yumsday:base', '--target base .')
+                }
+            }
+        }
         stage('Run tests') {
             steps {
                 script {
-                    def img = docker.build('zouipo/yumsday:base', '--target base .')
                     img.inside {
-                        sh("make test-cicd")
+                        sh('make test-cicd')
+                    }
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    img.inside {
+                        withSonarQubeEnv('SonarQube') {
+                            sh('sonar-scanner')
+                        }
                     }
                 }
             }
