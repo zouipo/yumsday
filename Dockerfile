@@ -4,7 +4,8 @@ RUN apk add --no-cache gcc=15.2.0-r2 make=4.4.1-r3 musl-dev=1.2.5-r21 && \
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY --exclude=test/compose.yaml --exclude=Dockerfile --exclude=Jenkinsfile --exclude=README.md . .
+# The --parents flag preserves the hierarchy of the given directory
+COPY --parents backend main.go Makefile ./
 
 
 FROM base AS build
