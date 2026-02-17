@@ -17,8 +17,10 @@ pipeline {
         }
         stage('Run tests') {
             steps {
-                img.inside {
-                    sh('make test-cicd')
+                script {
+                    img.inside {
+                        sh('make test-cicd')
+                    }
                 }
             }
         }
