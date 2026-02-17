@@ -25,6 +25,9 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
+            when {
+                branch 'main'
+            }
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
