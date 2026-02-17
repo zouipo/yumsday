@@ -1,5 +1,6 @@
-COVERAGE_FILE=coverage.out
 OUT=bin/yumsday
+COVERAGE_FILE=test/coverage.out
+TEST_REPORT=test/test-report.json
 
 .PHONY: all
 all: build
@@ -26,7 +27,7 @@ test: swagger
 
 .PHONY: test-cicd
 test-cicd: swagger
-	@go test -race ./...
+	@go test -v -race -cover -coverprofile=$(COVERAGE_FILE) -json ./... > $(TEST_REPORT)
 
 .PHONY: benchmark
 benchmark:
