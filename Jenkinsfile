@@ -17,10 +17,8 @@ pipeline {
         }
         stage('Run tests') {
             steps {
-                script {
-                    img.inside {
-                        sh('make test-cicd')
-                    }
+                img.inside {
+                    sh('make test-cicd')
                 }
             }
         }
@@ -29,10 +27,8 @@ pipeline {
                 branch 'main'
             }
             steps {
-                script {
-                    withSonarQubeEnv('SonarQube') {
-                        sh("${tool('SonarQube Scanner')}/bin/sonar-scanner")
-                    }
+                withSonarQubeEnv('SonarQube') {
+                    sh("${tool('SonarQube Scanner')}/bin/sonar-scanner")
                 }
             }
         }
