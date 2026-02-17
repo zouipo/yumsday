@@ -27,11 +27,8 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    img.inside {
-                        scannerHome = tool('SonarQube Scanner')
-                        withSonarQubeEnv('SonarQube') {
-                            sh("${scannerHome}/bin/sonar-scanner")
-                        }
+                    withSonarQubeEnv('SonarQube') {
+                        sh("${tool('SonarQube Scanner')}/bin/sonar-scanner")
                     }
                 }
             }
