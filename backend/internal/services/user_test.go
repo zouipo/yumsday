@@ -15,9 +15,9 @@ import (
 
 // Variables for test data
 var (
-	password1       = "password123"
-	hashedPassword1 = "$2a$12$d6mhGDARQpXwPbuaPtu10ezuWv6wNws9TgTiRwHN/LOD0MlIXfGAS"
-	hashedPassword2 = "$2a$12$nW8xNNY/7mHQ2m/jN3YYLON/s3DkkdqJCbKcTa27qCEWZXXWyJ7qO"
+	password1       = "password1234"
+	hashedPassword1 = "$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm"
+	hashedPassword2 = "$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2"
 
 	testUser1 = createTestUser(1, "user1", hashedPassword1)
 	testUser2 = createTestUser(2, "user2", hashedPassword2)
@@ -494,7 +494,7 @@ func TestCreate_InvalidUsername(t *testing.T) {
 
 	validationErr := customErrors.NewValidationError("username", "Invalid username format", nil)
 	if !compareErrors(err, validationErr) {
-		t.Errorf("Create() error ='%v', got expected %v", err, validationErr)
+		t.Errorf("Create() error ='%v' instead of %v", err, validationErr)
 	}
 
 	if len(mockRepo.users) != usersNb {
