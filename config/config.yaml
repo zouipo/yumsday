@@ -1,0 +1,4 @@
+host: localhost
+port: 8080
+db_path: yumsday.db
+log_level: info
