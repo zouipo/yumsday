@@ -111,6 +111,7 @@ func main() {
 		// then it returns the returned error ErrServerClosed.
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server stopped listening", "error", err)
+			cancel()
 		}
 	}()
 	slog.Info("HTTP server started", "addr", *addr, "port", *port)
