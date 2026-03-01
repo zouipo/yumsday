@@ -6,6 +6,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	CONFIG_PATH_ENV_VAR = "YUMSDAY_CONFIG_PATH"
+)
+
 type Config struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
