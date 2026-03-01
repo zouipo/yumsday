@@ -19,7 +19,7 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
-/*** COMMON error CONSTRUCTORS ***/
+/*** COMMON ERROR CONSTRUCTORS ***/
 
 func NewEntityNotFoundError(entityType string, identifier string, err error) error {
 	return &AppError{
