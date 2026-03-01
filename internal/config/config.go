@@ -32,9 +32,14 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	viper.SetEnvPrefix("YUMSDAY")
+	// Check for environment variables following
+	// the pattern YUMSDAY_<viper>_<key>_<name>
+	// e.g. YUMSDAY_DB_PATH
 	viper.AutomaticEnv()
 
 	var config Config
+	// Assign values to the Config struct following the names
+	// given by the mapstructure attributes
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		return nil, err
