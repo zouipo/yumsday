@@ -19,7 +19,7 @@ func IntPathValues(valueNames ...string) Middleware {
 				func(valueName, valueStr string) (any, error) {
 					value, err := strconv.ParseInt(valueStr, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("%s must be a valid interger", valueName)
+						return nil, fmt.Errorf("%s must be a valid integer", valueName)
 					}
 					return value, nil
 				},
