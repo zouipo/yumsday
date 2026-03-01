@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	httpSwagger "github.com/swaggo/http-swagger"
-	"github.com/zouipo/yumsday/backend/internal/handlers"
+	"github.com/zouipo/yumsday/backend/internal/handler"
 	"github.com/zouipo/yumsday/backend/internal/middleware"
 	"github.com/zouipo/yumsday/backend/internal/migration"
-	"github.com/zouipo/yumsday/backend/internal/repositories"
-	"github.com/zouipo/yumsday/backend/internal/services"
+	"github.com/zouipo/yumsday/backend/internal/repository"
+	"github.com/zouipo/yumsday/backend/internal/service"
 	_ "github.com/zouipo/yumsday/docs"
 )
 
@@ -30,9 +30,9 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	mux.Handle("/swagger/", httpSwagger.Handler())
 
 	// Initializing every layers
-	userRepo := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
-	userHandler := handlers.NewUserHandler(userService)
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
 	userHandler.RegisterRoutes(mux, "/api/user")
 
 	middlewareStack := middleware.Stack(
