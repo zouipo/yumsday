@@ -75,13 +75,13 @@ func (s *UserService) Create(user *models.User) (int64, error) {
 	user.CreatedAt = time.Now()
 
 	if !utils.IsUsernameValid(user.Username) {
-		slog.Debug("Invalid username format", "username", user.Username)
-		return 0, customErrors.NewValidationError("username", "Invalid username format", nil)
+		slog.Debug(customErrors.USERNAME_FIELD_ERROR, "username", user.Username)
+		return 0, customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 	}
 
 	if !utils.IsPasswordValid(user.Password) {
-		slog.Debug("Invalid password length")
-		return 0, customErrors.NewValidationError("password", "Invalid password length", nil)
+		slog.Debug(customErrors.PASSWORD_FIELD_ERROR, "password", user.Password)
+		return 0, customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 	}
 
 	var err error
@@ -111,7 +111,7 @@ func (s *UserService) Update(user *models.User) error {
 	// Check if the username is being updated to an already existing one
 	if user.Username != currentUser.Username {
 		if !utils.IsUsernameValid(user.Username) {
-			return customErrors.NewValidationError("username", "Invalid username format", nil)
+			return customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 		}
 
 		currentUser.Username = user.Username
@@ -158,8 +158,8 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 	}
 
 	if !utils.IsPasswordValid(newPassword) {
-		slog.Debug("Invalid password length")
-		return customErrors.NewValidationError("password", "Invalid password length", nil)
+		slog.Debug(customErrors.PASSWORD_FIELD_ERROR)
+		return customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 	}
 
 	currentUser, err := s.GetByID(userID)

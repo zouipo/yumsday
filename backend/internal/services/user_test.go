@@ -492,7 +492,7 @@ func TestCreate_InvalidUsername(t *testing.T) {
 		t.Errorf("Create() expected ID 0 for invalid username, got %d", id)
 	}
 
-	validationErr := customErrors.NewValidationError("username", "Invalid username format", nil)
+	validationErr := customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 	if !compareErrors(err, validationErr) {
 		t.Errorf("Create() error ='%v' instead of %v", err, validationErr)
 	}
@@ -630,7 +630,7 @@ func TestUpdate_InvalidUsername(t *testing.T) {
 	updatedUser := createTestUser(1, invalidUsername, validPassword)
 
 	err := service.Update(updatedUser)
-	validationErr := customErrors.NewValidationError("username", "Invalid username format", nil)
+	validationErr := customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 	if !compareErrors(err, validationErr) {
 		t.Errorf("Update() expected error '%v' for invalid username , got %v", validationErr, err)
 	}
@@ -762,7 +762,7 @@ func TestUpdatePassword_InvalidNewPassword(t *testing.T) {
 
 	err := service.UpdatePassword(user.ID, user.Password, invalidPassword)
 
-	validationErr := customErrors.NewValidationError("password", "Invalid password length", nil)
+	validationErr := customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 	if !compareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for invalid new password , got '%v'", validationErr, err)
 	}
