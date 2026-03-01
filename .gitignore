@@ -42,3 +42,6 @@ docs
 # Debug files
 *.log
 __debug_*
+
+# Custom
+note.txt
