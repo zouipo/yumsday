@@ -19,7 +19,7 @@ func IntPathValues(valueNames ...string) Middleware {
 				func(valueName, valueStr string) (any, error) {
 					value, err := strconv.ParseInt(valueStr, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("%s must be a valid interger", valueName)
+						return nil, fmt.Errorf("%s must be a valid integer", valueName)
 					}
 					return value, nil
 				},
@@ -86,7 +86,7 @@ type pathValueParser func(valueName, valueStr string) (any, error)
 
 // parsePathValue extracts and parses values from the URL path of an HTTP request.
 // It uses the provided parseFunc to convert string values to their expected types (int, float, string).
-// Parsed values are stored in the request context for later use by handlers.
+// Parsed values are stored in the request context for later use by handler.
 func parsePathValue(
 	w http.ResponseWriter,
 	r *http.Request,
