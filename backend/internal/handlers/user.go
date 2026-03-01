@@ -8,6 +8,7 @@ import (
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
 
+	"github.com/zouipo/yumsday/backend/internal/constants"
 	"github.com/zouipo/yumsday/backend/internal/dtos"
 	"github.com/zouipo/yumsday/backend/internal/mappers"
 	"github.com/zouipo/yumsday/backend/internal/middleware"
@@ -90,7 +91,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	if err = json.NewEncoder(w).Encode(mappers.ToUserDtoNoPassword(user)); err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
 		return
@@ -129,7 +130,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, `{"id": %d}`, id)
 }
@@ -165,7 +166,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -200,7 +201,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -236,7 +237,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -264,7 +265,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -283,7 +284,7 @@ func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	err = json.NewEncoder(w).Encode(mappers.MapList(users, mappers.ToUserDtoNoPassword))
 	if err != nil {
 		http.Error(w, "Failed to serialize users", http.StatusInternalServerError)
@@ -307,7 +308,7 @@ func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
 	// Return as an array with one user to match the array response of the original handler getUsers.
 	users := []*dtos.UserDto{mappers.ToUserDtoNoPassword(user)}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	err = json.NewEncoder(w).Encode(users)
 	if err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)

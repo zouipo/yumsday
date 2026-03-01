@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/zouipo/yumsday/backend/internal/constants"
 	customErrors "github.com/zouipo/yumsday/backend/internal/errors"
 
 	"github.com/zouipo/yumsday/backend/internal/dtos"
@@ -290,9 +291,9 @@ func TestGetUsersAll_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	var users []dtos.UserDto
@@ -466,9 +467,9 @@ func TestGetUserByID_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	var actual dtos.UserDto
@@ -527,7 +528,7 @@ func TestCreateUser_Success(t *testing.T) {
 	body, _ := json.Marshal(newUser)
 	// Create a POST request with the JSON body
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -536,9 +537,9 @@ func TestCreateUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusCreated, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	var result map[string]int
@@ -585,7 +586,7 @@ func TestCreateUser_Success_AvatarNil(t *testing.T) {
 	body, _ := json.Marshal(newUser)
 	// Create a POST request with the JSON body
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -594,9 +595,9 @@ func TestCreateUser_Success_AvatarNil(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusCreated, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	var result map[string]int
@@ -630,7 +631,7 @@ func TestCreateUser_InvalidBody(t *testing.T) {
 	usersNb := len(mockService.users)
 
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -650,7 +651,7 @@ func TestCreateUser_InvalidBody(t *testing.T) {
 
 func TestCreateUser_ValidationError(t *testing.T) {
 	mockService := setupTestData()
-	mockService.createErr = customErrors.NewValidationError("username", "invalid username format", nil)
+	mockService.createErr = customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -668,7 +669,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -678,7 +679,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
 
-	errMessage := "Validation error on field 'username': invalid username format"
+	errMessage := "Validation error on field 'username': " + customErrors.USERNAME_FIELD_ERROR
 	if !strings.Contains(w.Body.String(), errMessage) {
 		t.Errorf("expected error message containing '%s' instead of '%s'", errMessage, w.Body.String())
 	}
@@ -708,7 +709,7 @@ func TestCreateUser_ConflictError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -748,7 +749,7 @@ func TestCreateUser_RepoError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -783,7 +784,7 @@ func TestUpdateUser_Success(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -792,9 +793,9 @@ func TestUpdateUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -812,7 +813,7 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -837,7 +838,7 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -863,7 +864,7 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 
 func TestUpdateUser_ValidationError(t *testing.T) {
 	mockService := setupTestData()
-	mockService.updateErr = customErrors.NewValidationError("username", "Invalid username format", nil)
+	mockService.updateErr = customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -872,7 +873,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -882,7 +883,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
 
-	errMessage := "Validation error on field 'username': Invalid username format"
+	errMessage := "Validation error on field 'username': " + customErrors.USERNAME_FIELD_ERROR
 	if !strings.Contains(w.Body.String(), errMessage) {
 		t.Errorf("expected error message containing '%s' instead of '%s'", errMessage, w.Body.String())
 	}
@@ -913,7 +914,7 @@ func TestUpdateUser_RepoError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -949,7 +950,7 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -960,9 +961,9 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -982,7 +983,7 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1021,7 +1022,7 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1061,7 +1062,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1072,9 +1073,9 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -1094,7 +1095,7 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1121,7 +1122,7 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 
 func TestUpdateUserPassword_ValidationError(t *testing.T) {
 	mockService := setupTestData()
-	mockService.updatePassErr = customErrors.NewValidationError("password", "Invalid password length", nil)
+	mockService.updatePassErr = customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -1134,7 +1135,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1146,7 +1147,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
 
-	errMessage := "Validation error on field 'password': Invalid password length"
+	errMessage := "Validation error on field 'password': " + customErrors.PASSWORD_FIELD_ERROR
 	if !strings.Contains(w.Body.String(), errMessage) {
 		t.Errorf("expected error message containing '%s' instead of '%s'", errMessage, w.Body.String())
 	}
@@ -1177,7 +1178,7 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -1224,9 +1225,9 @@ func TestDeleteUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get("Content-Type")
-	if contentType != "application/json" {
-		t.Errorf("expected content type application/json instead of %s", contentType)
+	contentType := w.Header().Get(constants.CONTENT_TYPE_HEADER)
+	if contentType != constants.CONTENT_TYPE_VALUE {
+		t.Errorf("expected content type %s instead of %s", constants.CONTENT_TYPE_VALUE, contentType)
 	}
 
 	if len(mockService.users) != usersNb-1 {
@@ -1325,7 +1326,7 @@ func TestRegisterRoutes_Success(t *testing.T) {
 	}
 	body, _ := json.Marshal(newUser)
 	r = httptest.NewRequest(http.MethodPost, "/test/api/user", bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set(constants.CONTENT_TYPE_HEADER, constants.CONTENT_TYPE_VALUE)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 
