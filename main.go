@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"flag"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -16,8 +15,10 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/zouipo/yumsday/backend"
-	"github.com/zouipo/yumsday/config"
+	"github.com/zouipo/yumsday/internal/config"
 )
 
 //go:embed backend/data/migrations
@@ -29,7 +30,27 @@ var migrationsFs embed.FS
 // @host 			localhost:8080
 // @BasePath 		/api
 
-func main() {
+var cmd = &cobra.Command{
+	Use:   "yumsday",
+	Short: "yumsday",
+	Run:   run,
+}
+
+func init() {
+	// Define cli flags
+	cmd.PersistentFlags().String("host", "localhost", "Server host")
+	cmd.PersistentFlags().Int("port", 8080, "Server port")
+	cmd.PersistentFlags().String("db-path", "yumsday.db", "Path to the sqlite database")
+	cmd.PersistentFlags().String("log-level", "info", "Log level")
+
+	// Bind cli flags to viper values
+	viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
+	viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
+	viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
+	viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
+}
+
+func run(cmd *cobra.Command, args []string) {
 	cfg, err := config.LoadConfig(os.Getenv("CONFIG_PATH"))
 	if err != nil {
 		slog.Error(
@@ -64,14 +85,10 @@ func main() {
 		slog.Error("Failed to open sqlite db", "error", err)
 		return
 	}
+	slog.Info("Opened db", "db_path", cfg.DBPath)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	// Flag = CLI parameters when running the program, for example: go run main.go -addr=localhost -port=8080.
-	addr := flag.String("addr", cfg.Host, "Addresses to listen on")
-	port := flag.Int("port", cfg.Port, "Port to listen on")
-	flag.Parse()
 
 	migrationsFs, err := fs.Sub(migrationsFs, "backend/data/migrations")
 	if err != nil {
@@ -80,7 +97,7 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", *addr, *port), // TCP address to listen on, in the form "host:port"
+		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), // TCP address to listen on, in the form "host:port"
 		Handler: backend.NewAPIServer(db, migrationsFs),
 	}
 
@@ -114,8 +131,12 @@ func main() {
 			cancel()
 		}
 	}()
-	slog.Info("HTTP server started", "addr", *addr, "port", *port)
-	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:%d/swagger/index.html", *port))
+	slog.Info("HTTP server started", "addr", cfg.Host, "port", cfg.Port)
+	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:%d/swagger/index.html", cfg.Port))
 
 	<-ctx.Done()
+}
+
+func main() {
+	cmd.Execute()
 }
