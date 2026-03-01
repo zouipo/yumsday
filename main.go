@@ -132,7 +132,7 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	}()
 	slog.Info("HTTP server started", "addr", cfg.Host, "port", cfg.Port)
-	slog.Info(fmt.Sprintf("Swagger docs available at: http://localhost:%d/swagger/index.html", cfg.Port))
+	slog.Info(fmt.Sprintf("Swagger docs available at: http://%s:%d/swagger/index.html", cfg.Host, cfg.Port))
 
 	<-ctx.Done()
 }
