@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +21,10 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, err
+		var notFoundErr viper.ConfigFileNotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return nil, err
+		}
 	}
 
 	viper.SetEnvPrefix("YUMSDAY")
