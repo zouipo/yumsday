@@ -1,8 +1,8 @@
 INSERT INTO user (id, username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group) VALUES
-    (1, 'testuser1', 'password123', 0, datetime('now', '-1 day'), '/static/assets/avatar1.jpg', 'EN', 'LIGHT', NULL),
-    (2, 'testuser2', 'password456', 1, datetime('now', '-1 day'), '/static/assets/avatar2.jpg', 'FR', 'DARK', NULL),
-    (3, 'testuser3', 'password789', 0, datetime('now', '-1 day'), '/static/assets/avatar3.jpg', 'EN', 'SYSTEM', NULL),
-    (4, 'testuser4', 'password000', 0, datetime('now', '-1 day'), NULL, 'EN', 'LIGHT', NULL);
+    (1, 'testuser1', '$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm', 0, datetime('now', '-1 day'), '/static/assets/avatar1.jpg', 'EN', 'LIGHT', NULL),
+    (2, 'testuser2', '$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2', 1, datetime('now', '-1 day'), '/static/assets/avatar2.jpg', 'FR', 'DARK', NULL),
+    (3, 'testuser3', '$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy', 0, datetime('now', '-1 day'), '/static/assets/avatar3.jpg', 'EN', 'SYSTEM', NULL),
+    (4, 'testuser4', '$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa', 0, datetime('now', '-1 day'), NULL, 'EN', 'LIGHT', NULL);
 
 INSERT INTO user_group (id, name, image_url, created_at) VALUES
     (1, 'Family', '/static/images/family.jpg', datetime('now', '-1 day')),

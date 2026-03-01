@@ -30,7 +30,7 @@ var (
 		{
 			ID:               1,
 			Username:         "testuser1",
-			Password:         "password123",
+			Password:         "$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm",
 			AppAdmin:         false,
 			CreatedAt:        yesterday,
 			Avatar:           func() *enums.Avatar { a := enums.Avatar1; return &a }(),
@@ -41,7 +41,7 @@ var (
 		{
 			ID:               2,
 			Username:         "testuser2",
-			Password:         "password456",
+			Password:         "$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2",
 			AppAdmin:         true,
 			CreatedAt:        yesterday,
 			Avatar:           func() *enums.Avatar { a := enums.Avatar2; return &a }(),
@@ -52,7 +52,7 @@ var (
 		{
 			ID:               3,
 			Username:         "testuser3",
-			Password:         "password789",
+			Password:         "$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy",
 			AppAdmin:         false,
 			CreatedAt:        yesterday,
 			Avatar:           func() *enums.Avatar { a := enums.Avatar3; return &a }(),
@@ -63,7 +63,7 @@ var (
 		{
 			ID:               4,
 			Username:         "testuser4",
-			Password:         "password000",
+			Password:         "$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa",
 			AppAdmin:         false,
 			CreatedAt:        yesterday,
 			Avatar:           nil,
@@ -215,7 +215,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	}
 
 	// Read and execute the test data
-	testDataSQL, err := os.ReadFile("../../data/test/test_data.sql")
+	testDataSQL, err := os.ReadFile("../../data/test.sql")
 	if err != nil {
 		t.Fatalf("failed to read test data file: %v", err)
 	}
