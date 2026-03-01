@@ -51,11 +51,10 @@ func init() {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	cfg, err := config.LoadConfig(os.Getenv(config.CONFIG_PATH_ENV_VAR))
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		slog.Error(
 			"Failed to load configuration",
-			"config_path", os.Getenv(config.CONFIG_PATH_ENV_VAR),
 			"error", err,
 		)
 		return

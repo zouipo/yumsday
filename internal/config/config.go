@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -17,10 +18,10 @@ type Config struct {
 	LogLevel string `mapstructure:"log_level"`
 }
 
-func LoadConfig(configPath string) (*Config, error) {
+func LoadConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(configPath)
+	viper.AddConfigPath(os.Getenv(CONFIG_PATH_ENV_VAR))
 	viper.AddConfigPath(".")
 
 	err := viper.ReadInConfig()
