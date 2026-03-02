@@ -3,6 +3,7 @@ package backend
 import (
 	"database/sql"
 	"io/fs"
+	"log/slog"
 	"net/http"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -34,6 +35,9 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
 	userHandler.RegisterRoutes(mux, "/api/user")
+
+	sessionRepo := repository.NewSessionRepository(db)
+	slog.Info("Session repository initialized %s", sessionRepo)
 
 	middlewareStack := middleware.Stack(
 		middleware.ResponseWritter,

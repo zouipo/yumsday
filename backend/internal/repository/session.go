@@ -24,6 +24,7 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 	}
 }
 
+// GetByID retrieves a session by its ID.
 func (r *SessionRepository) GetByID(id int64) (*model.Session, error) {
 	row := r.db.QueryRow("SELECT * FROM session WHERE id = ?", id)
 
