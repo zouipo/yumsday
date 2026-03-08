@@ -5,7 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 # The --parents flag preserves the hierarchy of the given directory
-COPY --parents backend main.go Makefile ./
+COPY --parents backend internal main.go Makefile ./
 
 
 FROM base AS build
