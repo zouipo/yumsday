@@ -34,6 +34,17 @@ pipeline {
                 }
             }
         }
+        stage('Image build and push') {
+            when {
+                buildingTag()
+            }
+            steps {
+                script {
+                    img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
+                    img.push('latest')
+                }
+            }
+        }
     }
 
     post {
