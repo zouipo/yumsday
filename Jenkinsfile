@@ -8,14 +8,7 @@ pipeline {
     }
 
     stages {
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    img = docker.build('zouipo/yumsday:base', '--target base .')
-                }
-            }
-        }
-        stage('Run tests') {
+        stage('Run Tests') {
             when {
                 not {
                     buildingTag()
@@ -23,6 +16,7 @@ pipeline {
             }
             steps {
                 script {
+                    img = docker.build('zouipo/yumsday:base', '--target base .')
                     img.inside {
                         sh('make test-cicd')
                     }
@@ -39,7 +33,7 @@ pipeline {
                 }
             }
         }
-        stage('Image build and push') {
+        stage('Release Docker Image') {
             when {
                 buildingTag()
             }
