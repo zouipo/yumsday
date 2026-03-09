@@ -16,6 +16,11 @@ pipeline {
             }
         }
         stage('Run tests') {
+            when {
+                not {
+                    buildingTag()
+                }
+            }
             steps {
                 script {
                     img.inside {
