@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"strconv"
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -25,7 +24,7 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 }
 
 // GetByID retrieves a session by its ID.
-func (r *SessionRepository) GetByID(id int64) (*model.Session, error) {
+func (r *SessionRepository) GetByID(id string) (*model.Session, error) {
 	row := r.db.QueryRow("SELECT * FROM session WHERE id = ?", id)
 
 	s := &model.Session{}
@@ -40,7 +39,7 @@ func (r *SessionRepository) GetByID(id int64) (*model.Session, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewEntityNotFoundError("Session", strconv.FormatInt(id, 10), err)
+			return nil, customErrors.NewEntityNotFoundError("Session", id, err)
 		}
 		return nil, customErrors.NewInternalServerError("Failed to fetch session by ID", err)
 	}
@@ -63,7 +62,7 @@ func (r *SessionRepository) Write(s *model.Session) error {
 	return customErrors.NewInternalServerError("Failed to write in session", err)
 }
 
-func (r *SessionRepository) Delete(id int64) error {
+func (r *SessionRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM session WHERE id = ?", id)
 	return customErrors.NewInternalServerError("Failed to delete session", err)
 }
