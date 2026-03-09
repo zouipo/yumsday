@@ -45,8 +45,9 @@ pipeline {
             }
             steps {
                 script {
+                    img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
                     docker.withRegistry('', 'docker-zouipo') {
-                        img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
+                        img.push()
                         img.push('latest')
                     }
                 }
