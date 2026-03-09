@@ -21,11 +21,11 @@ INSERT INTO member_group (user_id, user_group_id, admin, joined_at) VALUES
     (1, 2, 0, datetime('now', '-1 day')),
     (3, 2, 1, datetime('now', '-1 day'));
 
-INSERT INTO session (id, session_id, created_at, expires_at, last_activity, ip_address, user_agent, user_id) VALUES
-    (1, 'session123abc', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 month'), datetime('now', '-1 day', '+5 hours'), '192.168.1.100', 'Mozilla/5.0', 1),
-    (2, 'session456def', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 month'), datetime('now', '-1 day', '+1 hour'), '192.168.1.101', 'Chrome/120.0', 2),
-    (3, 'session789ghi', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 month'), datetime('now', '-1 day', '+2 hours'), '192.168.1.102', 'Safari/17.0', 3),
-    (4, 'session999xyz', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 month'), datetime('now', '-1 day', '+3 hours'), '192.168.1.103', NULL, 4);
+INSERT INTO session (id, created_at, last_activity, ip_address, user_agent, user_id) VALUES
+    ('session123abc', datetime('now', '-1 day'), datetime('now', '-1 day', '+5 hours'), '192.168.1.100', 'Mozilla/5.0', 1),
+    ('session456def', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 hour'), '192.168.1.101', 'Chrome/120.0', 2),
+    ('session789ghi', datetime('now', '-1 day'), datetime('now', '-1 day', '+2 hours'), '192.168.1.102', 'Safari/17.0', 3),
+    ('session999xyz', datetime('now', '-1 day'), datetime('now', '-1 day', '+3 hours'), '192.168.1.103', NULL, 4);
 
 INSERT INTO unit (id, name, factor, unit_type) VALUES
     (1, 'Kilogram', 1000.0, 'WEIGHT'),
