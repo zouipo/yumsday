@@ -12,7 +12,7 @@ type Session struct {
 	LastActivity time.Time `json:"last_activity"`
 	IPAddress    string    `json:"ip_address"`
 	UserAgent    string    `json:"user_agent"`
-	UserID       string    `json:"user_id"`
+	UserID       int64     `json:"user_id"`
 }
 
 // NewSession creates a new session with a unique session ID and sets the creation and expiration times.
