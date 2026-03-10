@@ -1,3 +1,124 @@
 @startuml
-version
+class Unit {
+    id: int
+    name: string
+    factor: float
+    unit_type: UnitType
+}
+
+class GroceryList {
+    id: int
+    quantity_bought: floag
+    user_quantity: float
+    item: Item
+    unit: Unit
+    userGroup: UserGroup
+}
+
+class Category {
+    id: int
+    name: RecipeCategoryEnum
+    userGroup: UserGroup
+}
+
+class Recipe {
+    id: int
+    name: string
+    description: string
+    image_url: string
+    original_link: string
+    preparation_time: int
+    cooking_time: int
+    servings: int
+    instructions: string
+    created_at: timestamp
+    public: boolean
+    comment: string
+    userGroup: userGroup
+}
+
+class Item {
+    id: int
+    name: string
+    description: string
+    average_market_price: float
+    category: ItemCategory
+    unit_type: UnitType
+}
+
+class Ingredient {
+    id: int
+    quantity: float
+    unit: Unit
+    item: Item
+    recipe: Recipe
+}
+
+package "User management" {
+
+class UserGroup {
+    id: int
+    name: string
+    image_url: string
+    created_at: timestamp
+}
+
+class User {
+    id: int
+    username: string
+    password: string
+    app_admin: boolean
+    created_at: timestamp
+    avatar: Avatar
+    language: Language
+    app_theme: AppTheme
+    last_visiter_group: UserGroup
+}
+
+class Session {
+    id: string
+    created_at: timestamp
+    last_activity: timestamp
+    ip_address: string
+    user_agent: string
+    user: User
+}
+
+class MemberGroup {
+    user: User
+    userGroup: UserGroup
+    joined_at: timestamp
+    admin: boolean
+}
+}
+
+class Dish {
+    id: int
+    portion: int
+    bought: boolean
+    datetime: timestamp
+    userGroup: UserGroup
+    recipe: Recipe
+}
+
+Unit "0..1" - "0..*" GroceryList: Quantifies
+Unit "0..1" -- "0..*" Ingredient: Quantifies
+
+GroceryList "0..*" -- "1" UserGroup: Made for
+GroceryList "0..1" -- "1" Item: To buy
+
+Category "0..*" -- "1" UserGroup: Belongs to
+Category "0..*" -- "0..*" Recipe
+
+Recipe "0..*" - "1" UserGroup: Belongs to
+Recipe "1" -- "0..*" Dish: Composed by
+Recipe "1" *-- "1..*" Ingredient: Is used in
+
+Item "1" o-- "0..*" Ingredient: Is part of
+
+User "1" -- "0..*" Session: Belongs to
+User "0..*" -- "0..1" UserGroup: Last visited
+User "1" -- "0..*" MemberGroup: Is member of
+UserGroup "1" -- "0..*" Dish: Meal planned for
+
 @enduml
