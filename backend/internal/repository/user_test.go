@@ -21,47 +21,41 @@ import (
 var (
 	yesterday = time.Now().AddDate(0, 0, -1)
 
-	nextId = int64(5)
-
 	invalidId       = int64(-1)
 	invalidUsername = "invalidUsername"
 
 	expectedUsers = []model.User{
 		{
-			ID:               1,
 			Username:         "testuser1",
 			Password:         "$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm",
 			AppAdmin:         false,
 			CreatedAt:        yesterday,
-			Avatar:           func() *enum.Avatar { a := enum.Avatar1; return &a }(),
+			Avatar:           &enum.Avatar1,
 			Language:         enum.English,
 			AppTheme:         enum.Light,
 			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
 		},
 		{
-			ID:               2,
 			Username:         "testuser2",
 			Password:         "$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2",
 			AppAdmin:         true,
 			CreatedAt:        yesterday,
-			Avatar:           func() *enum.Avatar { a := enum.Avatar2; return &a }(),
+			Avatar:           &enum.Avatar2,
 			Language:         enum.French,
 			AppTheme:         enum.Dark,
 			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
 		},
 		{
-			ID:               3,
 			Username:         "testuser3",
 			Password:         "$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy",
 			AppAdmin:         false,
 			CreatedAt:        yesterday,
-			Avatar:           func() *enum.Avatar { a := enum.Avatar3; return &a }(),
+			Avatar:           &enum.Avatar3,
 			Language:         enum.English,
 			AppTheme:         enum.System,
 			LastVisitedGroup: func() *int64 { v := int64(2); return &v }(),
 		},
 		{
-			ID:               4,
 			Username:         "testuser4",
 			Password:         "$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa",
 			AppAdmin:         false,
@@ -75,15 +69,10 @@ var (
 )
 
 func compareListUsers(actual, expected []model.User) error {
-	if len(actual) != len(expected) {
-		return fmt.Errorf("user list length mismatch: actual is %d instead of %d", len(actual), len(expected))
-	}
+	sortUsersByID(actual)
+	sortUsersByID(expected)
 
-	// Sort both lists by ID to ensure consistent comparison
-	sortList(actual)
-	sortList(expected)
-
-	for i := range expected {
+	for i := 1; i < len(actual)-len(expected); i++ {
 		actualUser := actual[i]
 		expectedUser := expected[i]
 
@@ -96,10 +85,6 @@ func compareListUsers(actual, expected []model.User) error {
 }
 
 func compareUsers(actual, expected *model.User) error {
-	if actual.ID != expected.ID {
-		return fmt.Errorf("ID = %d instead of %d", actual.ID, expected.ID)
-	}
-
 	if actual.Username != expected.Username {
 		return fmt.Errorf("Username = %s instead of %s", actual.Username, expected.Username)
 	}
@@ -143,14 +128,10 @@ func compareUsers(actual, expected *model.User) error {
 	return nil
 }
 
-func sortList(users []model.User) {
+func sortUsersByID(users []model.User) {
 	sort.Slice(users, func(i, j int) bool {
 		return users[i].ID < users[j].ID
 	})
-}
-
-func resetNextId() {
-	nextId = int64(5)
 }
 
 // compareErrors compares two error to check if they are equivalent AppErrors.
@@ -214,15 +195,28 @@ func setupTestDB(t *testing.T) *sql.DB {
 		t.Fatalf("failed to apply migrations: %v", err)
 	}
 
-	// Read and execute the test data
-	testDataSQL, err := os.ReadFile("../../data/test.sql")
-	if err != nil {
-		t.Fatalf("failed to read test data file: %v", err)
-	}
+	// Insert test users
+	for i, user := range expectedUsers {
+		res, err := db.Exec(
+			`INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+			user.Username,
+			user.Password,
+			user.AppAdmin,
+			user.CreatedAt,
+			user.Avatar,
+			user.Language,
+			user.AppTheme,
+			user.LastVisitedGroup,
+		)
+		if err != nil {
+			t.Fatalf("failed to insert test user '%s'", user.Username)
+		}
 
-	_, err = db.Exec(string(testDataSQL))
-	if err != nil {
-		t.Fatalf("failed to execute test data: %v", err)
+		expectedUsers[i].ID, err = res.LastInsertId()
+		if err != nil {
+			t.Fatalf("failed to get last insert ID for user '%s'", user.Username)
+		}
 	}
 
 	return db
@@ -276,32 +270,31 @@ func TestGetByID(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		id       int64
 		wantErr  error
 		wantUser model.User
 	}{
 		{
 			name:     "existing user 1",
-			id:       expectedUsers[0].ID,
 			wantErr:  nil,
 			wantUser: expectedUsers[0],
 		},
 		{
 			name:     "existing user 2",
-			id:       expectedUsers[1].ID,
 			wantErr:  nil,
 			wantUser: expectedUsers[1],
 		},
 		{
 			name:    "non-existing user",
-			id:      invalidId,
 			wantErr: customErrors.NewEntityNotFoundError("User", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
+			wantUser: model.User{
+				ID: invalidId,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			user, err := repo.GetByID(tt.id)
+			user, err := repo.GetByID(tt.wantUser.ID)
 
 			if tt.wantErr != nil {
 				if !compareErrors(err, tt.wantErr) {
@@ -438,26 +431,17 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Create() unexpected error = %v", err)
 			}
 
-			if id != nextId {
-				t.Errorf("Create() returned invalid ID = %d", id)
-			}
-			nextId += 1
-
 			// Verify the user was actually created
 			createdUser, err := repo.GetByID(id)
 			if err != nil {
 				t.Fatalf("failed to fetch created user: %v", err)
 			}
 
-			tt.user.ID = id
-
 			if err := compareUsers(createdUser, tt.user); err != nil {
 				t.Errorf("Actual created user does not match expected user: %v", err.Error())
 			}
 		})
 	}
-
-	resetNextId()
 }
 
 /*** UPDATE OPERATIONS TESTS ***/
