@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS user (
     FOREIGN KEY (last_visited_group) REFERENCES user_group(id)
 );
 
+INSERT INTO user (username, password, app_admin, created_at, language, app_theme) VALUES (
+    "admin",
+    "$2a$12$L4zK2tkbTZFR37/jFJvbgObzhyqoogNuLaLUatMfGH3QGRKBnLrNS",
+    true,
+    (unixepoch()),
+    "en",
+    "system"
+);
+
 -- Many-to-Many relationship between USER and USER_GROUP
 CREATE TABLE IF NOT EXISTS member_group (
     user_id INTEGER NOT NULL,
