@@ -10,7 +10,10 @@ import (
 )
 
 type SessionRepositoryInterface interface {
-	// Define session-related data operations here
+	GetByID(id string) (*model.Session, error)
+	Write(s *model.Session) error
+	Delete(id string) error
+	CleanUp(expiration time.Duration) int64
 }
 
 type SessionRepository struct {

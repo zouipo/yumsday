@@ -12,12 +12,12 @@ import (
 )
 
 type Service struct {
-	repo       *repository.SessionRepository
+	repo       repository.SessionRepositoryInterface
 	cookieName string
 	expiration time.Duration
 }
 
-func NewSessionService(repo *repository.SessionRepository, cookieName string, expiration time.Duration) *Service {
+func NewSessionService(repo repository.SessionRepositoryInterface, cookieName string, expiration time.Duration) *Service {
 	s := &Service{
 		repo:       repo,
 		cookieName: cookieName,
