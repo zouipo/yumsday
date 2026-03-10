@@ -40,3 +40,7 @@ coverage: test
 .PHONY: clean
 clean:
 	@rm -rf bin/
+
+.PHONY: plantuml
+plantuml:
+	@plantuml --svg design/*.wsd 
