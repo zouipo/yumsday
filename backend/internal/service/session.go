@@ -82,7 +82,6 @@ func (s *Service) Save(session *model.Session) {
 func (s *Service) Remove(session *model.Session) {
 	slog.Debug("Removing session", "id", session.ID)
 	s.repo.Delete(session.ID)
-
 }
 
 /*** PRIVATE METHODS ***/

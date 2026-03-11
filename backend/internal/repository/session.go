@@ -67,7 +67,10 @@ func (r *SessionRepository) Write(s *model.Session) error {
 
 func (r *SessionRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM session WHERE id = ?", id)
-	return customErrors.NewInternalServerError("Failed to delete session", err)
+	if err != nil {
+		return customErrors.NewInternalServerError("Failed to delete session", err)
+	}
+	return nil
 }
 
 // CleanUp removes sessions that have been inactive for longer than the specified expiration duration.
