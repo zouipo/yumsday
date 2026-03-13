@@ -9,7 +9,7 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
 
-func SessionInjector(sessionService *service.SessionService) Middleware {
+func SessionInjector(sessionService service.SessionServiceInterface) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s := sessionService.GetSession(r)
@@ -21,17 +21,30 @@ func SessionInjector(sessionService *service.SessionService) Middleware {
 			))
 
 			cookie := &http.Cookie{
-				Name:     sessionService.CookieName(),
-				Value:    s.ID,
-				Domain:   "localhost",
+				Name:   sessionService.CookieName(),
+				Value:  s.ID,
+				Domain: "localhost",
+				// JS cannot access the cookie via document.cookie;
+				// security measure that prevents XSS attacks from stealing the session ID
 				HttpOnly: true,
-				Path:     "/",
-				Secure:   true,
+				// The URL path prefix for which the browser will send the cookie.
+				// "/" means it is sent on all paths of the domain.
+				Path: "/",
+				// The browser will only send the cookie over HTTPS connections;
+				// prevents the session ID from being intercepted over plain HTTP.
+				Secure: true,
+				// The cookie will be sent by the browser only when Top Level Navigation or Same-Site Sub-Requests are done.
+				// It won't be sent for cross-site sub-requests, which helps mitigate CSRF attacks.
 				SameSite: http.SameSiteLaxMode,
 				Expires:  time.Now().Add(sessionService.Expiration()).UTC(),
-				MaxAge:   int(sessionService.Expiration().Seconds()),
+				// The lifetime of the cookie in seconds from when it was received.
+				// Prefered over Expires because it is not dependent on the client's clock,
+				// but we set them both for compatibility with older browsers.
+				MaxAge: int(sessionService.Expiration().Seconds()),
 			}
 			// Adds a Set-Cookie header to the ResponseWriter's headers.
+			// This header instructs the browser to store the cookie and its attributes
+			// and send it with future requests to the same domain.
 			http.SetCookie(w, cookie)
 
 			next.ServeHTTP(w, r)
