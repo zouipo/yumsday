@@ -3,6 +3,7 @@ package service
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ var (
 )
 
 type MockSessionRepository struct {
+	mu         sync.RWMutex
 	sessions   map[string]*model.Session
 	getByIDErr error
 	writeErr   error
@@ -36,6 +38,9 @@ func (m *MockSessionRepository) GetByID(id string) (*model.Session, error) {
 		return nil, m.getByIDErr
 	}
 
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	session, exists := m.sessions[id]
 	if !exists {
 		return nil, customErrors.NewEntityNotFoundError("Session", id, nil)
@@ -49,6 +54,9 @@ func (m *MockSessionRepository) Write(s *model.Session) error {
 		return m.writeErr
 	}
 
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.sessions[s.ID] = s
 	return nil
 }
@@ -58,6 +66,9 @@ func (m *MockSessionRepository) Delete(id string) error {
 		return m.deleteErr
 	}
 
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	delete(m.sessions, id)
 	return nil
 }
@@ -66,6 +77,9 @@ func (m *MockSessionRepository) CleanUp(exp time.Duration) int64 {
 	if m.cleanUpErr != nil {
 		return 0
 	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	removed := int64(0)
 	cutoff := time.Now().Add(-exp).UTC()
@@ -83,7 +97,33 @@ func (m *MockSessionRepository) CleanUp(exp time.Duration) int64 {
 /*** HELPER FUNCTIONS ***/
 
 func (m *MockSessionRepository) addSession(session *model.Session) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.sessions[session.ID] = session
+}
+
+func (m *MockSessionRepository) hasSession(id string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	_, exists := m.sessions[id]
+	return exists
+}
+
+func (m *MockSessionRepository) sessionCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return len(m.sessions)
+}
+
+func (m *MockSessionRepository) getSession(id string) (*model.Session, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	s, exists := m.sessions[id]
+	return s, exists
 }
 
 func createTestSession(id string, lastActivity time.Time) *model.Session {
@@ -144,23 +184,23 @@ func TestNewSessionService_CleansUpExpiredSessions(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Expired sessions should be removed
-	if _, exists := mockRepo.sessions["expired-1"]; exists {
+	if mockRepo.hasSession("expired-1") {
 		t.Error("NewSessionService() did not clean up expired-1 session")
 	}
-	if _, exists := mockRepo.sessions["expired-2"]; exists {
+	if mockRepo.hasSession("expired-2") {
 		t.Error("NewSessionService() did not clean up expired-2 session")
 	}
 
 	// Valid sessions should remain
-	if _, exists := mockRepo.sessions["valid-1"]; !exists {
+	if !mockRepo.hasSession("valid-1") {
 		t.Error("NewSessionService() incorrectly removed valid-1 session")
 	}
-	if _, exists := mockRepo.sessions["valid-2"]; !exists {
+	if !mockRepo.hasSession("valid-2") {
 		t.Error("NewSessionService() incorrectly removed valid-2 session")
 	}
 
-	if len(mockRepo.sessions) != 2 {
-		t.Errorf("NewSessionService() expected 2 sessions after cleanup, got %d", len(mockRepo.sessions))
+	if mockRepo.sessionCount() != 2 {
+		t.Errorf("NewSessionService() expected 2 sessions after cleanup, got %d", mockRepo.sessionCount())
 	}
 }
 
@@ -178,8 +218,8 @@ func TestNewSessionService_CleansUpError(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	if len(mockRepo.sessions) != 2 {
-		t.Errorf("NewSessionService() expected 2 sessions after cleanup error, got %d", len(mockRepo.sessions))
+	if mockRepo.sessionCount() != 2 {
+		t.Errorf("NewSessionService() expected 2 sessions after cleanup error, got %d", mockRepo.sessionCount())
 	}
 }
 
@@ -316,7 +356,7 @@ func TestGetSession_ExpiredSession_ReturnsNewSession(t *testing.T) {
 	}
 
 	// Verify the expired session was deleted from the repository
-	_, exists := mockRepo.sessions[sessionID]
+	_, exists := mockRepo.getSession(sessionID)
 	if exists {
 		t.Error("GetSession() should delete expired session from repository")
 	}
@@ -372,7 +412,7 @@ func TestSave_Success(t *testing.T) {
 
 	service.Save(session)
 
-	savedSession, exists := mockRepo.sessions[session.ID]
+	savedSession, exists := mockRepo.getSession(session.ID)
 	if !exists {
 		t.Fatal("Save() did not save session to repository")
 	}
@@ -424,13 +464,13 @@ func TestRemove_Success(t *testing.T) {
 		expiration: expiration,
 	}
 
-	if _, exists := mockRepo.sessions[sessionID]; !exists {
+	if !mockRepo.hasSession(sessionID) {
 		t.Fatal("Setup failed: session does not exist before removal")
 	}
 
 	service.Remove(session)
 
-	if _, exists := mockRepo.sessions[sessionID]; exists {
+	if mockRepo.hasSession(sessionID) {
 		t.Error("Remove() did not delete session from repository")
 	}
 }
@@ -451,7 +491,7 @@ func TestRemove_NonExistentSession(t *testing.T) {
 
 	service.Remove(falseSession)
 
-	if len(mockRepo.sessions) != 1 {
+	if mockRepo.sessionCount() != 1 {
 		t.Error("Remove() should not have add or delete sessions")
 	}
 }
@@ -472,7 +512,7 @@ func TestRemove_Error(t *testing.T) {
 
 	service.Remove(session)
 
-	if len(mockRepo.sessions) != 1 {
+	if mockRepo.sessionCount() != 1 {
 		t.Error("Remove() should not have add or delete sessions")
 	}
 }
