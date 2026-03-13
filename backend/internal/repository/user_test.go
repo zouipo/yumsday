@@ -10,6 +10,7 @@ import (
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 
 	"github.com/mattn/go-sqlite3"
 	_ "github.com/mattn/go-sqlite3"
@@ -98,9 +99,7 @@ func compareUsers(actual, expected *model.User) error {
 	}
 
 	// allows a small time difference (±1 minute) to account for timing variations
-	minTime := expected.CreatedAt.Add(-1 * time.Minute)
-	maxTime := expected.CreatedAt.Add(1 * time.Minute)
-	if actual.CreatedAt.Before(minTime) || actual.CreatedAt.After(maxTime) {
+	if !utils.TimesApproximatelyEqual(actual.CreatedAt, expected.CreatedAt, time.Minute) {
 		return fmt.Errorf("CreatedAt ='%v'instead of around'%v'(±1min)", actual.CreatedAt, expected.CreatedAt)
 	}
 
@@ -132,53 +131,6 @@ func sortUsersByID(users []model.User) {
 	sort.Slice(users, func(i, j int) bool {
 		return users[i].ID < users[j].ID
 	})
-}
-
-// compareErrors compares two error to check if they are equivalent AppErrors.
-// It compares the Message, StatusCode, and underlying Err fields.
-func compareErrors(actual, expected error) bool {
-	if actual == nil && expected == nil {
-		return true
-	}
-
-	if (actual == nil) != (expected == nil) {
-		return false
-	}
-
-	// Cast both to *AppError
-	actualAppErr, actualIsAppErr := actual.(*customErrors.AppError)
-	expectedAppErr, expectedIsAppErr := expected.(*customErrors.AppError)
-
-	if actualIsAppErr && expectedIsAppErr {
-		if actualAppErr.Message != expectedAppErr.Message && actualAppErr.StatusCode != expectedAppErr.StatusCode {
-			return false
-		}
-
-		// Cast both into sqlite3.Error to compare their ExtendedCode if possible
-		actualSQLErr, actualIsSQLErr := actualAppErr.Err.(sqlite3.Error)
-		expectedSQLErr, expectedIsSQLErr := expectedAppErr.Err.(sqlite3.Error)
-
-		if actualIsSQLErr && expectedIsSQLErr {
-			return actualSQLErr.ExtendedCode == expectedSQLErr.ExtendedCode
-		}
-
-		// If actual is sqlite3.Error but expected is an error code constant (ErrNoExtended or ErrNo),
-		// compare the actual error's ExtendedCode with the expected constant
-		if actualIsSQLErr {
-			if errNoExt, ok := expectedAppErr.Err.(sqlite3.ErrNoExtended); ok {
-				return actualSQLErr.ExtendedCode == errNoExt
-			}
-			if errNo, ok := expectedAppErr.Err.(sqlite3.ErrNo); ok {
-				return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
-			}
-		}
-
-		// non-SQLite error
-		return actualAppErr.Err == expectedAppErr.Err
-	}
-
-	// If not AppErrors, compare their error messages
-	return actual.Error() == expected.Error()
 }
 
 // setupTestDB initializes an in-memory SQLite database with test data for testing.
@@ -297,7 +249,7 @@ func TestGetByID(t *testing.T) {
 			user, err := repo.GetByID(tt.wantUser.ID)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
+				if !utils.CompareErrors(err, tt.wantErr) {
 					t.Errorf("GetByID() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
@@ -350,18 +302,18 @@ func TestGetByUsername(t *testing.T) {
 			user, err := repo.GetByUsername(tt.username)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
-					t.Errorf("GetByID() error = '%v' instead of '%v'", err, tt.wantErr)
+				if !utils.CompareErrors(err, tt.wantErr) {
+					t.Errorf("GetByUsername() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Fatalf("GetByID() unexpected error = %v", err)
+				t.Fatalf("GetByUsername() unexpected error = %v", err)
 			}
 
 			if err := compareUsers(user, &tt.wantUser); err != nil {
-				t.Errorf("GetByID() returned user does not match expected user: %v", err.Error())
+				t.Errorf("GetByUsername() returned user does not match expected user: %v", err.Error())
 			}
 		})
 	}
@@ -421,7 +373,7 @@ func TestCreate(t *testing.T) {
 			id, err := repo.Create(tt.user)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
+				if !utils.CompareErrors(err, tt.wantErr) {
 					t.Errorf("Create() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
@@ -525,7 +477,7 @@ func TestUpdate(t *testing.T) {
 			err := repo.Update(tt.user)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
+				if !utils.CompareErrors(err, tt.wantErr) {
 					t.Errorf("Update() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
@@ -585,7 +537,7 @@ func TestUpdateAdminRole(t *testing.T) {
 			err := repo.UpdateAdminRole(tt.userID, tt.role)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
+				if !utils.CompareErrors(err, tt.wantErr) {
 					t.Errorf("UpdateAdminRole() error = '%v' instead of '%v'", err, tt.wantErr)
 				}
 				return
@@ -643,7 +595,7 @@ func TestDelete(t *testing.T) {
 			err := repo.Delete(tt.id)
 
 			if tt.wantErr != nil {
-				if !compareErrors(err, tt.wantErr) {
+				if !utils.CompareErrors(err, tt.wantErr) {
 					t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				return
