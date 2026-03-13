@@ -62,7 +62,10 @@ func (r *SessionRepository) Write(s *model.Session) error {
 		   user_agent = excluded.user_agent`,
 		s.ID, s.CreatedAt, s.LastActivity, s.IPAddress, s.UserAgent, s.UserID,
 	)
-	return customErrors.NewInternalServerError("Failed to write in session", err)
+	if err != nil {
+		return customErrors.NewInternalServerError("Failed to write in session", err)
+	}
+	return nil
 }
 
 func (r *SessionRepository) Delete(id string) error {
