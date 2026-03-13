@@ -1,4 +1,71 @@
 @startuml
+
+package Enums {
+    enum RecipeCategoryEnum {
+        dessert
+        salad
+        main_course
+        soup
+        breakfast
+        brunch
+        starter
+        sauce
+        snack
+    }
+    
+    enum Language {
+        en
+        fr
+    }
+    
+    enum AppTheme {
+        Light
+        Dark
+    }
+    
+    enum Avatar {
+        url_image1
+        url_image2
+        url_image3
+        url_image4
+        url_image5
+        url_image6
+        url_image7
+        url_image8
+        url_image9
+        url_image10
+    }
+    
+    enum UnitType {
+        undefined
+        volume
+        mass
+        numeric
+        bag
+    }
+    
+    enum ItemCategory {
+        fruits
+        vegetables
+        meat
+        fish_seafood
+        dairy
+        grains_pasta
+        beverages
+        snacks
+        spices_condiments
+        bread_bakery
+        baked_goods
+        canned_goods
+        frozen_foods
+        personal_care
+        household_supplies
+        pet_care
+        baby_items
+        others
+    }
+}
+
 class Unit {
     id: int
     name: string
@@ -55,41 +122,40 @@ class Ingredient {
 }
 
 package "User management" {
-
-class UserGroup {
-    id: int
-    name: string
-    image_url: string
-    created_at: timestamp
-}
-
-class User {
-    id: int
-    username: string
-    password: string
-    app_admin: boolean
-    created_at: timestamp
-    avatar: Avatar
-    language: Language
-    app_theme: AppTheme
-    last_visiter_group: UserGroup
-}
-
-class Session {
-    id: string
-    created_at: timestamp
-    last_activity: timestamp
-    ip_address: string
-    user_agent: string
-    user: User
-}
-
-class MemberGroup {
-    user: User
-    userGroup: UserGroup
-    joined_at: timestamp
-    admin: boolean
-}
+    class UserGroup {
+        id: int
+        name: string
+        image_url: string
+        created_at: timestamp
+    }
+    
+    class User {
+        id: int
+        username: string
+        password: string
+        app_admin: boolean
+        created_at: timestamp
+        avatar: Avatar
+        language: Language
+        app_theme: AppTheme
+        last_visiter_group: UserGroup
+    }
+    
+    class Session {
+        id: string
+        created_at: timestamp
+        last_activity: timestamp
+        ip_address: string
+        user_agent: string
+        user: User
+    }
+    
+    class MemberGroup {
+        user: User
+        userGroup: UserGroup
+        joined_at: timestamp
+        admin: boolean
+    }
 }
 
 class Dish {
@@ -119,6 +185,8 @@ Item "1" o-- "0..*" Ingredient: Is part of
 User "1" -- "0..*" Session: Belongs to
 User "0..*" -- "0..1" UserGroup: Last visited
 User "1" -- "0..*" MemberGroup: Is member of
+
 UserGroup "1" -- "0..*" Dish: Meal planned for
+UserGroup "1" -- "1..*" MemberGroup: Belongs to
 
 @enduml
