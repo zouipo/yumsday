@@ -68,6 +68,9 @@ func (r *SessionRepository) Write(s *model.Session) error {
 	return nil
 }
 
+// Delete removes a session by its ID.
+//
+// NOTE: It does not return an error if the session doesn't exist, since SQLite's DELETE doesn't error on non-existent rows.
 func (r *SessionRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM session WHERE id = ?", id)
 	if err != nil {
