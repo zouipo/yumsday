@@ -214,7 +214,7 @@ func TestGetAll(t *testing.T) {
 	}
 }
 
-func TestGetByID(t *testing.T) {
+func TestGetByUserID(t *testing.T) {
 	db := setupTestDB(t)
 	defer teardownTestDB(db)
 
