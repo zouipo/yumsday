@@ -35,7 +35,7 @@ func (s *SessionService) Expiration() time.Duration {
 	return s.expiration
 }
 
-// Gets the session with the ID from the request's session cookie.
+// GetSession gets the session with the ID from the request's session cookie.
 // It returns the session if found, or a new session if not found.
 func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	cookie, err := r.Cookie(s.cookieName)
