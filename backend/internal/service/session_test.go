@@ -187,7 +187,7 @@ func TestNewSessionService_CleansUpError(t *testing.T) {
 
 func TestGetSession_NoCookie_ReturnsNewSession(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -220,7 +220,7 @@ func TestGetSession_ValidCookie_ReturnsExistingSession(t *testing.T) {
 	existingSession := createTestSession(sessionID, time.Now().UTC())
 	mockRepo.addSession(existingSession)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -253,7 +253,7 @@ func TestGetSession_ValidCookie_ReturnsExistingSession(t *testing.T) {
 
 func TestGetSession_SessionNotFound_ReturnsNewSession(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -289,7 +289,7 @@ func TestGetSession_ExpiredSession_ReturnsNewSession(t *testing.T) {
 	expiredSession := createTestSession(sessionID, time.Now().UTC().Add(-2*time.Hour))
 	mockRepo.addSession(expiredSession)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -326,7 +326,7 @@ func TestGetSession_RepositoryError_ReturnsNewSession(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
 	mockRepo.getByIDErr = customErrors.NewInternalServerError("Failed to fetch session by ID", nil)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -358,7 +358,7 @@ func TestGetSession_RepositoryError_ReturnsNewSession(t *testing.T) {
 
 func TestSave_Success(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -394,7 +394,7 @@ func TestSave_WithRepositoryError(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
 	mockRepo.writeErr = customErrors.NewInternalServerError("Failed to write in session", nil)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -418,7 +418,7 @@ func TestRemove_Success(t *testing.T) {
 	session := createTestSession(sessionID, time.Now().UTC())
 	mockRepo.addSession(session)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -441,7 +441,7 @@ func TestRemove_NonExistentSession(t *testing.T) {
 	session := createTestSession(sessionID, time.Now().UTC())
 	mockRepo.addSession(session)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -464,7 +464,7 @@ func TestRemove_Error(t *testing.T) {
 	session := createTestSession(sessionID, time.Now().UTC())
 	mockRepo.addSession(session)
 
-	service := &Service{
+	service := &SessionService{
 		repo:       mockRepo,
 		cookieName: cookieName,
 		expiration: expiration,

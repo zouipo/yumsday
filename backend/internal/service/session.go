@@ -11,14 +11,14 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 )
 
-type Service struct {
+type SessionService struct {
 	repo       repository.SessionRepositoryInterface
 	cookieName string
 	expiration time.Duration
 }
 
-func NewSessionService(repo repository.SessionRepositoryInterface, cookieName string, expiration time.Duration) *Service {
-	s := &Service{
+func NewSessionService(repo repository.SessionRepositoryInterface, cookieName string, expiration time.Duration) *SessionService {
+	s := &SessionService{
 		repo:       repo,
 		cookieName: cookieName,
 		expiration: expiration,
@@ -27,17 +27,17 @@ func NewSessionService(repo repository.SessionRepositoryInterface, cookieName st
 	return s
 }
 
-func (s *Service) CookieName() string {
+func (s *SessionService) CookieName() string {
 	return s.cookieName
 }
 
-func (s *Service) Expiration() time.Duration {
+func (s *SessionService) Expiration() time.Duration {
 	return s.expiration
 }
 
 // Gets the session with the ID from the request's session cookie.
 // It returns the session if found, or a new session if not found.
-func (s *Service) GetSession(r *http.Request) *model.Session {
+func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	cookie, err := r.Cookie(s.cookieName)
 	var session *model.Session
 	if err == nil {
@@ -72,14 +72,14 @@ func (s *Service) GetSession(r *http.Request) *model.Session {
 	return session
 }
 
-func (s *Service) Save(session *model.Session) {
+func (s *SessionService) Save(session *model.Session) {
 	session.LastActivity = time.Now().UTC()
 	if err := s.repo.Write(session); err != nil {
 		slog.Error("Failed to write session to repository", "error", err)
 	}
 }
 
-func (s *Service) Remove(session *model.Session) {
+func (s *SessionService) Remove(session *model.Session) {
 	slog.Debug("Removing session", "id", session.ID)
 	s.repo.Delete(session.ID)
 }
@@ -87,7 +87,7 @@ func (s *Service) Remove(session *model.Session) {
 /*** PRIVATE METHODS ***/
 
 // cleanUp periodically removes expired sessions from the database.
-func (s *Service) cleanUp() {
+func (s *SessionService) cleanUp() {
 	impl := func() {
 		slog.Debug("Cleaning up expired sessions")
 		removed := s.repo.CleanUp(s.expiration)
