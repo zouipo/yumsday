@@ -11,6 +11,14 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 )
 
+// SessionServiceInterface defines the contract for session operations used by middlewares.
+type SessionServiceInterface interface {
+	GetSession(r *http.Request) *model.Session
+	CookieName() string
+	Expiration() time.Duration
+	Save(session *model.Session)
+}
+
 type SessionService struct {
 	repo       repository.SessionRepositoryInterface
 	cookieName string
