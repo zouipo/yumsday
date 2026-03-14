@@ -32,9 +32,10 @@ func SessionInjector(sessionService service.SessionServiceInterface) Middleware 
 				// The browser will only send the cookie over HTTPS connections;
 				// prevents the session ID from being intercepted over plain HTTP.
 				Secure: true,
-				// The cookie will be sent by the browser only when Top Level Navigation or Same-Site Sub-Requests are done.
+				// The cookie will be sent by the browser only when Same-Site Sub-Requests are done,
+				// or when the domain is typed directly in the URL.
 				// It won't be sent for cross-site sub-requests, which helps mitigate CSRF attacks.
-				SameSite: http.SameSiteLaxMode,
+				SameSite: http.SameSiteStrictMode,
 				Expires:  time.Now().Add(sessionService.Expiration()).UTC(),
 				// The lifetime of the cookie in seconds from when it was received.
 				// Prefered over Expires because it is not dependent on the client's clock,
