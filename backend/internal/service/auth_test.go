@@ -36,8 +36,9 @@ func (m *MockSessionService) Expiration() time.Duration {
 	return time.Hour
 }
 
-func (m *MockSessionService) Save(session *model.Session) {
+func (m *MockSessionService) Save(session *model.Session) error {
 	m.savedSessions = append(m.savedSessions, session)
+	return nil
 }
 
 func (m *MockSessionService) Remove(session *model.Session) error {
