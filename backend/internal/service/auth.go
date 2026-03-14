@@ -37,23 +37,25 @@ func (s *AuthService) Authenticate(session *model.Session, username, password st
 	slog.Debug("Checking password", "username", username)
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			slog.Debug("Wrong credentials", "username", username)
 			return customErrors.NewUnauthorizedError(err, "invalid credentials")
 		}
 		return customErrors.NewInternalServerError("an error occurred while checking credentials", err)
 	}
 
 	session.UserID = user.ID
-	s.sessionService.Save(session)
+	err = s.sessionService.Save(session)
+	if err != nil {
+		return err
+	}
 	slog.Debug("User authenticated successfully", "username", username)
 	return nil
 }
 
+// Logout removes the session from the session store, effectively logging out the user.
 func (s *AuthService) Logout(session *model.Session) error {
 	err := s.sessionService.Remove(session)
 	if err != nil {
-		slog.Error("Failed to remove session", "error", err)
-		return customErrors.NewInternalServerError("An error occurred while logging out", err)
+		return err
 	}
 	slog.Debug("User logged out successfully", "sessionID", session.ID)
 	return nil
