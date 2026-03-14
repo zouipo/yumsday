@@ -24,11 +24,9 @@ var (
 	testUser2 = createTestUser(2, "user2", hashedPassword2)
 
 	validUsername = "validuser"
-	validPassword = "ValidPass123"
 
 	invalidId       = -1
 	invalidUsername = "_"
-	invalidPassword = "tooshort"
 
 	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 )
@@ -386,7 +384,7 @@ func TestCreate_Success(t *testing.T) {
 	newUser := &model.User{
 		ID:       0,
 		Username: validUsername,
-		Password: validPassword,
+		Password: ValidPassword,
 		AppAdmin: false,
 		Avatar:   &avatar,
 		Language: enum.English,
@@ -429,7 +427,7 @@ func TestCreate_DuplicateUsername(t *testing.T) {
 	newUser := &model.User{
 		ID:       0,
 		Username: existingUser.Username,
-		Password: validPassword,
+		Password: ValidPassword,
 		AppAdmin: false,
 		Avatar:   nil,
 		Language: enum.English,
@@ -457,7 +455,7 @@ func TestCreate_InvalidUsername(t *testing.T) {
 	newUser := &model.User{
 		ID:       0,
 		Username: invalidUsername,
-		Password: validPassword,
+		Password: ValidPassword,
 		AppAdmin: false,
 		Avatar:   nil,
 		Language: enum.English,
@@ -488,7 +486,7 @@ func TestCreate_InvalidPassword(t *testing.T) {
 	newUser := &model.User{
 		ID:       0,
 		Username: validUsername,
-		Password: invalidPassword,
+		Password: InvalidPassword,
 		AppAdmin: false,
 		Avatar:   nil,
 		Language: enum.English,
@@ -521,7 +519,7 @@ func TestCreate_RepositoryError(t *testing.T) {
 	newUser := &model.User{
 		ID:       0,
 		Username: validUsername,
-		Password: validPassword,
+		Password: ValidPassword,
 		AppAdmin: false,
 		Avatar:   nil,
 		Language: enum.English,
@@ -576,7 +574,7 @@ func TestUpdate_UserNotFound(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
 
-	updatedUser := createTestUser(int64(invalidId), validUsername, validPassword)
+	updatedUser := createTestUser(int64(invalidId), validUsername, ValidPassword)
 
 	err := service.Update(updatedUser)
 	if !utils.CompareErrors(err, notFoundIdErr) {
@@ -591,7 +589,7 @@ func TestUpdate_DuplicateUsername(t *testing.T) {
 	firstUser := mockRepo.users[0]
 	secondUser := mockRepo.users[1]
 
-	updatedUser := createTestUser(firstUser.ID, secondUser.Username, validPassword)
+	updatedUser := createTestUser(firstUser.ID, secondUser.Username, ValidPassword)
 
 	conflictErr := customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
 	err := service.Update(updatedUser)
@@ -604,7 +602,7 @@ func TestUpdate_InvalidUsername(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
 
-	updatedUser := createTestUser(1, invalidUsername, validPassword)
+	updatedUser := createTestUser(1, invalidUsername, ValidPassword)
 
 	err := service.Update(updatedUser)
 	validationErr := customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
@@ -662,7 +660,7 @@ func TestUpdatePassword_Success(t *testing.T) {
 	user := mockRepo.users[0]
 	userBeforeUpdate, _ := mockRepo.GetByID(user.ID)
 
-	err := service.UpdatePassword(user.ID, password1, validPassword)
+	err := service.UpdatePassword(user.ID, password1, ValidPassword)
 	if err != nil {
 		t.Fatalf("UpdatePassword() expected no error, got '%v'", err)
 	}
@@ -681,7 +679,7 @@ func TestUpdatePassword_EmptyPasswords(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, "", validPassword)
+	err := service.UpdatePassword(user.ID, "", ValidPassword)
 
 	validationErr := customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
 	if !utils.CompareErrors(err, validationErr) {
@@ -704,7 +702,7 @@ func TestUpdatePassword_IncorrectOldPassword(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, validPassword, validPassword+"123")
+	err := service.UpdatePassword(user.ID, ValidPassword, ValidPassword+"123")
 	validationErr := customErrors.NewValidationError("password", "Old password is incorrect for user "+user.Username, nil)
 	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for incorrect old password , got '%v'", validationErr, err)
@@ -737,7 +735,7 @@ func TestUpdatePassword_InvalidNewPassword(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, user.Password, invalidPassword)
+	err := service.UpdatePassword(user.ID, user.Password, InvalidPassword)
 
 	validationErr := customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 	if !utils.CompareErrors(err, validationErr) {
@@ -755,7 +753,7 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(int64(invalidId), user.Password, validPassword)
+	err := service.UpdatePassword(int64(invalidId), user.Password, ValidPassword)
 
 	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
@@ -770,7 +768,7 @@ func TestUpdatePassword_RepositoryError(t *testing.T) {
 
 	user := mockRepo.users[0]
 
-	err := service.UpdatePassword(user.ID, password1, validPassword)
+	err := service.UpdatePassword(user.ID, password1, ValidPassword)
 	if !utils.CompareErrors(err, mockRepo.updateErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for repository error , got '%v'", mockRepo.updateErr, err)
 	}
