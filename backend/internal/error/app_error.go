@@ -37,9 +37,9 @@ func NewValidationError(field string, message string, err error) error {
 	}
 }
 
-func NewUnauthorizedError(err error) error {
+func NewUnauthorizedError(err error, message string) error {
 	return &AppError{
-		Message:    "Unauthorized: authentication required",
+		Message:    fmt.Sprintf("Unauthorized: %s", message),
 		StatusCode: http.StatusUnauthorized,
 		Err:        err,
 	}
