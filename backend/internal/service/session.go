@@ -50,12 +50,14 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	var session *model.Session
 	if err == nil {
 		session, err = s.repo.GetByID(cookie.Value)
-		var appErr *customErrors.AppError
-		if err != nil && !(errors.As(err, &appErr) && appErr.StatusCode == http.StatusNotFound) {
-			slog.Error(
-				"Failed to read session from repo, generating new session",
-				"error", err.Error(),
-			)
+		if err != nil {
+			appErr, ok := errors.AsType[*customErrors.AppError](err)
+			if !ok || appErr.StatusCode != http.StatusNotFound {
+				slog.Error(
+					"Failed to read session from repo, generating new session",
+					"error", err.Error(),
+				)
+			}
 		}
 		if err == nil {
 			slog.Debug("Found session", "id", cookie.Value)

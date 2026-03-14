@@ -26,8 +26,7 @@ func LoadConfig() (*Config, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		var notFoundErr viper.ConfigFileNotFoundError
-		if !errors.As(err, &notFoundErr) {
+		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); !ok {
 			return nil, err
 		}
 	}
