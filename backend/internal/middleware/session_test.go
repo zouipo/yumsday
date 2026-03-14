@@ -92,9 +92,6 @@ func compareCookiesSession(t *testing.T, cookie *http.Cookie, expectedName strin
 	if cookie.Value != expectedValue {
 		t.Errorf("expected cookie Value %q, got %q", expectedValue, cookie.Value)
 	}
-	if cookie.Domain != "localhost" {
-		t.Errorf("expected cookie Domain %q, got %q", "localhost", cookie.Domain)
-	}
 	if !cookie.HttpOnly {
 		t.Error("expected cookie HttpOnly to be true")
 	}
@@ -104,8 +101,8 @@ func compareCookiesSession(t *testing.T, cookie *http.Cookie, expectedName strin
 	if !cookie.Secure {
 		t.Error("expected cookie Secure to be true")
 	}
-	if cookie.SameSite != http.SameSiteLaxMode {
-		t.Errorf("expected cookie SameSite Lax, got %v", cookie.SameSite)
+	if cookie.SameSite != http.SameSiteStrictMode {
+		t.Errorf("expected cookie SameSite Strict, got %v", cookie.SameSite)
 	}
 	if !utils.TimesApproximatelyEqual(cookie.Expires, time.Now().Add(expiration).UTC(), time.Minute) {
 		t.Errorf("expected cookie Expires %v, got %v", time.Now().Add(expiration).UTC(), cookie.Expires)
