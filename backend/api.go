@@ -43,6 +43,10 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		30*24*time.Hour,
 	)
 
+	authService := service.NewAuthService(sessionService, userService)
+	authHandler := handler.NewAuthHandler(authService)
+	authHandler.RegisterRoutes(mux)
+
 	middlewareStack := middleware.Stack(
 		middleware.ResponseWritter,
 		middleware.Logger,
