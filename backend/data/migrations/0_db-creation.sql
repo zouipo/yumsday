@@ -43,16 +43,15 @@ CREATE TABLE IF NOT EXISTS member_group (
 );
 
 CREATE TABLE IF NOT EXISTS session (
-    id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    session_id VARCHAR NOT NULL UNIQUE,
+    id VARCHAR(255) PRIMARY KEY NOT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
     last_activity TIMESTAMP NOT NULL,
-    ip_address VARCHAR NOT NULL,
+    ip_address VARCHAR,
     user_agent VARCHAR,
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
+CREATE INDEX idx_session_id ON session (id);
 
 CREATE TABLE IF NOT EXISTS unit (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,

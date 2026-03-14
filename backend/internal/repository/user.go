@@ -86,7 +86,7 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 		user.AppTheme,
 	)
 	if err != nil {
-		if sqlerr, ok := err.(sqlite3.Error); ok {
+		if sqlerr, ok := errors.AsType[sqlite3.Error](err); ok {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
@@ -119,7 +119,7 @@ func (r *UserRepository) Update(user *model.User) error {
 		user.ID,
 	)
 	if err != nil {
-		if sqlerr, ok := err.(sqlite3.Error); ok {
+		if sqlerr, ok := errors.AsType[sqlite3.Error](err); ok {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return customErrors.NewConflictError("User", "already exists", sqlerr)
 			}

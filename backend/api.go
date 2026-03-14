@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io/fs"
 	"net/http"
+	"time"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/zouipo/yumsday/backend/internal/handler"
@@ -35,9 +36,17 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	userHandler := handler.NewUserHandler(userService)
 	userHandler.RegisterRoutes(mux, "/api/user")
 
+	sessionRepo := repository.NewSessionRepository(db)
+	sessionService := service.NewSessionService(
+		sessionRepo,
+		"yumsday_session",
+		30*24*time.Hour,
+	)
+
 	middlewareStack := middleware.Stack(
 		middleware.ResponseWritter,
 		middleware.Logger,
+		middleware.SessionInjector(sessionService),
 	)
 
 	return middlewareStack(mux)

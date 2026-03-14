@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
@@ -242,30 +243,6 @@ func compareUsers(actual, expected *model.User) error {
 	return nil
 }
 
-func compareErrors(actual, expected error) bool {
-	if actual == nil && expected == nil {
-		return true
-	}
-
-	if (actual == nil) != (expected == nil) {
-		return false
-	}
-
-	// Cast both to *AppError
-	actualAppErr, actualIsAppErr := actual.(*customErrors.AppError)
-	expectedAppErr, expectedIsAppErr := expected.(*customErrors.AppError)
-
-	if actualIsAppErr && expectedIsAppErr {
-		if actualAppErr.Message != expectedAppErr.Message && actualAppErr.StatusCode != expectedAppErr.StatusCode && actualAppErr.Err.Error() != expectedAppErr.Err.Error() {
-			return false
-		}
-		return true
-	}
-
-	// If not AppErrors, compare their error messages
-	return actual.Error() == expected.Error()
-}
-
 /*** TEST CONSTRUCTOR ***/
 
 func TestNewUserService(t *testing.T) {
@@ -312,7 +289,7 @@ func TestGetAll_RepositoryError(t *testing.T) {
 		t.Error("GetAll() expected error , got non-nil users")
 	}
 
-	if !compareErrors(err, mockRepo.getAllErr) {
+	if !utils.CompareErrors(err, mockRepo.getAllErr) {
 		t.Errorf("GetAll() error ='%v', got expected %v", err, mockRepo.getAllErr)
 	}
 }
@@ -342,7 +319,7 @@ func TestGetByID_NotFound(t *testing.T) {
 		t.Error("GetByID() expected error , got non-nil user")
 	}
 
-	if !compareErrors(err, notFoundIdErr) {
+	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("GetByID() error ='%v', got expected %v", err, notFoundIdErr)
 	}
 }
@@ -360,7 +337,7 @@ func TestGetByID_RepositoryError(t *testing.T) {
 		t.Error("GetByID() expected error , got non-nil user")
 	}
 
-	if !compareErrors(err, mockRepo.getByIDErr) {
+	if !utils.CompareErrors(err, mockRepo.getByIDErr) {
 		t.Errorf("GetByID() error ='%v', got expected %v", err, mockRepo.getByIDErr)
 	}
 }
@@ -392,7 +369,7 @@ func TestGetByUsername_NotFound(t *testing.T) {
 	}
 
 	notFoundUsernameErr := customErrors.NewEntityNotFoundError("User", invalidUsername, nil)
-	if !compareErrors(err, notFoundUsernameErr) {
+	if !utils.CompareErrors(err, notFoundUsernameErr) {
 		t.Errorf("GetByUsername() error ='%v', got expected %v", err, notFoundUsernameErr)
 	}
 }
@@ -466,7 +443,7 @@ func TestCreate_DuplicateUsername(t *testing.T) {
 	}
 
 	errConflict := customErrors.NewConflictError("User", "already exists", nil)
-	if !compareErrors(err, errConflict) {
+	if !utils.CompareErrors(err, errConflict) {
 		t.Error("Create() expected error for duplicate username, got nil")
 	}
 }
@@ -493,7 +470,7 @@ func TestCreate_InvalidUsername(t *testing.T) {
 	}
 
 	validationErr := customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
-	if !compareErrors(err, validationErr) {
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("Create() error ='%v' instead of %v", err, validationErr)
 	}
 
@@ -523,9 +500,9 @@ func TestCreate_InvalidPassword(t *testing.T) {
 		t.Error("Create() expected error for invalid password , got nil")
 	}
 
-	validationErr := customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
-	if !compareErrors(err, validationErr) {
-		t.Errorf("Create() error ='%v', got expected %v", err, validationErr)
+	validationErr := customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
+	if !utils.CompareErrors(err, validationErr) {
+		t.Errorf("Create() error ='%v', expected %v", err, validationErr)
 	}
 
 	if len(mockRepo.users) != usersNb {
@@ -556,7 +533,7 @@ func TestCreate_RepositoryError(t *testing.T) {
 		t.Errorf("Create() expected ID 0 for database error, got %d", id)
 	}
 
-	if !compareErrors(err, mockRepo.createErr) {
+	if !utils.CompareErrors(err, mockRepo.createErr) {
 		t.Errorf("Create() error ='%v', got expected %v", err, mockRepo.createErr)
 	}
 
@@ -602,7 +579,7 @@ func TestUpdate_UserNotFound(t *testing.T) {
 	updatedUser := createTestUser(int64(invalidId), validUsername, validPassword)
 
 	err := service.Update(updatedUser)
-	if !compareErrors(err, notFoundIdErr) {
+	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Error("Update() expected error for non-existent user, got nil")
 	}
 }
@@ -618,7 +595,7 @@ func TestUpdate_DuplicateUsername(t *testing.T) {
 
 	conflictErr := customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
 	err := service.Update(updatedUser)
-	if !compareErrors(err, conflictErr) {
+	if !utils.CompareErrors(err, conflictErr) {
 		t.Errorf("Update() expected error '%v' for duplicate username , got '%v'", conflictErr, err)
 	}
 }
@@ -631,7 +608,7 @@ func TestUpdate_InvalidUsername(t *testing.T) {
 
 	err := service.Update(updatedUser)
 	validationErr := customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
-	if !compareErrors(err, validationErr) {
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("Update() expected error '%v' for invalid username , got %v", validationErr, err)
 	}
 
@@ -662,7 +639,7 @@ func TestUpdateAdminRole_UserNotFound(t *testing.T) {
 	err := service.UpdateAdminRole(int64(invalidId), true)
 
 	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
-	if !compareErrors(err, notFoundIdErr) {
+	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdateAdminRole() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
 }
@@ -673,7 +650,7 @@ func TestUpdateAdminRole_RepositoryError(t *testing.T) {
 	mockRepo.updateErr = customErrors.NewInternalServerError("Failed to update user admin role", nil)
 
 	err := service.UpdateAdminRole(1, true)
-	if !compareErrors(err, mockRepo.updateErr) {
+	if !utils.CompareErrors(err, mockRepo.updateErr) {
 		t.Errorf("UpdateAdminRole() expected error '%v' for repository error , got '%v'", mockRepo.updateErr, err)
 	}
 }
@@ -707,12 +684,12 @@ func TestUpdatePassword_EmptyPasswords(t *testing.T) {
 	err := service.UpdatePassword(user.ID, "", validPassword)
 
 	validationErr := customErrors.NewValidationError("password", "Old and new passwords must be provided", nil)
-	if !compareErrors(err, validationErr) {
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for empty old password, got '%v'", validationErr, err)
 	}
 
 	err = service.UpdatePassword(user.ID, user.Password, "")
-	if !compareErrors(err, validationErr) {
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for empty new password, got '%v'", validationErr, err)
 	}
 
@@ -728,8 +705,8 @@ func TestUpdatePassword_IncorrectOldPassword(t *testing.T) {
 	user := mockRepo.users[0]
 
 	err := service.UpdatePassword(user.ID, validPassword, validPassword+"123")
-	validationErr := customErrors.NewValidationError("password", "Old password is incorrect for user "+user.Password, nil)
-	if !compareErrors(err, validationErr) {
+	validationErr := customErrors.NewValidationError("password", "Old password is incorrect for user "+user.Username, nil)
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for incorrect old password , got '%v'", validationErr, err)
 	}
 
@@ -763,7 +740,7 @@ func TestUpdatePassword_InvalidNewPassword(t *testing.T) {
 	err := service.UpdatePassword(user.ID, user.Password, invalidPassword)
 
 	validationErr := customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
-	if !compareErrors(err, validationErr) {
+	if !utils.CompareErrors(err, validationErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for invalid new password , got '%v'", validationErr, err)
 	}
 
@@ -781,7 +758,7 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 	err := service.UpdatePassword(int64(invalidId), user.Password, validPassword)
 
 	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
-	if !compareErrors(err, notFoundIdErr) {
+	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
 }
@@ -794,7 +771,7 @@ func TestUpdatePassword_RepositoryError(t *testing.T) {
 	user := mockRepo.users[0]
 
 	err := service.UpdatePassword(user.ID, password1, validPassword)
-	if !compareErrors(err, mockRepo.updateErr) {
+	if !utils.CompareErrors(err, mockRepo.updateErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for repository error , got '%v'", mockRepo.updateErr, err)
 	}
 }
@@ -826,7 +803,7 @@ func TestDelete_UserNotFound(t *testing.T) {
 	err := service.Delete(int64(invalidId))
 
 	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
-	if !compareErrors(err, notFoundIdErr) {
+	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("Delete() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
 }
@@ -838,7 +815,7 @@ func TestDelete_RepositoryError(t *testing.T) {
 	service := &UserService{repo: mockRepo}
 
 	err := service.Delete(1)
-	if !compareErrors(err, mockRepo.deleteErr) {
+	if !utils.CompareErrors(err, mockRepo.deleteErr) {
 		t.Errorf("Delete() expected error '%v' for repository error , got '%v'", mockRepo.deleteErr, err)
 	}
 
