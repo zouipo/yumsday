@@ -341,7 +341,6 @@ func TestCleanUp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clean up the database and re-insert test data before each test case
 			testDB := setupSessionTestDB(t)
 			defer teardownSessionTestDB(testDB)
 			testRepo := NewSessionRepository(testDB)
