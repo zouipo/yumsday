@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS base
+FROM golang:1.26-alpine AS base
 RUN apk add --no-cache gcc=15.2.0-r2 make=4.4.1-r3 musl-dev=1.2.5-r21 && \
     go install github.com/swaggo/swag/cmd/swag@latest
 WORKDIR /app
