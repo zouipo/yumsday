@@ -87,6 +87,9 @@ func (r *SessionRepository) CleanUp(expiration time.Duration) int64 {
 		return 0
 	}
 
-	removedRows, _ := result.RowsAffected()
+	removedRows, err := result.RowsAffected()
+	if err != nil {
+		return 0
+	}
 	return removedRows
 }
