@@ -17,6 +17,7 @@ type SessionServiceInterface interface {
 	CookieName() string
 	Expiration() time.Duration
 	Save(session *model.Session)
+	Remove(session *model.Session)
 }
 
 type SessionService struct {
