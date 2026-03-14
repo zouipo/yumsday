@@ -94,7 +94,12 @@ func (s *SessionService) Save(session *model.Session) error {
 
 func (s *SessionService) Remove(session *model.Session) error {
 	slog.Debug("Removing session", "id", session.ID)
-	return s.repo.Delete(session.ID)
+	err := s.repo.Delete(session.ID)
+	if err != nil {
+		slog.Error("Failed to remove session from repository", "error", err)
+		return customErrors.NewInternalServerError("failed to remove session", err)
+	}
+	return nil
 }
 
 /*** PRIVATE METHODS ***/
