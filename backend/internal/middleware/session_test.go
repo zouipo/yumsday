@@ -65,10 +65,11 @@ func (m *mockSessionService) Expiration() time.Duration {
 	return m.expiration
 }
 
-func (m *mockSessionService) Save(_ *model.Session) {
+func (m *mockSessionService) Save(_ *model.Session) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.saveCalled++
+	return nil
 }
 
 // Never used here but required to satisfy the SessionServiceInterface

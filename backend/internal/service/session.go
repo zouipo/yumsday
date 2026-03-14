@@ -16,7 +16,7 @@ type SessionServiceInterface interface {
 	GetSession(r *http.Request) *model.Session
 	CookieName() string
 	Expiration() time.Duration
-	Save(session *model.Session)
+	Save(session *model.Session) error
 	Remove(session *model.Session) error
 }
 
@@ -83,11 +83,13 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	return session
 }
 
-func (s *SessionService) Save(session *model.Session) {
+func (s *SessionService) Save(session *model.Session) error {
 	session.LastActivity = time.Now().UTC()
 	if err := s.repo.Write(session); err != nil {
 		slog.Error("Failed to write session to repository", "error", err)
+		return customErrors.NewInternalServerError("failed to save session", err)
 	}
+	return nil
 }
 
 func (s *SessionService) Remove(session *model.Session) error {
