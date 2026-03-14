@@ -9,6 +9,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type AuthServiceInterface interface {
+	Authenticate(session *model.Session, username, password string) error
+	Logout(session *model.Session) error
+}
+
 type AuthService struct {
 	sessionService SessionServiceInterface
 	userService    UserServiceInterface
