@@ -21,9 +21,8 @@ func SessionInjector(sessionService service.SessionServiceInterface) Middleware 
 			))
 
 			cookie := &http.Cookie{
-				Name:   sessionService.CookieName(),
-				Value:  s.ID,
-				Domain: "localhost",
+				Name:  sessionService.CookieName(),
+				Value: s.ID,
 				// JS cannot access the cookie via document.cookie;
 				// security measure that prevents XSS attacks from stealing the session ID
 				HttpOnly: true,
