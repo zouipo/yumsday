@@ -17,7 +17,7 @@ type SessionServiceInterface interface {
 	CookieName() string
 	Expiration() time.Duration
 	Save(session *model.Session)
-	Remove(session *model.Session)
+	Remove(session *model.Session) error
 }
 
 type SessionService struct {
@@ -90,9 +90,9 @@ func (s *SessionService) Save(session *model.Session) {
 	}
 }
 
-func (s *SessionService) Remove(session *model.Session) {
+func (s *SessionService) Remove(session *model.Session) error {
 	slog.Debug("Removing session", "id", session.ID)
-	s.repo.Delete(session.ID)
+	return s.repo.Delete(session.ID)
 }
 
 /*** PRIVATE METHODS ***/

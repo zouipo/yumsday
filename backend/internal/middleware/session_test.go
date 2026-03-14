@@ -73,9 +73,10 @@ func (m *mockSessionService) Save(_ *model.Session) {
 
 // Never used here but required to satisfy the SessionServiceInterface
 // and prevent panics if called by the middleware.
-func (m *mockSessionService) Remove(_ *model.Session) {
+func (m *mockSessionService) Remove(_ *model.Session) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return nil
 }
 
 func (m *mockSessionService) getSaveCalled() int {
