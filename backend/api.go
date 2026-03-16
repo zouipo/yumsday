@@ -51,6 +51,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		middleware.ResponseWritter,
 		middleware.Logger,
 		middleware.SessionInjector(sessionService),
+		middleware.UserInjector(userService),
 	)
 
 	return middlewareStack(mux)
