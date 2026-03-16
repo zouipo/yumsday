@@ -22,19 +22,10 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		panic(err)
 	}
 
-	// ServeMux = HTTP request multiplexer, a router.
-	// It matches the URL of each incoming request against a list of registered patterns
-	// and calls the handler for the pattern tha most closely matches the URL.
-	mux := http.NewServeMux()
-
-	// Swagger = provides a UI for API documentation
-	mux.Handle("/swagger/", httpSwagger.Handler())
-
 	// Initializing every layers
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
-	userHandler.RegisterRoutes(mux, "/api/user")
 
 	sessionRepo := repository.NewSessionRepository(db)
 	sessionService := service.NewSessionService(
@@ -45,7 +36,6 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 
 	authService := service.NewAuthService(sessionService, userService)
 	authHandler := handler.NewAuthHandler(authService)
-	authHandler.RegisterRoutes(mux)
 
 	middlewareStack := middleware.Stack(
 		middleware.ResponseWritter,
@@ -54,5 +44,25 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		middleware.UserInjector(userService),
 	)
 
-	return middlewareStack(mux)
+	swaggerMiddlewareStack := middleware.Stack(
+		middleware.ResponseWritter,
+		middleware.Logger,
+	)
+
+	// ServeMux = HTTP request multiplexer, a router.
+	// It matches the URL of each incoming request against a list of registered patterns
+	// and calls the handler for the pattern tha most closely matches the URL.
+	mux := http.NewServeMux()
+	apiMux := http.NewServeMux()
+
+	// Swagger = provides a UI for API documentation
+	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
+	mux.Handle("/api/", middlewareStack(apiMux))
+	mux.Handle("/login", middlewareStack(apiMux))
+	mux.Handle("/logout", middlewareStack(apiMux))
+
+	userHandler.RegisterRoutes(apiMux, "/api/user")
+	authHandler.RegisterRoutes(apiMux)
+
+	return mux
 }

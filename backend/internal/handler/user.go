@@ -75,6 +75,7 @@ func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "User ID"
 // @Success 200 {object} dto.UserDto
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [get]
@@ -106,6 +107,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Param user body dto.NewUserDto true "New User Data"
 // @Success 201 {object} map[string]int "Returns the new user ID"
 // @Failure 400 {string} string "Bad request"
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user [post]
@@ -142,6 +144,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Param user body dto.UserDto true "User Data to Update"
 // @Success 204 {string} string "No Content"
 // @Failure 400 {string} string "Bad request"
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
@@ -176,6 +179,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Param id path int true "User ID"
 // @Param role body map[string]bool true "Admin Role Status"
 // @Success 204 {string} string "No Content"
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id}/admin [patch]
@@ -210,6 +214,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 // @Param id path int true "User ID"
 // @Param password body map[string]string true "Old and New Passwords"
 // @Success 204 {string} string "No Content"
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 400 {string} string "Bad request"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
@@ -244,6 +249,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Produce json
 // @Param id path int true "User ID"
 // @Success 204 {string} string "No Content"
+// @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
 // @Router /user/{id} [delete]
