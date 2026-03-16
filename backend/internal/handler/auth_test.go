@@ -1,15 +1,17 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
 )
@@ -110,12 +112,14 @@ func TestPostLogin_Success(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	form := url.Values{}
-	form.Set("username", username)
-	form.Set("password", password)
+	loginReq := dto.LoginRequest{
+		Username: username,
+		Password: password,
+	}
+	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
@@ -151,7 +155,14 @@ func TestPostLogin_MissingCredentials(t *testing.T) {
 	mockService := &mockAuthService{}
 	handler := NewAuthHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", nil)
+	loginReq := dto.LoginRequest{
+		Username: "",
+		Password: "",
+	}
+	body, _ := json.Marshal(loginReq)
+
+	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	handler.postLogin(w, r)
@@ -176,12 +187,14 @@ func TestPostLogin_AppError(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	form := url.Values{}
-	form.Set("username", username)
-	form.Set("password", wrongPassword)
+	loginReq := dto.LoginRequest{
+		Username: username,
+		Password: wrongPassword,
+	}
+	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
@@ -201,12 +214,14 @@ func TestPostLogin_GenericError(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	form := url.Values{}
-	form.Set("username", username)
-	form.Set("password", password)
+	loginReq := dto.LoginRequest{
+		Username: username,
+		Password: password,
+	}
+	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(form.Encode()))
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 

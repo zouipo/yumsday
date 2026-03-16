@@ -33,7 +33,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.Handle("GET "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.getUserByID)))
 	mux.HandleFunc("POST "+prefix, h.createUser)
 	mux.HandleFunc("PUT "+prefix, h.updateUser)
-	mux.Handle("PATCH "+prefix+"/{id}/role", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserAdminRole)))
+	mux.Handle("PATCH "+prefix+"/{id}/admin", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserAdminRole)))
 	mux.Handle("PATCH "+prefix+"/{id}/password", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserPassword)))
 	mux.Handle("DELETE "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.deleteUser)))
 }
@@ -50,7 +50,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user [get]
+// @Router /api/user [get]
 func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	if len(queryParams) == 0 {
@@ -78,7 +78,7 @@ func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user/{id} [get]
+// @Router /api/user/{id} [get]
 func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the request context (set by the middleware).
 	user, err := h.userService.GetByID(r.Context().Value("id").(int64))
@@ -110,7 +110,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user [post]
+// @Router /api/user [post]
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	var newUserDto dto.NewUserDto
 	err := json.NewDecoder(r.Body).Decode(&newUserDto)
@@ -148,7 +148,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {string} string "User not found"
 // @Failure 409 {string} string "Conflict: username already used"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user [put]
+// @Router /api/user [put]
 func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	var userDto dto.UserDto
 	if err := json.NewDecoder(r.Body).Decode(&userDto); err != nil {
@@ -175,14 +175,13 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Update the admin role status for a specific user
 // @Tags user
 // @Accept json
-// @Produce json
 // @Param id path int true "User ID"
-// @Param role body map[string]bool true "Admin Role Status"
+// @Param role body dto.AdminRolePayload true "Admin Role Status"
 // @Success 204 {string} string "No Content"
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user/{id}/admin [patch]
+// @Router /api/user/{id}/admin [patch]
 func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
@@ -210,15 +209,14 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 // @Description Update the password for a specific user
 // @Tags user
 // @Accept json
-// @Produce json
 // @Param id path int true "User ID"
-// @Param password body map[string]string true "Old and New Passwords"
+// @Param password body dto.PasswordPayload true "Old and New Passwords"
 // @Success 204 {string} string "No Content"
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 400 {string} string "Bad request"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user/{id}/password [patch]
+// @Router /api/user/{id}/password [patch]
 func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("id").(int64)
 
@@ -252,7 +250,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 401 {string} string "Unauthorized"
 // @Failure 404 {string} string "User not found"
 // @Failure 500 {string} string "Internal server error"
-// @Router /user/{id} [delete]
+// @Router /api/user/{id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.Delete(r.Context().Value("id").(int64))
 

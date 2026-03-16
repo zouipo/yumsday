@@ -28,7 +28,7 @@ var migrationsFs embed.FS
 // @version			1.0
 // @description		Yumsday is a meal-planning application that includes a menu, a collection of cooking recipes and a grocery list.
 // @host 			localhost:8080
-// @BasePath 		/api
+// @BasePath 		/
 
 var cmd = &cobra.Command{
 	Use:   "yumsday",
