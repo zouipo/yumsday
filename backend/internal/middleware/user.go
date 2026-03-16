@@ -19,7 +19,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 			if s.UserID == 0 {
 				slog.Debug("session is not authenticated", "id", s.ID)
 				if r.URL.Path != "/login" {
-					http.Redirect(w, r, "/login", http.StatusFound)
+					http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 					return
 				}
 				next.ServeHTTP(w, r)
