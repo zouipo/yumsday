@@ -265,7 +265,7 @@ func TestLogout_RemovesSession(t *testing.T) {
 func TestLogout_RepositoryError(t *testing.T) {
 	mockUserService := &MockUserService{}
 	mockSessionService := &MockSessionService{
-		removeErr: customErrors.NewInternalServerError("Failed to delete session", nil),
+		removeErr: customErrors.NewInternalServerError("failed to remove session", nil),
 	}
 	service := NewAuthService(mockSessionService, mockUserService)
 
@@ -276,9 +276,8 @@ func TestLogout_RepositoryError(t *testing.T) {
 		t.Fatal("Logout() error = nil, want non-nil")
 	}
 
-	expectedError := customErrors.NewInternalServerError("An error occurred while logging out", mockSessionService.removeErr)
-	if !utils.CompareErrors(err, expectedError) {
-		t.Errorf("Logout() error = %v, want %v", err, expectedError)
+	if !utils.CompareErrors(err, mockSessionService.removeErr) {
+		t.Errorf("Logout() error = %v, want %v", err, mockSessionService.removeErr)
 	}
 
 	if len(mockSessionService.removedSessions) != 0 {
