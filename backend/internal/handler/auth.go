@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/service"
@@ -44,23 +46,27 @@ func (h *AuthHandler) getLogin(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param username formData string true "Username"
-// @Param password formData string true "Password"
+// @Param credentials body dto.LoginRequest true "Login credentials"
 // @Success 302 {string} string "Redirect to home page"
 // @Failure 400 {string} string "Missing username or password"
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
 // @Router /login [post]
 func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	if username == "" || password == "" {
+	var loginReq dto.LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&loginReq)
+	if err != nil {
+		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if loginReq.Username == "" || loginReq.Password == "" {
 		http.Error(w, "missing username or password", http.StatusBadRequest)
 		return
 	}
 
 	session := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
-	err := h.s.Authenticate(session, username, password)
+	err = h.s.Authenticate(session, loginReq.Username, loginReq.Password)
 	if err != nil {
 		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
 			http.Error(w, err.Error(), appErr.StatusCode)
