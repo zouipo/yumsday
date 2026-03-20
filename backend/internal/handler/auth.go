@@ -23,21 +23,8 @@ func NewAuthHandler(s service.AuthServiceInterface) *AuthHandler {
 }
 
 func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /login", h.getLogin)
 	mux.HandleFunc("POST /login", h.postLogin)
 	mux.HandleFunc("POST /logout", h.postLogout)
-}
-
-// GetLogin godoc
-// @Summary Get login page
-// @Description Retrieve the login page
-// @Tags auth
-// @Produce html
-// @Success 200 {string} string "Login page HTML"
-// @Failure 500 {string} string "Internal server error"
-// @Router /login [get]
-func (h *AuthHandler) getLogin(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Login page !"))
 }
 
 // PostLogin godoc

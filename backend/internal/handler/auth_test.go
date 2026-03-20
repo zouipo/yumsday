@@ -59,52 +59,6 @@ func TestNewAuthHandler(t *testing.T) {
 	}
 }
 
-func TestAuthRegisterRoutes_Success(t *testing.T) {
-	mockService := &mockAuthService{}
-	handler := NewAuthHandler(mockService)
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
-
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/login", nil)
-	mux.ServeHTTP(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
-	}
-
-	if w.Body.String() != "Login page !" {
-		t.Errorf("expected body %q instead of %q", "Login page !", w.Body.String())
-	}
-
-	w = httptest.NewRecorder()
-	r = httptest.NewRequest(http.MethodPost, "/login", nil)
-	mux.ServeHTTP(w, r)
-
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d instead of %d", http.StatusBadRequest, w.Code)
-	}
-}
-
-/*** TEST GetLogin ***/
-
-func TestGetLogin(t *testing.T) {
-	handler := NewAuthHandler(&mockAuthService{})
-
-	r := httptest.NewRequest(http.MethodGet, "/login", nil)
-	w := httptest.NewRecorder()
-
-	handler.getLogin(w, r)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
-	}
-
-	if w.Body.String() != "Login page !" {
-		t.Errorf("expected body %q instead of %q", "Login page !", w.Body.String())
-	}
-}
-
 /*** TESTS PostLogin ***/
 
 func TestPostLogin_Success(t *testing.T) {
