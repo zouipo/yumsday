@@ -24,6 +24,7 @@ func Logger(next http.Handler) http.Handler {
 		slog.Info(
 			"Processed HTTP request",
 			"status", *status, // captured by the custom ResponseWriter middleware
+			"status_text", http.StatusText(*status),
 			"method", r.Method,
 			"path", r.URL.Path,
 			"duration", time.Since(start),
