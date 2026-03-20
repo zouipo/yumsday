@@ -65,7 +65,7 @@ func TestErrorConstructors(t *testing.T) {
 		},
 		{
 			name:            "NewUnauthorizedError",
-			createError:     func() error { return NewUnauthorizedError(underlyingErr) },
+			createError:     func() error { return NewUnauthorizedError(underlyingErr, "authentication required") },
 			expectedStatus:  http.StatusUnauthorized,
 			expectedMessage: "Unauthorized: authentication required",
 		},

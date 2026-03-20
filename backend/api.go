@@ -22,19 +22,10 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		panic(err)
 	}
 
-	// ServeMux = HTTP request multiplexer, a router.
-	// It matches the URL of each incoming request against a list of registered patterns
-	// and calls the handler for the pattern tha most closely matches the URL.
-	mux := http.NewServeMux()
-
-	// Swagger = provides a UI for API documentation
-	mux.Handle("/swagger/", httpSwagger.Handler())
-
 	// Initializing every layers
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
-	userHandler.RegisterRoutes(mux, "/api/user")
 
 	sessionRepo := repository.NewSessionRepository(db)
 	sessionService := service.NewSessionService(
@@ -43,11 +34,41 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		30*24*time.Hour,
 	)
 
+	authService := service.NewAuthService(sessionService, userService)
+	authHandler := handler.NewAuthHandler(authService)
+
 	middlewareStack := middleware.Stack(
-		middleware.ResponseWritter,
+		middleware.ResponseWriter,
+		middleware.Logger,
+		middleware.SessionInjector(sessionService),
+		middleware.UserInjector(userService),
+	)
+
+	authMiddlewareStack := middleware.Stack(
+		middleware.ResponseWriter,
 		middleware.Logger,
 		middleware.SessionInjector(sessionService),
 	)
 
-	return middlewareStack(mux)
+	swaggerMiddlewareStack := middleware.Stack(
+		middleware.ResponseWriter,
+		middleware.Logger,
+	)
+
+	// ServeMux = HTTP request multiplexer, a router.
+	// It matches the URL of each incoming request against a list of registered patterns
+	// and calls the handler for the pattern tha most closely matches the URL.
+	mux := http.NewServeMux()
+	apiMux := http.NewServeMux()
+	authMux := http.NewServeMux()
+
+	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
+	mux.Handle("/api/", middlewareStack(apiMux))
+	mux.Handle("/login", authMiddlewareStack(authMux))
+	mux.Handle("/logout", middlewareStack(authMux))
+
+	userHandler.RegisterRoutes(apiMux, "/api/user")
+	authHandler.RegisterRoutes(authMux)
+
+	return mux
 }
