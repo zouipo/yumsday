@@ -79,13 +79,8 @@ func TestPostLogin_Success(t *testing.T) {
 
 	handler.postLogin(w, r)
 
-	if w.Code != http.StatusFound {
-		t.Errorf("expected status %d instead of %d", http.StatusFound, w.Code)
-	}
-
-	// Check that the user is redirected to the home page after successful login
-	if got := w.Header().Get("Location"); got != "/" {
-		t.Errorf("expected location %q instead of %q", "/", got)
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	if mockService.authCalls != 1 {
@@ -203,12 +198,8 @@ func TestPostLogout_Success(t *testing.T) {
 
 	handler.postLogout(w, r)
 
-	if w.Code != http.StatusFound {
-		t.Errorf("expected status %d instead of %d", http.StatusFound, w.Code)
-	}
-
-	if got := w.Header().Get("Location"); got != "/login" {
-		t.Errorf("expected location %q instead of %q", "/login", got)
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
 	if mockService.logoutCalls != 1 {

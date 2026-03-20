@@ -34,7 +34,7 @@ func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Accept json
 // @Produce json
 // @Param credentials body dto.LoginDto true "Login credentials"
-// @Success 302 {string} string "Redirect to home page"
+// @Success 204 {string} string "Login successful"
 // @Failure 400 {string} string "Missing username or password"
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
@@ -63,7 +63,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // PostLogout godoc
@@ -71,7 +71,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 // @Description Logout the authenticated user
 // @Tags auth
 // @Produce json
-// @Success 302 {string} string "Redirect to login page"
+// @Success 204 {string} string "Logout successful"
 // @Failure 500 {string} string "Internal server error"
 // @Router /logout [post]
 func (h *AuthHandler) postLogout(w http.ResponseWriter, r *http.Request) {
@@ -81,5 +81,5 @@ func (h *AuthHandler) postLogout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/login", http.StatusFound)
+	w.WriteHeader(http.StatusNoContent)
 }
