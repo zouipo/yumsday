@@ -60,15 +60,15 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	// and calls the handler for the pattern tha most closely matches the URL.
 	mux := http.NewServeMux()
 	apiMux := http.NewServeMux()
+	authMux := http.NewServeMux()
 
-	// Swagger = provides a UI for API documentation
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
 	mux.Handle("/api/", middlewareStack(apiMux))
-	mux.Handle("/login", authMiddlewareStack(apiMux))
-	mux.Handle("/logout", middlewareStack(apiMux))
+	mux.Handle("/login", authMiddlewareStack(authMux))
+	mux.Handle("/logout", middlewareStack(authMux))
 
 	userHandler.RegisterRoutes(apiMux, "/api/user")
-	authHandler.RegisterRoutes(apiMux)
+	authHandler.RegisterRoutes(authMux)
 
 	return mux
 }
