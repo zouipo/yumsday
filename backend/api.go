@@ -44,6 +44,12 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		middleware.UserInjector(userService),
 	)
 
+	authMiddlewareStack := middleware.Stack(
+		middleware.ResponseWritter,
+		middleware.Logger,
+		middleware.SessionInjector(sessionService),
+	)
+
 	swaggerMiddlewareStack := middleware.Stack(
 		middleware.ResponseWritter,
 		middleware.Logger,
@@ -58,7 +64,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	// Swagger = provides a UI for API documentation
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
 	mux.Handle("/api/", middlewareStack(apiMux))
-	mux.Handle("/login", middlewareStack(apiMux))
+	mux.Handle("/login", authMiddlewareStack(apiMux))
 	mux.Handle("/logout", middlewareStack(apiMux))
 
 	userHandler.RegisterRoutes(apiMux, "/api/user")
