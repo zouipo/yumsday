@@ -46,14 +46,14 @@ func (h *AuthHandler) getLogin(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body dto.LoginRequest true "Login credentials"
+// @Param credentials body dto.LoginDto true "Login credentials"
 // @Success 302 {string} string "Redirect to home page"
 // @Failure 400 {string} string "Missing username or password"
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
 // @Router /login [post]
 func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
-	var loginReq dto.LoginRequest
+	var loginReq dto.LoginDto
 	err := json.NewDecoder(r.Body).Decode(&loginReq)
 	if err != nil {
 		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)

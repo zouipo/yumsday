@@ -112,7 +112,7 @@ func TestPostLogin_Success(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	loginReq := dto.LoginRequest{
+	loginReq := dto.LoginDto{
 		Username: username,
 		Password: password,
 	}
@@ -155,7 +155,7 @@ func TestPostLogin_MissingCredentials(t *testing.T) {
 	mockService := &mockAuthService{}
 	handler := NewAuthHandler(mockService)
 
-	loginReq := dto.LoginRequest{
+	loginReq := dto.LoginDto{
 		Username: "",
 		Password: "",
 	}
@@ -187,7 +187,7 @@ func TestPostLogin_AppError(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	loginReq := dto.LoginRequest{
+	loginReq := dto.LoginDto{
 		Username: username,
 		Password: wrongPassword,
 	}
@@ -214,7 +214,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	loginReq := dto.LoginRequest{
+	loginReq := dto.LoginDto{
 		Username: username,
 		Password: password,
 	}
