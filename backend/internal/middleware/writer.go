@@ -8,14 +8,14 @@ import (
 
 // Custom response writer to intercept calls to WriterHeader
 // and Writter to do additional processing, e.g get the status code.
-type ResponseWriter struct {
+type responseWriter struct {
 	http.ResponseWriter
 	status      int
 	wroteHeader bool
 }
 
 // WriteHeader intercepts the call to WriteHeader to capture the status code.
-func (w *ResponseWriter) WriteHeader(status int) {
+func (w *responseWriter) WriteHeader(status int) {
 	// The wroteHeader flag is to ensure we only call WriteHeader once,
 	// otherwise we get a "superfluous response.WriteHeader call" error in the logs.
 	if w.wroteHeader {
@@ -31,15 +31,15 @@ func (w *ResponseWriter) WriteHeader(status int) {
 // Write intercepts the call to Write (for example by json.Encode) to ensure WriteHeader is called first.
 // http.Error explicitely calls our WriteHeader (check http.Error) sources,
 // so it's not bypassed in that case.
-func (w *ResponseWriter) Write(data []byte) (int, error) {
+func (w *responseWriter) Write(data []byte) (int, error) {
 	w.WriteHeader(http.StatusOK)
 	return w.ResponseWriter.Write(data)
 }
 
-// ResponseWritter is a middleware that wraps the ResponseWriter struct to capture status codes.
-func ResponseWritter(next http.Handler) http.Handler {
+// ResponseWriter is a middleware that wraps the ResponseWriter struct to capture status codes.
+func ResponseWriter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writer := &ResponseWriter{
+		writer := &responseWriter{
 			ResponseWriter: w,
 			status:         http.StatusOK,
 		}

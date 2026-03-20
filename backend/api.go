@@ -38,20 +38,20 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	authHandler := handler.NewAuthHandler(authService)
 
 	middlewareStack := middleware.Stack(
-		middleware.ResponseWritter,
+		middleware.ResponseWriter,
 		middleware.Logger,
 		middleware.SessionInjector(sessionService),
 		middleware.UserInjector(userService),
 	)
 
 	authMiddlewareStack := middleware.Stack(
-		middleware.ResponseWritter,
+		middleware.ResponseWriter,
 		middleware.Logger,
 		middleware.SessionInjector(sessionService),
 	)
 
 	swaggerMiddlewareStack := middleware.Stack(
-		middleware.ResponseWritter,
+		middleware.ResponseWriter,
 		middleware.Logger,
 	)
 
