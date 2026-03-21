@@ -24,9 +24,9 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
-            // when {
-            //     branch 'main'
-            // }
+            when {
+                branch 'main'
+            }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh("${tool('SonarQube Scanner')}/bin/sonar-scanner")
