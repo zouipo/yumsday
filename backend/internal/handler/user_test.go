@@ -376,10 +376,6 @@ func TestGetUsersByUsername_NotFound(t *testing.T) {
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
 	}
-
-	if !strings.Contains(w.Body.String(), notFoundErr) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", notFoundErr, w.Body.String())
-	}
 }
 
 func TestGetUsersByUsername_EmptyUsername(t *testing.T) {
@@ -395,10 +391,6 @@ func TestGetUsersByUsername_EmptyUsername(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
-	}
-
-	if !strings.Contains(w.Body.String(), notFoundErr) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", notFoundErr, w.Body.String())
 	}
 }
 
@@ -498,10 +490,6 @@ func TestGetUserByID_NotFound(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
-	}
-
-	if !strings.Contains(w.Body.String(), notFoundErr) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", notFoundErr, w.Body.String())
 	}
 }
 

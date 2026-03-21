@@ -19,7 +19,7 @@ func TestAppError_Error(t *testing.T) {
 				StatusCode: http.StatusInternalServerError,
 				Err:        errors.New("database connection failed"),
 			},
-			expectedOutput: "Failed to fetch user: database connection failed",
+			expectedOutput: "Failed to fetch user",
 		},
 		{
 			name: "without underlying error",
@@ -110,7 +110,7 @@ func TestErrorConstructors(t *testing.T) {
 				t.Errorf("Underlying error not preserved")
 			}
 
-			expectedError := tt.expectedMessage + ": " + underlyingErr.Error()
+			expectedError := tt.expectedMessage
 			if err.Error() != expectedError {
 				t.Errorf("Error() = %q, expected %q", err.Error(), expectedError)
 			}

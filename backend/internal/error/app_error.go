@@ -2,6 +2,7 @@ package error
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -13,9 +14,6 @@ type AppError struct {
 }
 
 func (e *AppError) Error() string {
-	if e.Err != nil {
-		return fmt.Sprintf("%s: %v", e.Message, e.Err)
-	}
 	return e.Message
 }
 
@@ -66,6 +64,12 @@ func NewConflictError(resource, conflict string, err error) error {
 }
 
 func NewInternalServerError(message string, err error) error {
+	if err != nil {
+		slog.Error(fmt.Sprintf("%s: %v", message, err))
+	} else {
+		slog.Error(fmt.Sprintf("%s", message))
+	}
+
 	return &AppError{
 		Message:    message,
 		StatusCode: http.StatusInternalServerError,
