@@ -30,37 +30,38 @@ func CompareErrors(actual, expected error) bool {
 	actualAppErr, actualIsAppErr := errors.AsType[*customErrors.AppError](actual)
 	expectedAppErr, expectedIsAppErr := errors.AsType[*customErrors.AppError](expected)
 
-	if actualIsAppErr && expectedIsAppErr {
-		if actualAppErr.Message != expectedAppErr.Message || actualAppErr.StatusCode != expectedAppErr.StatusCode {
-			return false
-		}
-
-		// Compare sqlite extended codes when both wrapped errors are sqlite3.Error.
-		actualSQLErr, actualIsSQLErr := errors.AsType[sqlite3.Error](actualAppErr.Err)
-		expectedSQLErr, expectedIsSQLErr := errors.AsType[sqlite3.Error](expectedAppErr.Err)
-
-		if actualIsSQLErr && expectedIsSQLErr {
-			return actualSQLErr.ExtendedCode == expectedSQLErr.ExtendedCode
-		}
-
-		// If actual is sqlite3.Error but expected is an error code constant (ErrNoExtended or ErrNo),
-		// compare the actual error's ExtendedCode with the expected constant
-		if actualIsSQLErr {
-			if errNoExt, ok := errors.AsType[sqlite3.ErrNoExtended](expectedAppErr.Err); ok {
-				return actualSQLErr.ExtendedCode == errNoExt
-			}
-			if errNo, ok := errors.AsType[sqlite3.ErrNo](expectedAppErr.Err); ok {
-				return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
-			}
-		}
-
-		// non-SQLite error
-		if expectedAppErr.Err != nil {
-			return actualAppErr.Err == expectedAppErr.Err
-		}
-		return true
+	if !actualIsAppErr || !expectedIsAppErr {
+		// If not AppErrors, compare their error messages
+		return actual.Error() == expected.Error()
 	}
 
-	// If not AppErrors, compare their error messages
-	return actual.Error() == expected.Error()
+	if actualAppErr.Message != expectedAppErr.Message || actualAppErr.StatusCode != expectedAppErr.StatusCode {
+		return false
+	}
+
+	// Compare sqlite extended codes when both wrapped errors are sqlite3.Error.
+	actualSQLErr, actualIsSQLErr := errors.AsType[sqlite3.Error](actual)
+	expectedSQLErr, expectedIsSQLErr := errors.AsType[sqlite3.Error](expected)
+
+	if actualIsSQLErr && expectedIsSQLErr {
+		return actualSQLErr.ExtendedCode == expectedSQLErr.ExtendedCode
+	}
+
+	// If actual is sqlite3.Error but expected is an error code constant (ErrNoExtended or ErrNo),
+	// compare the actual error's ExtendedCode with the expected constant
+	if actualIsSQLErr {
+		if errNoExt, ok := errors.AsType[sqlite3.ErrNoExtended](expected); ok {
+			return actualSQLErr.ExtendedCode == errNoExt
+		}
+		if errNo, ok := errors.AsType[sqlite3.ErrNo](expected); ok {
+			return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
+		}
+	}
+
+	// non-SQLite error
+	if expectedAppErr.Err != nil {
+		return actualAppErr.Err == expectedAppErr.Err
+	}
+
+	return true
 }

@@ -19,6 +19,10 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
+func (e *AppError) Unwrap() error {
+	return e.Err
+}
+
 /*** COMMON ERROR CONSTRUCTORS ***/
 
 func NewEntityNotFoundError(entityType string, identifier string, err error) error {
