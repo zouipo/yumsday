@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
-	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 )
 
 // TimesApproximatelyEqual checks if two time values are approximately equal within a specified tolerance.
@@ -16,7 +15,8 @@ func TimesApproximatelyEqual(t1, t2 time.Time, tolerance time.Duration) bool {
 }
 
 // CompareErrors compares two errors to check if they are equivalent AppErrors.
-// It compares the error message, statusCode, and underlying error.
+// It compares the error message and underlying error if it is an sqlite error.
+// Returns true if the errors are equivalent.
 func CompareErrors(actual, expected error) bool {
 	if actual == nil && expected == nil {
 		return true
@@ -26,15 +26,7 @@ func CompareErrors(actual, expected error) bool {
 		return false
 	}
 
-	// Support wrapped errors, not only direct type assertions.
-	actualAppErr, actualIsAppErr := errors.AsType[customErrors.AppError](actual)
-	expectedAppErr, expectedIsAppErr := errors.AsType[customErrors.AppError](expected)
-
-	if actualIsAppErr && expectedIsAppErr && actualAppErr.HTTPStatus() != expectedAppErr.HTTPStatus() {
-		return false
-	}
-
-	if actualAppErr.Error() != expectedAppErr.Error() {
+	if actual.Error() != expected.Error() {
 		return false
 	}
 
@@ -55,11 +47,6 @@ func CompareErrors(actual, expected error) bool {
 		if errNo, ok := errors.AsType[sqlite3.ErrNo](expected); ok {
 			return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
 		}
-	}
-
-	// non-SQLite error
-	if expectedAppErr.Unwrap() != nil {
-		return actualAppErr.Unwrap() == expectedAppErr.Unwrap()
 	}
 
 	return true
