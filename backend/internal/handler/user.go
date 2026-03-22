@@ -83,8 +83,8 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the request context (set by the middleware).
 	user, err := h.userService.GetByID(r.Context().Value("id").(int64))
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -122,8 +122,8 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	user := mapper.FromNewUserDtoToUser(&newUserDto)
 	id, err := h.userService.Create(user)
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -158,8 +158,8 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 
 	user := mapper.FromUserDtoToUser(&userDto)
 	if err := h.userService.Update(user); err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -192,8 +192,8 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.userService.UpdateAdminRole(userID, payload.AppAdmin); err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -227,8 +227,8 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.userService.UpdatePassword(userID, payload.OldPassword, payload.NewPassword); err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -255,8 +255,8 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.userService.Delete(r.Context().Value("id").(int64))
 
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -273,8 +273,8 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 	users, err := h.userService.GetAll()
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -293,8 +293,8 @@ func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
 	user, err := h.userService.GetByUsername(username)
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)

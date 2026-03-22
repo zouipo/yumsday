@@ -88,7 +88,7 @@ func (s *UserService) Create(user *model.User) (int64, error) {
 	user.Password, err = utils.HashPassword(user.Password)
 	if err != nil {
 		slog.Error("CreateUser: failed to hash password", "error", err)
-		return 0, customErrors.NewInternalServerError("Failed to hash password", err)
+		return 0, customErrors.NewInternalError("Failed to hash password", err)
 	}
 
 	id, err := s.repo.Create(user)
@@ -179,7 +179,7 @@ func (s *UserService) UpdatePassword(userID int64, oldPassword string, newPasswo
 	currentUser.Password, err = utils.HashPassword(newPassword)
 	if err != nil {
 		slog.Error("UpdatePassword: failed to hash new password", "error", err)
-		return customErrors.NewInternalServerError("Failed to hash new password", err)
+		return customErrors.NewInternalError("Failed to hash new password", err)
 	}
 
 	if err = s.repo.Update(currentUser); err != nil {

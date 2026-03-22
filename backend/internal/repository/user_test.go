@@ -237,7 +237,7 @@ func TestGetByUserID(t *testing.T) {
 		},
 		{
 			name:    "non-existing user",
-			wantErr: customErrors.NewEntityNotFoundError("User", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
+			wantErr: customErrors.NewNotFoundError("User", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
 			wantUser: model.User{
 				ID: invalidId,
 			},
@@ -293,7 +293,7 @@ func TestGetByUsername(t *testing.T) {
 		{
 			name:     "non-existing user",
 			username: invalidUsername,
-			wantErr:  customErrors.NewEntityNotFoundError("User", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
+			wantErr:  customErrors.NewNotFoundError("User", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
 		},
 	}
 
@@ -438,7 +438,7 @@ func TestUpdate(t *testing.T) {
 				Language: enum.English,
 				AppTheme: enum.Light,
 			},
-			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name: "no field updated",
@@ -516,7 +516,7 @@ func TestUpdateAdminRole(t *testing.T) {
 			name:    "update admin role for non-existing user",
 			userID:  invalidId,
 			role:    true,
-			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name:    "set admin role for existing user",
@@ -576,7 +576,7 @@ func TestDelete(t *testing.T) {
 		{
 			name:    "delete non-existing user",
 			id:      invalidId,
-			wantErr: customErrors.NewEntityNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name:    "delete existing user",
@@ -609,7 +609,7 @@ func TestDelete(t *testing.T) {
 			_, err = repo.GetByID(tt.id)
 			if err == nil {
 				t.Errorf("expected user to be deleted, but GetByID() returned no error")
-			} else if appErr, ok := err.(*customErrors.AppError); !ok || appErr.StatusCode != 404 {
+			} else if appErr, ok := err.(customErrors.AppError); !ok || appErr.HTTPStatus() != 404 {
 				t.Errorf("expected NotFound error, but GetByID() error = %v", err)
 			}
 		})

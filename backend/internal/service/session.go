@@ -52,8 +52,8 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	if err == nil {
 		session, err = s.repo.GetByID(cookie.Value)
 		if err != nil {
-			appErr, ok := errors.AsType[*customErrors.AppError](err)
-			if !ok || appErr.StatusCode != http.StatusNotFound {
+			appErr, ok := errors.AsType[customErrors.AppError](err)
+			if !ok || appErr.HTTPStatus() != http.StatusNotFound {
 				slog.Error(
 					"Failed to read session from repo, generating new session",
 					"error", err.Error(),
@@ -87,7 +87,7 @@ func (s *SessionService) Save(session *model.Session) error {
 	session.LastActivity = time.Now().UTC()
 	if err := s.repo.Write(session); err != nil {
 		slog.Error("Failed to write session to repository", "error", err)
-		return customErrors.NewInternalServerError("failed to save session", err)
+		return customErrors.NewInternalError("failed to save session", err)
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func (s *SessionService) Remove(session *model.Session) error {
 	err := s.repo.Delete(session.ID)
 	if err != nil {
 		slog.Error("Failed to remove session from repository", "error", err)
-		return customErrors.NewInternalServerError("failed to remove session", err)
+		return customErrors.NewInternalError("failed to remove session", err)
 	}
 	return nil
 }

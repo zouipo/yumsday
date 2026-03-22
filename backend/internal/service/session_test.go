@@ -43,7 +43,7 @@ func (m *MockSessionRepository) GetByID(id string) (*model.Session, error) {
 
 	session, exists := m.sessions[id]
 	if !exists {
-		return nil, customErrors.NewEntityNotFoundError("Session", id, nil)
+		return nil, customErrors.NewNotFoundError("Session", id, nil)
 	}
 
 	return session, nil
@@ -206,7 +206,7 @@ func TestNewSessionService_CleansUpExpiredSessions(t *testing.T) {
 
 func TestNewSessionService_CleansUpError(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	mockRepo.cleanUpErr = customErrors.NewInternalServerError("Failed to clean up sessions", nil)
+	mockRepo.cleanUpErr = customErrors.NewInternalError("Failed to clean up sessions", nil)
 	testExpiration := 1 * time.Hour
 
 	expiredSession1 := createTestSession("expired-1", time.Now().UTC().Add(-2*time.Hour))
@@ -364,7 +364,7 @@ func TestGetSession_ExpiredSession_ReturnsNewSession(t *testing.T) {
 
 func TestGetSession_RepositoryError_ReturnsNewSession(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	mockRepo.getByIDErr = customErrors.NewInternalServerError("Failed to fetch session by ID", nil)
+	mockRepo.getByIDErr = customErrors.NewInternalError("Failed to fetch session by ID", nil)
 
 	service := &SessionService{
 		repo:       mockRepo,
@@ -432,7 +432,7 @@ func TestSave_Success(t *testing.T) {
 
 func TestSave_WithRepositoryError(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	mockRepo.writeErr = customErrors.NewInternalServerError("Failed to write in session", nil)
+	mockRepo.writeErr = customErrors.NewInternalError("Failed to write in session", nil)
 
 	service := &SessionService{
 		repo:       mockRepo,
@@ -498,7 +498,7 @@ func TestRemove_NonExistentSession(t *testing.T) {
 
 func TestRemove_Error(t *testing.T) {
 	mockRepo := NewMockSessionRepository()
-	mockRepo.deleteErr = customErrors.NewInternalServerError("Failed to delete session", nil)
+	mockRepo.deleteErr = customErrors.NewInternalError("Failed to delete session", nil)
 
 	sessionID := "test-session-123"
 	session := createTestSession(sessionID, time.Now().UTC())

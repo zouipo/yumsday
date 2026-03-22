@@ -155,7 +155,7 @@ func TestAuthenticate_Success(t *testing.T) {
 }
 
 func TestAuthenticate_UserServiceError(t *testing.T) {
-	expectedErr := customErrors.NewEntityNotFoundError("User", username, nil)
+	expectedErr := customErrors.NewNotFoundError("User", username, nil)
 	mockUserService := &MockUserService{getByUsernameErr: expectedErr}
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
@@ -182,7 +182,7 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 	session := model.NewSession()
 	err := service.Authenticate(session, username, InvalidPassword)
 
-	expectedErr := customErrors.NewUnauthorizedError(bcrypt.ErrMismatchedHashAndPassword, "invalid credentials")
+	expectedErr := customErrors.NewUnauthorizedError("invalid credentials", bcrypt.ErrMismatchedHashAndPassword)
 	if !utils.CompareErrors(err, expectedErr) {
 		t.Errorf("Authenticate() error = %v, want %v", err, expectedErr)
 	}
@@ -219,20 +219,20 @@ func TestAuthenticate_InvalidPasswordHash_ReturnsInternalServerError(t *testing.
 		t.Fatal("Authenticate() error = nil, want non-nil")
 	}
 
-	appErr, ok := errors.AsType[*customErrors.AppError](err)
+	appErr, ok := errors.AsType[customErrors.AppError](err)
 	if !ok {
 		t.Fatalf("Authenticate() error type = %T, want *AppError", err)
 	}
 
-	if appErr.StatusCode != http.StatusInternalServerError {
-		t.Errorf("Authenticate() status = %d, want %d", appErr.StatusCode, http.StatusInternalServerError)
+	if appErr.HTTPStatus() != http.StatusInternalServerError {
+		t.Errorf("Authenticate() status = %d, want %d", appErr.HTTPStatus(), http.StatusInternalServerError)
 	}
 
-	if appErr.Message != "an error occurred while checking credentials" {
-		t.Errorf("Authenticate() message = %q, want %q", appErr.Message, "an error occurred while checking credentials")
+	if appErr.Error() != "an error occurred while checking credentials" {
+		t.Errorf("Authenticate() message = %q, want %q", appErr.Error(), "an error occurred while checking credentials")
 	}
 
-	if errors.Is(appErr.Err, bcrypt.ErrMismatchedHashAndPassword) {
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		t.Error("Authenticate() expected non-mismatch bcrypt error for invalid hash")
 	}
 
@@ -265,7 +265,7 @@ func TestLogout_RemovesSession(t *testing.T) {
 func TestLogout_RepositoryError(t *testing.T) {
 	mockUserService := &MockUserService{}
 	mockSessionService := &MockSessionService{
-		removeErr: customErrors.NewInternalServerError("failed to remove session", nil),
+		removeErr: customErrors.NewInternalError("failed to remove session", nil),
 	}
 	service := NewAuthService(mockSessionService, mockUserService)
 

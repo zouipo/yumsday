@@ -16,7 +16,7 @@ func TimesApproximatelyEqual(t1, t2 time.Time, tolerance time.Duration) bool {
 }
 
 // CompareErrors compares two errors to check if they are equivalent AppErrors.
-// It compares the Message, StatusCode, and underlying Err fields.
+// It compares the error message, statusCode, and underlying error.
 func CompareErrors(actual, expected error) bool {
 	if actual == nil && expected == nil {
 		return true
@@ -27,15 +27,14 @@ func CompareErrors(actual, expected error) bool {
 	}
 
 	// Support wrapped errors, not only direct type assertions.
-	actualAppErr, actualIsAppErr := errors.AsType[*customErrors.AppError](actual)
-	expectedAppErr, expectedIsAppErr := errors.AsType[*customErrors.AppError](expected)
+	actualAppErr, actualIsAppErr := errors.AsType[customErrors.AppError](actual)
+	expectedAppErr, expectedIsAppErr := errors.AsType[customErrors.AppError](expected)
 
-	if !actualIsAppErr || !expectedIsAppErr {
-		// If not AppErrors, compare their error messages
-		return actual.Error() == expected.Error()
+	if actualIsAppErr && expectedIsAppErr && actualAppErr.HTTPStatus() != expectedAppErr.HTTPStatus() {
+		return false
 	}
 
-	if actualAppErr.Message != expectedAppErr.Message || actualAppErr.StatusCode != expectedAppErr.StatusCode {
+	if actualAppErr.Error() != expectedAppErr.Error() {
 		return false
 	}
 
@@ -59,8 +58,8 @@ func CompareErrors(actual, expected error) bool {
 	}
 
 	// non-SQLite error
-	if expectedAppErr.Err != nil {
-		return actualAppErr.Err == expectedAppErr.Err
+	if expectedAppErr.Unwrap() != nil {
+		return actualAppErr.Unwrap() == expectedAppErr.Unwrap()
 	}
 
 	return true

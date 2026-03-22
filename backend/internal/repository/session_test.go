@@ -191,7 +191,7 @@ func TestGetBySessionID(t *testing.T) {
 		{
 			name:      "non-existing session",
 			sessionID: invalidSession,
-			wantErr:   customErrors.NewEntityNotFoundError("Session", invalidSession, sql.ErrNoRows),
+			wantErr:   customErrors.NewNotFoundError("Session", invalidSession, sql.ErrNoRows),
 			expected:  nil,
 		},
 	}
@@ -355,7 +355,7 @@ func TestCleanUp(t *testing.T) {
 			cutoffTime := now.Add(-tt.expiration)
 			for _, session := range expectedSessions {
 				retrievedSession, err := testRepo.GetByID(session.ID)
-				notFoundErr := customErrors.NewEntityNotFoundError("Session", session.ID, sql.ErrNoRows)
+				notFoundErr := customErrors.NewNotFoundError("Session", session.ID, sql.ErrNoRows)
 				if err != nil && !utils.CompareErrors(err, notFoundErr) {
 					t.Errorf("Unexpected error while retrieving user session: %v", err)
 				}

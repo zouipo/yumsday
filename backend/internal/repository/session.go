@@ -42,9 +42,9 @@ func (r *SessionRepository) GetByID(id string) (*model.Session, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewEntityNotFoundError("Session", id, err)
+			return nil, customErrors.NewNotFoundError("Session", id, err)
 		}
-		return nil, customErrors.NewInternalServerError("Failed to fetch session by ID", err)
+		return nil, customErrors.NewInternalError("Failed to fetch session by ID", err)
 	}
 
 	return s, nil
@@ -63,7 +63,7 @@ func (r *SessionRepository) Write(s *model.Session) error {
 		s.ID, s.CreatedAt, s.LastActivity, s.IPAddress, s.UserAgent, s.UserID,
 	)
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to write in session", err)
+		return customErrors.NewInternalError("Failed to write in session", err)
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (r *SessionRepository) Write(s *model.Session) error {
 func (r *SessionRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM session WHERE id = ?", id)
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to delete session", err)
+		return customErrors.NewInternalError("Failed to delete session", err)
 	}
 	return nil
 }

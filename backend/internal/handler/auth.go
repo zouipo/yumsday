@@ -55,8 +55,8 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
 	err = h.s.Authenticate(session, loginReq.Username, loginReq.Password)
 	if err != nil {
-		if appErr, ok := errors.AsType[*customErrors.AppError](err); ok {
-			http.Error(w, err.Error(), appErr.StatusCode)
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)

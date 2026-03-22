@@ -37,9 +37,9 @@ func (s *AuthService) Authenticate(session *model.Session, username, password st
 	slog.Debug("Checking password", "username", username)
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return customErrors.NewUnauthorizedError(err, "invalid credentials")
+			return customErrors.NewUnauthorizedError("invalid credentials", err)
 		}
-		return customErrors.NewInternalServerError("an error occurred while checking credentials", err)
+		return customErrors.NewInternalError("an error occurred while checking credentials", err)
 	}
 
 	session.UserID = user.ID
