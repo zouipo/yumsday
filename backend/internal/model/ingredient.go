@@ -5,5 +5,5 @@ type Ingredient struct {
 	Quantity *float64 `json:"quantity"`
 	RecipeID int64    `json:"recipe_id"`
 	ItemID   int64    `json:"item_id"`
-	UnitID   *int64   `json:"unit_id"`
+	UnitID   int64    `json:"unit_id"`
 }

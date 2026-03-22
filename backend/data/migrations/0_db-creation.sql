@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS ingredient (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     quantity FLOAT,
     item_id INTEGER NOT NULL,
-    unit_id INTEGER,
+    unit_id INTEGER NOT NULL,
     reciped_id INTEGER NOT NULL,
     FOREIGN KEY (item_id) REFERENCES item(id),
     FOREIGN KEY (unit_id) REFERENCES unit(id),
