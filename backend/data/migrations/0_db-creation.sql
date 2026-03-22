@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS item (
     description VARCHAR(1000000),
     average_market_price FLOAT,
     unit_type VARCHAR NOT NULL,
-    category VARCHAR
+    item_category VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS recipe (
