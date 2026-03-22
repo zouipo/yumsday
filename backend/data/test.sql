@@ -109,7 +109,7 @@ INSERT INTO dish (id, portion, bought, datetime, recipe_id, user_group_id) VALUE
     (3, 12, 1, datetime('now', '-1 day', '+15 hours'), 1, 1); -- Cookies (bought)
 
 -- Grocery List
-INSERT INTO grocery_list (id, quantity, quantity_bought, user_quantity, item_id, unit_id, user_group_id) VALUES
+INSERT INTO grocery (id, quantity, quantity_bought, user_quantity, item_id, unit_id, user_group_id) VALUES
     (1, 2.0, 0.0, 2.0, 1, 1, 1),       -- 2 kg flour
     (2, 1.0, 0.5, 1.0, 2, 1, 1),       -- 1 kg sugar (half bought)
     (3, 12.0, 12.0, 12.0, 4, 8, 1),    -- 12 eggs (all bought)

@@ -1,6 +1,6 @@
 package model
 
-type GroceryList struct {
+type Grocery struct {
 	ID             int64   `json:"id"`
 	QuantityBought float64 `json:"quantity_bought"`
 	UserQuantity   float64 `json:"user_quantity"`

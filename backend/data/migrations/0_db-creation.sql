@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS dish (
     FOREIGN KEY (user_group_id) REFERENCES user_group(id)
 );
 
-CREATE TABLE IF NOT EXISTS grocery_list (
+CREATE TABLE IF NOT EXISTS grocery (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     quantity_bought FLOAT NOT NULL,
     user_quantity FLOAT NOT NULL,
