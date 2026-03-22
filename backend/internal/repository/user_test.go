@@ -27,44 +27,44 @@ var (
 
 	expectedUsers = []model.User{
 		{
-			Username:         "testuser1",
-			Password:         "$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm",
-			AppAdmin:         false,
-			CreatedAt:        yesterday,
-			Avatar:           &enum.Avatar1,
-			Language:         enum.English,
-			AppTheme:         enum.Light,
-			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
+			Username:           "testuser1",
+			Password:           "$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm",
+			AppAdmin:           false,
+			CreatedAt:          yesterday,
+			Avatar:             &enum.Avatar1,
+			Language:           enum.English,
+			AppTheme:           enum.Light,
+			LastVisitedGroupID: func() *int64 { v := int64(1); return &v }(),
 		},
 		{
-			Username:         "testuser2",
-			Password:         "$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2",
-			AppAdmin:         true,
-			CreatedAt:        yesterday,
-			Avatar:           &enum.Avatar2,
-			Language:         enum.French,
-			AppTheme:         enum.Dark,
-			LastVisitedGroup: func() *int64 { v := int64(1); return &v }(),
+			Username:           "testuser2",
+			Password:           "$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2",
+			AppAdmin:           true,
+			CreatedAt:          yesterday,
+			Avatar:             &enum.Avatar2,
+			Language:           enum.French,
+			AppTheme:           enum.Dark,
+			LastVisitedGroupID: func() *int64 { v := int64(1); return &v }(),
 		},
 		{
-			Username:         "testuser3",
-			Password:         "$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy",
-			AppAdmin:         false,
-			CreatedAt:        yesterday,
-			Avatar:           &enum.Avatar3,
-			Language:         enum.English,
-			AppTheme:         enum.System,
-			LastVisitedGroup: func() *int64 { v := int64(2); return &v }(),
+			Username:           "testuser3",
+			Password:           "$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy",
+			AppAdmin:           false,
+			CreatedAt:          yesterday,
+			Avatar:             &enum.Avatar3,
+			Language:           enum.English,
+			AppTheme:           enum.System,
+			LastVisitedGroupID: func() *int64 { v := int64(2); return &v }(),
 		},
 		{
-			Username:         "testuser4",
-			Password:         "$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa",
-			AppAdmin:         false,
-			CreatedAt:        yesterday,
-			Avatar:           nil,
-			Language:         enum.English,
-			AppTheme:         enum.Light,
-			LastVisitedGroup: nil,
+			Username:           "testuser4",
+			Password:           "$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa",
+			AppAdmin:           false,
+			CreatedAt:          yesterday,
+			Avatar:             nil,
+			Language:           enum.English,
+			AppTheme:           enum.Light,
+			LastVisitedGroupID: nil,
 		},
 	}
 )
@@ -118,11 +118,11 @@ func compareUsers(actual, expected *model.User) error {
 		return fmt.Errorf("AppTheme = %s instead of %s", actual.AppTheme, expected.AppTheme)
 	}
 
-	// Compare LastVisitedGroup pointers
-	if (actual.LastVisitedGroup == nil) != (expected.LastVisitedGroup == nil) {
-		return fmt.Errorf("LastVisitedGroup nil mismatch: got'%v'instead of %v", actual.LastVisitedGroup, expected.LastVisitedGroup)
-	} else if actual.LastVisitedGroup != nil && expected.LastVisitedGroup != nil && *actual.LastVisitedGroup != *expected.LastVisitedGroup {
-		return fmt.Errorf("LastVisitedGroup = %d instead of %d", *actual.LastVisitedGroup, *expected.LastVisitedGroup)
+	// Compare LastVisitedGroupID pointers
+	if (actual.LastVisitedGroupID == nil) != (expected.LastVisitedGroupID == nil) {
+		return fmt.Errorf("LastVisitedGroupID nil mismatch: got'%v'instead of %v", actual.LastVisitedGroupID, expected.LastVisitedGroupID)
+	} else if actual.LastVisitedGroupID != nil && expected.LastVisitedGroupID != nil && *actual.LastVisitedGroupID != *expected.LastVisitedGroupID {
+		return fmt.Errorf("LastVisitedGroupID = %d instead of %d", *actual.LastVisitedGroupID, *expected.LastVisitedGroupID)
 	}
 	return nil
 }
@@ -150,7 +150,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// Insert test users
 	for i, user := range expectedUsers {
 		res, err := db.Exec(
-			`INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group)
+			`INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group_id)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
 			user.Username,
 			user.Password,
@@ -159,7 +159,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 			user.Avatar,
 			user.Language,
 			user.AppTheme,
-			user.LastVisitedGroup,
+			user.LastVisitedGroupID,
 		)
 		if err != nil {
 			t.Fatalf("failed to insert test user '%s'", user.Username)
@@ -415,15 +415,15 @@ func TestUpdate(t *testing.T) {
 		{
 			name: "duplicate username update",
 			user: &model.User{
-				ID:               expectedUsers[1].ID,
-				Username:         expectedUsers[0].Username,
-				Password:         expectedUsers[1].Password + "_updated",
-				AppAdmin:         true,
-				CreatedAt:        expectedUsers[1].CreatedAt,
-				Avatar:           &avatar2,
-				Language:         enum.French,
-				AppTheme:         enum.Dark,
-				LastVisitedGroup: expectedUsers[1].LastVisitedGroup,
+				ID:                 expectedUsers[1].ID,
+				Username:           expectedUsers[0].Username,
+				Password:           expectedUsers[1].Password + "_updated",
+				AppAdmin:           true,
+				CreatedAt:          expectedUsers[1].CreatedAt,
+				Avatar:             &avatar2,
+				Language:           enum.French,
+				AppTheme:           enum.Dark,
+				LastVisitedGroupID: expectedUsers[1].LastVisitedGroupID,
 			},
 			wantErr: customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique),
 		},
@@ -443,30 +443,30 @@ func TestUpdate(t *testing.T) {
 		{
 			name: "no field updated",
 			user: &model.User{
-				ID:               expectedUsers[0].ID,
-				Username:         expectedUsers[0].Username,
-				Password:         expectedUsers[0].Password,
-				AppAdmin:         expectedUsers[0].AppAdmin,
-				CreatedAt:        expectedUsers[0].CreatedAt,
-				Avatar:           expectedUsers[0].Avatar,
-				Language:         expectedUsers[0].Language,
-				AppTheme:         expectedUsers[0].AppTheme,
-				LastVisitedGroup: expectedUsers[0].LastVisitedGroup,
+				ID:                 expectedUsers[0].ID,
+				Username:           expectedUsers[0].Username,
+				Password:           expectedUsers[0].Password,
+				AppAdmin:           expectedUsers[0].AppAdmin,
+				CreatedAt:          expectedUsers[0].CreatedAt,
+				Avatar:             expectedUsers[0].Avatar,
+				Language:           expectedUsers[0].Language,
+				AppTheme:           expectedUsers[0].AppTheme,
+				LastVisitedGroupID: expectedUsers[0].LastVisitedGroupID,
 			},
 			wantErr: nil,
 		},
 		{
 			name: "update existing user",
 			user: &model.User{
-				ID:               expectedUsers[0].ID,
-				Username:         expectedUsers[0].Username + "_updated",
-				Password:         expectedUsers[0].Password + "_updated",
-				AppAdmin:         true,
-				CreatedAt:        expectedUsers[0].CreatedAt,
-				Avatar:           &avatar2,
-				Language:         enum.French,
-				AppTheme:         enum.Dark,
-				LastVisitedGroup: expectedUsers[0].LastVisitedGroup,
+				ID:                 expectedUsers[0].ID,
+				Username:           expectedUsers[0].Username + "_updated",
+				Password:           expectedUsers[0].Password + "_updated",
+				AppAdmin:           true,
+				CreatedAt:          expectedUsers[0].CreatedAt,
+				Avatar:             &avatar2,
+				Language:           enum.French,
+				AppTheme:           enum.Dark,
+				LastVisitedGroupID: expectedUsers[0].LastVisitedGroupID,
 			},
 			wantErr: nil,
 		},
