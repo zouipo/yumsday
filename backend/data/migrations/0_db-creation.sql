@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS user (
     avatar VARCHAR,
     language VARCHAR NOT NULL,
     app_theme VARCHAR NOT NULL,
-    last_visited_group INTEGER,
-    FOREIGN KEY (last_visited_group) REFERENCES user_group(id)
+    last_visited_group_id INTEGER,
+    FOREIGN KEY (last_visited_group_id) REFERENCES user_group(id)
 );
 
 INSERT INTO user (username, password, app_admin, created_at, language, app_theme) VALUES (
