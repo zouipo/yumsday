@@ -126,11 +126,10 @@ CREATE TABLE IF NOT EXISTS dish (
 
 CREATE TABLE IF NOT EXISTS grocery_list (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    quantity FLOAT,
-    quantity_bought FLOAT,
-    user_quantity FLOAT,
+    quantity_bought FLOAT NOT NULL,
+    user_quantity FLOAT NOT NULL,
     item_id INTEGER NOT NULL,
-    unit_id INTEGER,
+    unit_id INTEGER NOT NULL,
     user_group_id INTEGER NOT NULL,
     FOREIGN KEY (item_id) REFERENCES item(id),
     FOREIGN KEY (unit_id) REFERENCES unit(id),
