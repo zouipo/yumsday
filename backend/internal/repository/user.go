@@ -38,7 +38,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 func (r *UserRepository) GetAll() ([]model.User, error) {
 	users, err := r.fetchUsers()
 	if err != nil {
-		return nil, customErrors.NewInternalServerError("Failed to fetch users", err)
+		return nil, customErrors.NewInternalError("Failed to fetch users", err)
 	}
 
 	return users, nil
@@ -50,9 +50,9 @@ func (r *UserRepository) GetByID(id int64) (*model.User, error) {
 	user, err := r.fetchUser("id", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), err)
+			return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
 		}
-		return nil, customErrors.NewInternalServerError("Failed to fetch user by ID", err)
+		return nil, customErrors.NewInternalError("Failed to fetch user by ID", err)
 	}
 
 	return user, nil
@@ -64,7 +64,7 @@ func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
 	user, err := r.fetchUser("username", username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewEntityNotFoundError("User", username, err)
+			return nil, customErrors.NewNotFoundError("User", username, err)
 		}
 		return nil, err
 	}
@@ -90,13 +90,13 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
-			return 0, customErrors.NewInternalServerError("Failed to create user", err)
+			return 0, customErrors.NewInternalError("Failed to create user", err)
 		}
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, customErrors.NewInternalServerError("Failed to retrieve created user", err)
+		return 0, customErrors.NewInternalError("Failed to retrieve created user", err)
 	}
 
 	return id, nil
@@ -123,18 +123,18 @@ func (r *UserRepository) Update(user *model.User) error {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
-			return customErrors.NewInternalServerError("Failed to update user", err)
+			return customErrors.NewInternalError("Failed to update user", err)
 		}
 	}
 
 	updatedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to retrieve updated user", err)
+		return customErrors.NewInternalError("Failed to retrieve updated user", err)
 	}
 
 	// If no row was updated (because the resource was not found), returns an AppError of type EntityNotFoundError
 	if updatedRow == 0 {
-		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), err)
+		return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), err)
 	}
 
 	return nil
@@ -149,16 +149,16 @@ func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 		id,
 	)
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to update user admin role", err)
+		return customErrors.NewInternalError("Failed to update user admin role", err)
 	}
 
 	updatedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to retrieve updated user", err)
+		return customErrors.NewInternalError("Failed to retrieve updated user", err)
 	}
 
 	if updatedRow == 0 {
-		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil
@@ -169,16 +169,16 @@ func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 func (r *UserRepository) Delete(id int64) error {
 	result, err := r.db.Exec("DELETE FROM user WHERE id = ?", id)
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to delete user", err)
+		return customErrors.NewInternalError("Failed to delete user", err)
 	}
 
 	deletedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalServerError("Failed to retrieve deleted user", err)
+		return customErrors.NewInternalError("Failed to retrieve deleted user", err)
 	}
 
 	if deletedRow == 0 {
-		return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil

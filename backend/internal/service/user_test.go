@@ -28,7 +28,7 @@ var (
 	invalidId       = -1
 	invalidUsername = "_"
 
-	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 )
 
 // MockUserRepository is a mock implementation of UserRepository for testing
@@ -71,7 +71,7 @@ func (m *MockUserRepository) GetByID(id int64) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), nil)
+	return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), nil)
 }
 
 func (m *MockUserRepository) GetByUsername(username string) (*model.User, error) {
@@ -84,7 +84,7 @@ func (m *MockUserRepository) GetByUsername(username string) (*model.User, error)
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewEntityNotFoundError("User", username, nil)
+	return nil, customErrors.NewNotFoundError("User", username, nil)
 }
 
 func (m *MockUserRepository) Create(user *model.User) (int64, error) {
@@ -125,7 +125,7 @@ func (m *MockUserRepository) Update(user *model.User) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), nil)
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), nil)
 }
 
 func (m *MockUserRepository) UpdateAdminRole(userID int64, role bool) error {
@@ -139,7 +139,7 @@ func (m *MockUserRepository) UpdateAdminRole(userID int64, role bool) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(userID, 10), nil)
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(userID, 10), nil)
 }
 
 func (m *MockUserRepository) Delete(id int64) error {
@@ -155,7 +155,7 @@ func (m *MockUserRepository) Delete(id int64) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), nil)
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), nil)
 }
 
 /*** HELPER FUNCTIONS ***/
@@ -278,7 +278,7 @@ func TestGetAll_Success(t *testing.T) {
 
 func TestGetAll_RepositoryError(t *testing.T) {
 	mockRepo := NewMockUserRepository()
-	mockRepo.getAllErr = customErrors.NewInternalServerError("Failed to fetch users", nil)
+	mockRepo.getAllErr = customErrors.NewInternalError("Failed to fetch users", nil)
 
 	service := &UserService{repo: mockRepo}
 
@@ -324,7 +324,7 @@ func TestGetByID_NotFound(t *testing.T) {
 
 func TestGetByID_RepositoryError(t *testing.T) {
 	mockRepo := setupTestData()
-	mockRepo.getByIDErr = customErrors.NewInternalServerError("Failed to fetch user by ID", nil)
+	mockRepo.getByIDErr = customErrors.NewInternalError("Failed to fetch user by ID", nil)
 
 	service := &UserService{repo: mockRepo}
 
@@ -366,7 +366,7 @@ func TestGetByUsername_NotFound(t *testing.T) {
 		t.Error("GetByUsername() expected error , got non-nil user")
 	}
 
-	notFoundUsernameErr := customErrors.NewEntityNotFoundError("User", invalidUsername, nil)
+	notFoundUsernameErr := customErrors.NewNotFoundError("User", invalidUsername, nil)
 	if !utils.CompareErrors(err, notFoundUsernameErr) {
 		t.Errorf("GetByUsername() error ='%v', got expected %v", err, notFoundUsernameErr)
 	}
@@ -510,7 +510,7 @@ func TestCreate_InvalidPassword(t *testing.T) {
 
 func TestCreate_RepositoryError(t *testing.T) {
 	mockRepo := setupTestData()
-	mockRepo.createErr = customErrors.NewInternalServerError("Failed to retrieve created user", nil)
+	mockRepo.createErr = customErrors.NewInternalError("Failed to retrieve created user", nil)
 
 	usersNb := len(mockRepo.users)
 
@@ -636,7 +636,7 @@ func TestUpdateAdminRole_UserNotFound(t *testing.T) {
 
 	err := service.UpdateAdminRole(int64(invalidId), true)
 
-	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdateAdminRole() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
@@ -645,7 +645,7 @@ func TestUpdateAdminRole_UserNotFound(t *testing.T) {
 func TestUpdateAdminRole_RepositoryError(t *testing.T) {
 	mockRepo := NewMockUserRepository()
 	service := &UserService{repo: mockRepo}
-	mockRepo.updateErr = customErrors.NewInternalServerError("Failed to update user admin role", nil)
+	mockRepo.updateErr = customErrors.NewInternalError("Failed to update user admin role", nil)
 
 	err := service.UpdateAdminRole(1, true)
 	if !utils.CompareErrors(err, mockRepo.updateErr) {
@@ -755,7 +755,7 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 
 	err := service.UpdatePassword(int64(invalidId), user.Password, ValidPassword)
 
-	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
@@ -764,7 +764,7 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 func TestUpdatePassword_RepositoryError(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
-	mockRepo.updateErr = customErrors.NewInternalServerError("Failed to update user", nil)
+	mockRepo.updateErr = customErrors.NewInternalError("Failed to update user", nil)
 
 	user := mockRepo.users[0]
 
@@ -800,7 +800,7 @@ func TestDelete_UserNotFound(t *testing.T) {
 
 	err := service.Delete(int64(invalidId))
 
-	notFoundIdErr = customErrors.NewEntityNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("Delete() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
@@ -808,7 +808,7 @@ func TestDelete_UserNotFound(t *testing.T) {
 
 func TestDelete_RepositoryError(t *testing.T) {
 	mockRepo := setupTestData()
-	mockRepo.deleteErr = customErrors.NewInternalServerError("Failed to delete user", nil)
+	mockRepo.deleteErr = customErrors.NewInternalError("Failed to delete user", nil)
 
 	service := &UserService{repo: mockRepo}
 

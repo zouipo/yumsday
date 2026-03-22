@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -131,7 +130,7 @@ func TestPostLogin_MissingCredentials(t *testing.T) {
 
 func TestPostLogin_AppError(t *testing.T) {
 	mockService := &mockAuthService{
-		authErr: customErrors.NewUnauthorizedError(errors.New("invalid"), "invalid credentials"),
+		authErr: customErrors.NewUnauthorizedError("invalid credentials", nil),
 	}
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
@@ -159,7 +158,9 @@ func TestPostLogin_AppError(t *testing.T) {
 }
 
 func TestPostLogin_GenericError(t *testing.T) {
-	mockService := &mockAuthService{authErr: customErrors.NewInternalServerError("an error occurred while checking credentials", nil)}
+	mockService := &mockAuthService{
+		authErr: customErrors.NewInternalError("an error occurred while checking credentials", nil),
+	}
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
@@ -212,7 +213,7 @@ func TestPostLogout_Success(t *testing.T) {
 }
 
 func TestPostLogout_Error(t *testing.T) {
-	mockService := &mockAuthService{logoutErr: customErrors.NewInternalServerError("Failed to remove session", nil)}
+	mockService := &mockAuthService{logoutErr: customErrors.NewInternalError("Failed to remove session", nil)}
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 

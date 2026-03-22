@@ -29,7 +29,7 @@ var (
 	testUser3 = createTestUser(3, "user3", "password789")
 
 	notFoundErr = "No row found"
-	conflictErr = "Conflict with User: already exists"
+	conflictErr = "Conflict with entity 'User': already exists"
 
 	validUsername = "validuser"
 	validPassword = "ValidPass123"
@@ -80,7 +80,7 @@ func (m *MockUserService) GetByID(id int64) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
@@ -93,7 +93,7 @@ func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewEntityNotFoundError("User", username, errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("User", username, errors.New(notFoundErr))
 }
 
 func (m *MockUserService) Create(user *model.User) (int64, error) {
@@ -117,7 +117,7 @@ func (m *MockUserService) Update(user *model.User) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(user.ID, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) Delete(id int64) error {
@@ -130,7 +130,7 @@ func (m *MockUserService) Delete(id int64) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
@@ -143,7 +143,7 @@ func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword string) error {
@@ -156,7 +156,7 @@ func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword stri
 			return nil
 		}
 	}
-	return customErrors.NewEntityNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 /*** HELPER FUNCTIONS ***/
@@ -310,7 +310,7 @@ func TestGetUsersAll_Success(t *testing.T) {
 func TestGetUsersAll_RepoError(t *testing.T) {
 	mockService := NewMockUserService()
 	errMessage := errors.New("Failed to fetch users")
-	mockService.getAllErr = customErrors.NewInternalServerError("Failed to fetch users", errMessage)
+	mockService.getAllErr = customErrors.NewInternalError("Failed to fetch users", errMessage)
 
 	handler := NewUserHandler(mockService)
 
@@ -319,7 +319,7 @@ func TestGetUsersAll_RepoError(t *testing.T) {
 
 	handler.getUsers(w, r)
 
-	statusCode := mockService.getAllErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.getAllErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -662,7 +662,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 	handler.createUser(w, r)
 
-	statusCode := mockService.createErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.createErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -702,7 +702,7 @@ func TestCreateUser_ConflictError(t *testing.T) {
 
 	handler.createUser(w, r)
 
-	statusCode := mockService.createErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.createErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -719,7 +719,7 @@ func TestCreateUser_ConflictError(t *testing.T) {
 func TestCreateUser_RepoError(t *testing.T) {
 	mockService := setupTestData()
 	errMessage := "Failed to create user"
-	mockService.createErr = customErrors.NewInternalServerError(errMessage, nil)
+	mockService.createErr = customErrors.NewInternalError(errMessage, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -742,7 +742,7 @@ func TestCreateUser_RepoError(t *testing.T) {
 
 	handler.createUser(w, r)
 
-	statusCode := mockService.createErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.createErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -831,7 +831,7 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 
 	handler.updateUser(w, r)
 
-	statusCode := mockService.updateErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updateErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -866,7 +866,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 
 	handler.updateUser(w, r)
 
-	statusCode := mockService.updateErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updateErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -889,7 +889,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 func TestUpdateUser_RepoError(t *testing.T) {
 	mockService := setupTestData()
 	errMessage := "Failed to update user"
-	mockService.updateErr = customErrors.NewInternalServerError(errMessage, nil)
+	mockService.updateErr = customErrors.NewInternalError(errMessage, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -907,7 +907,7 @@ func TestUpdateUser_RepoError(t *testing.T) {
 
 	handler.updateUser(w, r)
 
-	statusCode := mockService.updateErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updateErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -999,7 +999,7 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 	mockService := setupTestData()
 	errMessage := "Failed to update user admin role"
-	mockService.updateRoleErr = customErrors.NewInternalServerError(errMessage, nil)
+	mockService.updateRoleErr = customErrors.NewInternalError(errMessage, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -1017,7 +1017,7 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 
 	handler.updateUserAdminRole(w, r)
 
-	statusCode := mockService.updateRoleErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updateRoleErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -1130,7 +1130,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 
 	handler.updateUserPassword(w, r)
 
-	statusCode := mockService.updatePassErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updatePassErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -1153,7 +1153,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 func TestUpdateUserPassword_RepoError(t *testing.T) {
 	mockService := setupTestData()
 	errMessage := "Failed to update user"
-	mockService.updatePassErr = customErrors.NewInternalServerError(errMessage, nil)
+	mockService.updatePassErr = customErrors.NewInternalError(errMessage, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -1173,7 +1173,7 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 
 	handler.updateUserPassword(w, r)
 
-	statusCode := mockService.updatePassErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.updatePassErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
@@ -1253,7 +1253,7 @@ func TestDeleteUser_NotFound(t *testing.T) {
 func TestDeleteUser_RepoError(t *testing.T) {
 	mockService := setupTestData()
 	errMessage := "Failed to delete user"
-	mockService.deleteErr = customErrors.NewInternalServerError(errMessage, nil)
+	mockService.deleteErr = customErrors.NewInternalError(errMessage, nil)
 
 	handler := NewUserHandler(mockService)
 
@@ -1267,7 +1267,7 @@ func TestDeleteUser_RepoError(t *testing.T) {
 
 	handler.deleteUser(w, r)
 
-	statusCode := mockService.deleteErr.(*customErrors.AppError).StatusCode
+	statusCode := mockService.deleteErr.(customErrors.AppError).HTTPStatus()
 	if w.Code != statusCode {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
