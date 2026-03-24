@@ -16,4 +16,9 @@ type User struct {
 	Language           enum.Language `json:"language"`
 	AppTheme           enum.AppTheme `json:"theme"`
 	LastVisitedGroupID *int64        `json:"last_visited_group_id"`
+	Groups             []struct {
+		UserGroupID int64     `json:"user_group_id"`
+		Admin       bool      `json:"admin"`
+		JoinedAt    time.Time `json:"joined_at"`
+	}
 }
