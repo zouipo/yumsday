@@ -194,9 +194,9 @@ func copyUser(user model.User) model.User {
 		avatarCopy := *user.Avatar
 		copy.Avatar = &avatarCopy
 	}
-	if user.LastVisitedGroup != nil {
-		groupCopy := *user.LastVisitedGroup
-		copy.LastVisitedGroup = &groupCopy
+	if user.LastVisitedGroupID != nil {
+		groupCopy := *user.LastVisitedGroupID
+		copy.LastVisitedGroupID = &groupCopy
 	}
 	return copy
 }

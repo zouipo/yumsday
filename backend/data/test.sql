@@ -1,4 +1,4 @@
--- INSERT INTO user (id, username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group) VALUES
+-- INSERT INTO user (id, username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group_id) VALUES
 --     (1, 'testuser1', '$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm', 0, datetime('now', '-1 day'), '/static/assets/avatar1.jpg', 'EN', 'LIGHT', NULL),
 --     (2, 'testuser2', '$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2', 1, datetime('now', '-1 day'), '/static/assets/avatar2.jpg', 'FR', 'DARK', NULL),
 --     (3, 'testuser3', '$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy', 0, datetime('now', '-1 day'), '/static/assets/avatar3.jpg', 'EN', 'SYSTEM', NULL),
@@ -9,10 +9,10 @@ INSERT INTO user_group (id, name, image_url, created_at) VALUES
     (2, 'Friends', '/static/images/friends.jpg', datetime('now', '-1 day')),
     (3, 'Work', NULL, datetime('now', '-1 day'));
 
--- Update users with last_visited_group
-UPDATE user SET last_visited_group = 1 WHERE id = 1;
-UPDATE user SET last_visited_group = 1 WHERE id = 2;
-UPDATE user SET last_visited_group = 2 WHERE id = 3;
+-- Update users with last_visited_group_id
+UPDATE user SET last_visited_group_id = 1 WHERE id = 1;
+UPDATE user SET last_visited_group_id = 1 WHERE id = 2;
+UPDATE user SET last_visited_group_id = 2 WHERE id = 3;
 
 INSERT INTO member_group (user_id, user_group_id, admin, joined_at) VALUES
     (1, 1, 1, datetime('now', '-1 day')),
@@ -109,7 +109,7 @@ INSERT INTO dish (id, portion, bought, datetime, recipe_id, user_group_id) VALUE
     (3, 12, 1, datetime('now', '-1 day', '+15 hours'), 1, 1); -- Cookies (bought)
 
 -- Grocery List
-INSERT INTO grocery_list (id, quantity, quantity_bought, user_quantity, item_id, unit_id, user_group_id) VALUES
+INSERT INTO grocery (id, quantity, quantity_bought, user_quantity, item_id, unit_id, user_group_id) VALUES
     (1, 2.0, 0.0, 2.0, 1, 1, 1),       -- 2 kg flour
     (2, 1.0, 0.5, 1.0, 2, 1, 1),       -- 1 kg sugar (half bought)
     (3, 12.0, 12.0, 12.0, 4, 8, 1),    -- 12 eggs (all bought)

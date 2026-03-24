@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS user (
     avatar VARCHAR,
     language VARCHAR NOT NULL,
     app_theme VARCHAR NOT NULL,
-    last_visited_group INTEGER,
-    FOREIGN KEY (last_visited_group) REFERENCES user_group(id)
+    last_visited_group_id INTEGER,
+    FOREIGN KEY (last_visited_group_id) REFERENCES user_group(id)
 );
 
 INSERT INTO user (username, password, app_admin, created_at, language, app_theme) VALUES (
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS item (
     description VARCHAR(1000000),
     average_market_price FLOAT,
     unit_type VARCHAR NOT NULL,
-    category VARCHAR
+    item_category VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS recipe (
@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS recipe (
     description VARCHAR(1000000),
     image_url VARCHAR,
     original_link VARCHAR,
-    preparation_time INTEGER,
-    cooking_time INTEGER,
+    preparation_time_min INTEGER,
+    cooking_time_min INTEGER,
     servings INTEGER,
     instructions VARCHAR(1000000),
     created_at TIMESTAMP NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS ingredient (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     quantity FLOAT,
     item_id INTEGER NOT NULL,
-    unit_id INTEGER,
+    unit_id INTEGER NOT NULL,
     reciped_id INTEGER NOT NULL,
     FOREIGN KEY (item_id) REFERENCES item(id),
     FOREIGN KEY (unit_id) REFERENCES unit(id),
@@ -124,13 +124,12 @@ CREATE TABLE IF NOT EXISTS dish (
     FOREIGN KEY (user_group_id) REFERENCES user_group(id)
 );
 
-CREATE TABLE IF NOT EXISTS grocery_list (
+CREATE TABLE IF NOT EXISTS grocery (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    quantity FLOAT,
-    quantity_bought FLOAT,
-    user_quantity FLOAT,
+    quantity_bought FLOAT NOT NULL,
+    user_quantity FLOAT NOT NULL,
     item_id INTEGER NOT NULL,
-    unit_id INTEGER,
+    unit_id INTEGER NOT NULL,
     user_group_id INTEGER NOT NULL,
     FOREIGN KEY (item_id) REFERENCES item(id),
     FOREIGN KEY (unit_id) REFERENCES unit(id),

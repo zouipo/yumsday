@@ -207,7 +207,7 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 			&user.Avatar,
 			&user.Language,
 			&user.AppTheme,
-			&user.LastVisitedGroup,
+			&user.LastVisitedGroupID,
 		)
 
 		if err != nil {
@@ -245,7 +245,7 @@ func (r *UserRepository) fetchUser(column string, args ...any) (*model.User, err
 		&user.Avatar,
 		&user.Language,
 		&user.AppTheme,
-		&user.LastVisitedGroup,
+		&user.LastVisitedGroupID,
 	)
 
 	if err != nil {
