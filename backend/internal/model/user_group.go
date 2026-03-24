@@ -12,4 +12,8 @@ type UserGroup struct {
 		Admin    bool      `json:"admin"`
 		JoinedAt time.Time `json:"joined_at"`
 	}
+	Groceries  []Grocery  `json:"groceries"`
+	Categories []Category `json:"categories"`
+	Recipes    []Recipe   `json:"recipes"`
+	Dishes     []Dish     `json:"dishes"`
 }
