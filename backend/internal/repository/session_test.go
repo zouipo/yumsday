@@ -102,7 +102,7 @@ func setupSessionTestDB(t *testing.T) *sql.DB {
 	var userIDs []int64
 	for _, user := range testUsers {
 		res, err := db.Exec(
-			`INSERT INTO user (username, password, app_admin, created_at, language, app_theme)
+			`INSERT INTO users (username, password, app_admin, created_at, language, app_theme)
 			VALUES (?, ?, ?, ?, ?, ?);`,
 			user.username,
 			user.password,
@@ -129,7 +129,7 @@ func setupSessionTestDB(t *testing.T) *sql.DB {
 
 	for _, session := range expectedSessions {
 		_, err := db.Exec(
-			`INSERT INTO session (id, created_at, last_activity, ip_address, user_agent, user_id)
+			`INSERT INTO sessions (id, created_at, last_activity, ip_address, user_agent, user_id)
 			VALUES (?, ?, ?, ?, ?, ?);`,
 			session.ID,
 			session.CreatedAt,

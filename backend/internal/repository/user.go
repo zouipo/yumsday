@@ -76,7 +76,7 @@ func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
 // Returns an AppError if creation fails.
 func (r *UserRepository) Create(user *model.User) (int64, error) {
 	result, err := r.db.Exec(
-		"INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO users (username, password, app_admin, created_at, avatar, language, app_theme) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		user.Username,
 		user.Password,
 		user.AppAdmin,
@@ -109,7 +109,7 @@ func (r *UserRepository) Update(user *model.User) error {
 	slog.Debug("Existing user before update", "user", existingUser, "error", err)
 
 	result, err := r.db.Exec(
-		"UPDATE user SET username = ?, password = ?, app_admin = ?, avatar = ?, language = ?, app_theme = ? WHERE id = ?",
+		"UPDATE users SET username = ?, password = ?, app_admin = ?, avatar = ?, language = ?, app_theme = ? WHERE id = ?",
 		user.Username,
 		user.Password,
 		user.AppAdmin,
@@ -144,7 +144,7 @@ func (r *UserRepository) Update(user *model.User) error {
 // Returns an AppError if update fails.
 func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 	result, err := r.db.Exec(
-		"UPDATE user SET app_admin = ? WHERE id = ?",
+		"UPDATE users SET app_admin = ? WHERE id = ?",
 		role,
 		id,
 	)
@@ -167,7 +167,7 @@ func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 // Delete removes a user by its ID.
 // Returns an AppError if deletion fails.
 func (r *UserRepository) Delete(id int64) error {
-	result, err := r.db.Exec("DELETE FROM user WHERE id = ?", id)
+	result, err := r.db.Exec("DELETE FROM users WHERE id = ?", id)
 	if err != nil {
 		return customErrors.NewInternalError("Failed to delete user", err)
 	}
@@ -189,7 +189,7 @@ func (r *UserRepository) Delete(id int64) error {
 func (r *UserRepository) fetchUsers() ([]model.User, error) {
 	users := []model.User{}
 
-	rows, err := r.db.Query("SELECT * FROM user")
+	rows, err := r.db.Query("SELECT * FROM users")
 
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 func (r *UserRepository) fetchUser(column string, args ...any) (*model.User, error) {
 	user := &model.User{}
 
-	query := "SELECT * FROM user WHERE " + column + " = ?"
+	query := "SELECT * FROM users WHERE " + column + " = ?"
 
 	row := r.db.QueryRow(query, args...)
 

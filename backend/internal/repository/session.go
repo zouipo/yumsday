@@ -28,7 +28,7 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 
 // GetByID retrieves a session by its ID.
 func (r *SessionRepository) GetByID(id string) (*model.Session, error) {
-	row := r.db.QueryRow("SELECT * FROM session WHERE id = ?", id)
+	row := r.db.QueryRow("SELECT * FROM sessions WHERE id = ?", id)
 
 	s := &model.Session{}
 
@@ -53,7 +53,7 @@ func (r *SessionRepository) GetByID(id string) (*model.Session, error) {
 // Write inserts a new session or updates an existing one based on the session ID.
 func (r *SessionRepository) Write(s *model.Session) error {
 	_, err := r.db.Exec(
-		`INSERT INTO session (id, created_at, last_activity, ip_address, user_agent, user_id)
+		`INSERT INTO sessions (id, created_at, last_activity, ip_address, user_agent, user_id)
 		 VALUES (?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(id) DO UPDATE SET
 		   user_id = excluded.user_id,
@@ -72,7 +72,7 @@ func (r *SessionRepository) Write(s *model.Session) error {
 //
 // NOTE: It does not return an error if the session doesn't exist, since SQLite's DELETE doesn't error on non-existent rows.
 func (r *SessionRepository) Delete(id string) error {
-	_, err := r.db.Exec("DELETE FROM session WHERE id = ?", id)
+	_, err := r.db.Exec("DELETE FROM sessions WHERE id = ?", id)
 	if err != nil {
 		return customErrors.NewInternalError("Failed to delete session", err)
 	}
@@ -82,7 +82,7 @@ func (r *SessionRepository) Delete(id string) error {
 // CleanUp removes sessions that have been inactive for longer than the specified expiration duration.
 // It returns the number of sessions that were removed.
 func (r *SessionRepository) CleanUp(expiration time.Duration) int64 {
-	result, err := r.db.Exec("DELETE FROM session WHERE last_activity < ?", time.Now().Add(-expiration).UTC())
+	result, err := r.db.Exec("DELETE FROM sessions WHERE last_activity < ?", time.Now().Add(-expiration).UTC())
 	if err != nil {
 		return 0
 	}
