@@ -18,8 +18,8 @@ type User struct {
 	LastVisitedGroupID *int64        `json:"last_visited_group_id"`
 	Sessions           []string      `json:"sessions"`
 	Groups             []struct {
-		UserGroupID int64     `json:"user_group_id"`
-		Admin       bool      `json:"admin"`
-		JoinedAt    time.Time `json:"joined_at"`
+		GroupID  int64     `json:"group_id"`
+		Admin    bool      `json:"admin"`
+		JoinedAt time.Time `json:"joined_at"`
 	} `json:"groups"`
 }

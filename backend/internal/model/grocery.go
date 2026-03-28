@@ -6,5 +6,5 @@ type Grocery struct {
 	UserQuantity   float64 `json:"user_quantity"`
 	ItemID         int64   `json:"item_id"`
 	UnitID         int64   `json:"unit_id"`
-	UserGroupID    int64   `json:"user_group_id"`
+	GroupID        int64   `json:"group_id"`
 }

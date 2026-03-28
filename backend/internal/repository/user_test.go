@@ -150,7 +150,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// Insert test users
 	for i, user := range expectedUsers {
 		res, err := db.Exec(
-			`INSERT INTO user (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group_id)
+			`INSERT INTO users (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group_id)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
 			user.Username,
 			user.Password,
