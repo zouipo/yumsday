@@ -174,16 +174,11 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-// teardownTestDB closes the database connection.
-func teardownTestDB(db *sql.DB) {
-	db.Close()
-}
-
 /*** TEST CONSTRUCTOR ***/
 
 func TestNewUserRepository(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -200,7 +195,7 @@ func TestNewUserRepository(t *testing.T) {
 
 func TestGetAll(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -216,7 +211,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByUserID(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -268,7 +263,7 @@ func TestGetByUserID(t *testing.T) {
 
 func TestGetByUsername(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -323,7 +318,7 @@ func TestGetByUsername(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -400,7 +395,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -502,7 +497,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateAdminRole(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -564,7 +559,7 @@ func TestUpdateAdminRole(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 
@@ -618,7 +613,7 @@ func TestDelete(t *testing.T) {
 
 func TestDeleteThenGetAll(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer utils.TeardownTestDB(db)
 
 	repo := NewUserRepository(db)
 

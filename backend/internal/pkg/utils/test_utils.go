@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"database/sql"
 	"errors"
 	"math"
 	"time"
@@ -50,4 +51,9 @@ func CompareErrors(actual, expected error) bool {
 	}
 
 	return true
+}
+
+// TeardownTestDB closes the database connection.
+func TeardownTestDB(db *sql.DB) {
+	db.Close()
 }
