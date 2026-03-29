@@ -211,7 +211,7 @@ func TestNewUserRepository(t *testing.T) {
 
 /*** READ OPERATIONS TESTS ***/
 
-func TestGetAll(t *testing.T) {
+func TestGetAllUsers(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
