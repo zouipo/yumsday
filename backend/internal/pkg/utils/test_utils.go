@@ -8,6 +8,7 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+// Ptr returns a pointer of type T initialized to v.
 func Ptr[T any](v T) *T {
 	return &v
 }
