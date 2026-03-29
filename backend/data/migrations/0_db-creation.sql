@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS items (
     description VARCHAR(1000000),
     average_market_price FLOAT,
     unit_type VARCHAR NOT NULL,
-    item_category_id INTEGER,
     group_id INTEGER NOT NULL,
+    item_category_id INTEGER NOT NULL,
     FOREIGN KEY (item_category_id) REFERENCES item_categories(id),
     FOREIGN KEY (group_id) REFERENCES groups(id)
 );
