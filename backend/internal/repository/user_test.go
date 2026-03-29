@@ -70,9 +70,14 @@ var (
 )
 
 func compareListUsers(actual, expected []model.User) error {
+	if len(actual) != (len(expected) + 1) {
+		return fmt.Errorf("expected %d users, got %d", len(expected)+1, len(actual))
+	}
+
 	sortUsersByID(actual)
 	sortUsersByID(expected)
 
+	// Start at 1 to skip the admin user created by the migration script
 	for i := 1; i < len(actual)-len(expected); i++ {
 		actualUser := actual[i]
 		expectedUser := expected[i]
