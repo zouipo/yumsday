@@ -151,7 +151,7 @@ func sortItemsByField(items []model.Item, sortBy string) []model.Item {
 
 // setUpTestDB initializes an in-memory SQLite database, applies migrations, and inserts test data for items.
 func setUpTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -415,11 +415,6 @@ func TestGetItemByName(t *testing.T) {
 
 /*** CREATE OPERATIONS TESTS ***/
 func TestCreateItem(t *testing.T) {
-	db := setUpTestDB(t)
-	defer db.Close()
-
-	repo := NewItemRepository(db)
-
 	tests := []struct {
 		name      string
 		item      model.Item
@@ -436,6 +431,11 @@ func TestCreateItem(t *testing.T) {
 			expectErr: nil,
 		},
 		{
+			name:      "Create item with no nil values",
+			item:      expectedItems[1],
+			expectErr: nil,
+		},
+		{
 			name: "Create item with invalid group ID",
 			item: model.Item{
 				Name:    "Invalid Group Item",
@@ -443,10 +443,27 @@ func TestCreateItem(t *testing.T) {
 			},
 			expectErr: customErrors.NewInternalError("Failed to create item", nil),
 		},
+		{
+			name: "Create item with invalid category ID",
+			item: model.Item{
+				Name:    "Invalid Category Item",
+				GroupID: invalidGroupId,
+				ItemCategory: model.ItemCategory{
+					ID:   invalidCategoryId,
+					Name: "Invalid Category",
+				},
+			},
+			expectErr: customErrors.NewInternalError("Failed to create item", nil),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := setUpTestDB(t)
+			defer db.Close()
+
+			repo := NewItemRepository(db)
+
 			id, err := repo.Create(&tt.item)
 
 			if tt.expectErr != nil {
@@ -465,8 +482,8 @@ func TestCreateItem(t *testing.T) {
 			}
 
 			lastId := sortItemsByField(expectedItems, "id")[len(expectedItems)-1].ID
-			if id > lastId {
-				t.Errorf("expected item ID to be sequential: expected <= %d, got %d", lastId, id)
+			if id <= lastId {
+				t.Errorf("expected item ID to be sequential: expected > %d, got %d", lastId, id)
 			}
 
 			// Verify the item was created correctly
@@ -490,9 +507,10 @@ func TestUpdateItem(t *testing.T) {
 	repo := NewItemRepository(db)
 
 	tests := []struct {
-		name      string
-		item      model.Item
-		expectErr error
+		name         string
+		item         model.Item
+		expectedItem model.Item
+		expectErr    error
 	}{
 		{
 			name: "Update existing item",
@@ -508,12 +526,25 @@ func TestUpdateItem(t *testing.T) {
 					Name: "Vegetables",
 				},
 			},
+			expectedItem: model.Item{
+				ID:                 4,
+				Name:               "Carot",
+				Description:        utils.Ptr("Good for making pies, soups, juice, etc."),
+				AverageMarketPrice: utils.Ptr(2.5),
+				UnitType:           enum.Numeric,
+				GroupID:            1,
+				ItemCategory: model.ItemCategory{
+					ID:   2,
+					Name: "Vegetables",
+				},
+			},
 			expectErr: nil,
 		},
 		{
-			name:      "No field updated",
-			item:      expectedItems[0],
-			expectErr: nil,
+			name:         "No field updated",
+			item:         expectedItems[0],
+			expectedItem: expectedItems[0],
+			expectErr:    nil,
 		},
 		{
 			name: "Update non-existing item",
@@ -526,7 +557,50 @@ func TestUpdateItem(t *testing.T) {
 					Name: "Baking",
 				},
 			},
-			expectErr: customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), sql.ErrNoRows),
+			expectedItem: model.Item{},
+			expectErr:    customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), sql.ErrNoRows),
+		},
+		{
+			name: "Update item without taking group ID into account",
+			item: model.Item{
+				ID:                 expectedItems[0].ID,
+				Name:               "Sugar",
+				Description:        expectedItems[0].Description,
+				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
+				UnitType:           expectedItems[0].UnitType,
+				GroupID:            2,
+				ItemCategory: model.ItemCategory{
+					ID:   1,
+					Name: "Baking",
+				},
+			},
+			expectedItem: model.Item{
+				ID:                 expectedItems[0].ID,
+				Name:               "Sugar",
+				Description:        expectedItems[0].Description,
+				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
+				UnitType:           expectedItems[0].UnitType,
+				GroupID:            expectedItems[0].GroupID,
+				ItemCategory: model.ItemCategory{
+					ID:   1,
+					Name: "Baking",
+				},
+			},
+			expectErr: nil,
+		},
+		{
+			name: "Update item with invalid category ID",
+			item: model.Item{
+				ID:      expectedItems[0].ID,
+				Name:    "Valid name",
+				GroupID: 1,
+				ItemCategory: model.ItemCategory{
+					ID:   invalidCategoryId,
+					Name: "Invalid Category",
+				},
+			},
+			expectedItem: model.Item{},
+			expectErr:    customErrors.NewInternalError("Failed to update item", nil),
 		},
 	}
 
@@ -551,7 +625,7 @@ func TestUpdateItem(t *testing.T) {
 				t.Fatalf("failed to retrieve updated item: %v", err)
 			}
 
-			if err := compareItems(updatedItem, &tt.item, true); err != nil {
+			if err := compareItems(updatedItem, &tt.expectedItem, true); err != nil {
 				t.Errorf("updated item does not match expected: %v", err.Error())
 			}
 		})
