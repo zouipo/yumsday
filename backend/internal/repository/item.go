@@ -30,15 +30,19 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string) ([]model.It
 	items := []model.Item{}
 
 	rows, err := r.db.Query(`
-	SELECT i.*, ic.id, ic.name
+	SELECT i.*, ic.name
 	FROM items i
-	LEFT JOIN item_categories ic ON i.item_category_id = ic.id
+	JOIN item_categories ic ON i.item_category_id = ic.id
 	WHERE i.group_id = ?
-	ORDER BY i.?`, groupID, sort)
+	ORDER BY `+sort, groupID)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return items, nil // Return empty slice if no items found for the group ID
+		}
 		return nil, customErrors.NewInternalError("Failed to fetch items", err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var item model.Item
@@ -54,7 +58,6 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string) ([]model.It
 		)
 
 		if err != nil {
-			rows.Close()
 			return nil, customErrors.NewInternalError("Failed to scan item", err)
 		}
 
@@ -177,9 +180,9 @@ func (r *ItemRepository) fetchItem(column string, value any) (*model.Item, error
 	item := &model.Item{}
 
 	query := `
-	SELECT i.*, ic.id, ic.name
+	SELECT i.*, ic.name
 	FROM items i
-	LEFT JOIN item_categories ic ON i.item_category_id = ic.id
+	JOIN item_categories ic ON i.item_category_id = ic.id
 	WHERE i.` + column + ` = ?`
 
 	row := r.db.QueryRow(query, value)
