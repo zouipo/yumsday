@@ -8,7 +8,7 @@ type Item struct {
 	Description        *string       `json:"description"`
 	AverageMarketPrice *float64      `json:"average_market_price"`
 	UnitType           enum.UnitType `json:"unit_type"`
-	ItemCategoryID     int64         `json:"item_category_id"`
+	ItemCategory       ItemCategory  `json:"item_category"`
 	GroupID            int64         `json:"group_id"`
 	Ingredients        []Ingredient  `json:"ingredients"`
 }
