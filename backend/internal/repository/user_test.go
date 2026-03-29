@@ -334,7 +334,7 @@ func TestGetByUsername(t *testing.T) {
 
 /*** CREATE OPERATIONS TESTS ***/
 
-func TestCreate(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -575,7 +575,7 @@ func TestUpdateAdminRole(t *testing.T) {
 
 /*** DELETE OPERATIONS TESTS ***/
 
-func TestDelete(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
