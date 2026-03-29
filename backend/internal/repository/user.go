@@ -90,8 +90,8 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
-			return 0, customErrors.NewInternalError("Failed to create user", err)
 		}
+		return 0, customErrors.NewInternalError("Failed to create user", err)
 	}
 
 	id, err := result.LastInsertId()
@@ -102,7 +102,7 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 	return id, nil
 }
 
-// Update updates an existing user, except the the createdAt field.
+// Update modifies an existing user, except the the createdAt field.
 // Returns an AppError if update fails.
 func (r *UserRepository) Update(user *model.User) error {
 	existingUser, err := r.GetByID(user.ID)
