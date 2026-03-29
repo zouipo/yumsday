@@ -18,7 +18,7 @@ UPDATE users
 SET last_visited_group_id = (SELECT id FROM groups WHERE name = 'Friends')
 WHERE username = 'testuser3';
 
-INSERT INTO group_members (user_id, user_group_id, admin, joined_at) VALUES
+INSERT INTO group_members (user_id, group_id, admin, joined_at) VALUES
     ((SELECT id FROM users WHERE username = 'testuser1'), (SELECT id FROM groups WHERE name = 'Family'), 1, datetime('now', '-1 day')),
     ((SELECT id FROM users WHERE username = 'testuser2'), (SELECT id FROM groups WHERE name = 'Family'), 1, datetime('now', '-1 day')),
     ((SELECT id FROM users WHERE username = 'testuser3'), (SELECT id FROM groups WHERE name = 'Family'), 0, datetime('now', '-1 day')),
@@ -71,14 +71,14 @@ INSERT INTO items (name, description, average_market_price, unit_type, item_cate
     ('Potato Chips', 'Salted potato chips', 2.99, 'BAG', (SELECT id FROM item_categories WHERE name = 'SNACKS'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Friends'));
 
-INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, user_group_id) VALUES
+INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, group_id) VALUES
     ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', datetime('now', '-1 day'), 1, 'Family favorite!', 1),
     ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', datetime('now', '-1 day'), 1, NULL, 1),
     ('Tomato Soup', 'Creamy tomato soup', '/static/recipes/soup.jpg', 'https://example.com/soup', 10, 30, 6, 'Cook tomatoes with onions and blend', datetime('now', '-1 day'), 0, 'Great for winter', 2),
     ('Quick Salad', NULL, NULL, NULL, NULL, NULL, NULL, NULL, datetime('now', '-1 day'), 1, NULL, 1),
     ('Secret Recipe', 'Top secret family recipe', NULL, NULL, 5, 15, 2, 'Cannot reveal instructions', datetime('now', '-1 day'), 0, 'Do not share!', 2);
 
-INSERT INTO recipe_categories (name, user_group_id) VALUES
+INSERT INTO recipe_categories (name, group_id) VALUES
     ('DESSERT', 1),
     ('MAIN COURSE', 1),
     ('SOUP', 1),
@@ -121,6 +121,11 @@ INSERT INTO dishes (portion, bought, datetime, recipe_id, group_id) VALUES
     (4, 0, datetime('now', '-1 day', '+6 hours'), 2, 1),  -- Grilled chicken for dinner
     (6, 0, datetime('now', '-1 day', '+12 hours'), 3, 1),  -- Tomato soup for lunch
     (12, 1, datetime('now', '-1 day', '+15 hours'), 1, 1); -- Cookies (bought)
+
+INSERT INTO recipes_dishes_junction (recipe_id, dish_id) VALUES
+    (2, 1), -- 1st dish: Grilled Chicken
+    (3, 2), -- 2nd dish: Tomato soup
+    (1, 3); -- 3rd dish: Cookies
 
 -- Grocery List
 INSERT INTO groceries (quantity_bought, user_quantity, item_id, unit_id, group_id) VALUES
