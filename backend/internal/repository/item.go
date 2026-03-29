@@ -173,7 +173,7 @@ func (r *ItemRepository) Delete(id int64) error {
 }
 
 // fetchItem is a helper method to retrieve an item based on a specific column and value.
-func (r *ItemRepository) fetchItem(column string, args ...any) (*model.Item, error) {
+func (r *ItemRepository) fetchItem(column string, value any) (*model.Item, error) {
 	item := &model.Item{}
 
 	query := `
@@ -182,7 +182,7 @@ func (r *ItemRepository) fetchItem(column string, args ...any) (*model.Item, err
 	LEFT JOIN item_categories ic ON i.item_category_id = ic.id
 	WHERE i.` + column + ` = ?`
 
-	row := r.db.QueryRow(query, args...)
+	row := r.db.QueryRow(query, value)
 
 	err := row.Scan(
 		&item.ID,

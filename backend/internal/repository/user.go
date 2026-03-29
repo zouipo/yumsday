@@ -229,12 +229,12 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 }
 
 // fetchUser executes the provided query and returns a single user.
-func (r *UserRepository) fetchUser(column string, args ...any) (*model.User, error) {
+func (r *UserRepository) fetchUser(column string, value any) (*model.User, error) {
 	user := &model.User{}
 
 	query := "SELECT * FROM users WHERE " + column + " = ?"
 
-	row := r.db.QueryRow(query, args...)
+	row := r.db.QueryRow(query, value)
 
 	err := row.Scan(
 		&user.ID,
