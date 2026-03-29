@@ -17,6 +17,8 @@ var validMigrations embed.FS
 //go:embed migrations_test/invalid_version/*.sql
 var invalidMigrations embed.FS
 
+const testSQLiteDSN = "file::memory:?_foreign_keys=on"
+
 var expectedValidMigrations = []migration{
 	{
 		version: 0,
@@ -114,7 +116,7 @@ func TestLoadMigrations(t *testing.T) {
 }
 
 func TestPerformMigrations(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -169,7 +171,7 @@ func TestPerformMigrations_InvalidScript(t *testing.T) {
 		},
 	}
 
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -182,7 +184,7 @@ func TestPerformMigrations_InvalidScript(t *testing.T) {
 }
 
 func TestInitializeMigrationVersion(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -205,7 +207,7 @@ func TestInitializeMigrationVersion(t *testing.T) {
 }
 
 func TestInitializeMigrationVersion_AlreadyInitialized(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -223,7 +225,7 @@ func TestInitializeMigrationVersion_AlreadyInitialized(t *testing.T) {
 }
 
 func TestInitiliazeMigrationVersion_CreateExists(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -241,7 +243,7 @@ func TestInitiliazeMigrationVersion_CreateExists(t *testing.T) {
 }
 
 func TestGetMigrationVersion(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", testSQLiteDSN)
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}

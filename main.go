@@ -79,12 +79,15 @@ func run(cmd *cobra.Command, args []string) {
 	slog.SetDefault(logger)
 	defer slog.Debug("Closing app")
 
-	db, err := sql.Open("sqlite3", cfg.DBPath)
+	// SQLite DSN (data source name) format: "file:path/to/database.db?_foreign_keys=on".
+	// The query parameter "_foreign_keys=on" is required to enable foreign key constraints in SQLite.
+	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", cfg.DBPath)
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		slog.Error("Failed to open sqlite db", "error", err)
 		return
 	}
-	slog.Info("Opened db", "db_path", cfg.DBPath)
+	slog.Info("Opened db", "db_path", cfg.DBPath, "dsn", dsn)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

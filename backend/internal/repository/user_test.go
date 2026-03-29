@@ -135,7 +135,7 @@ func sortUsersByID(users []model.User) {
 
 // setupTestDB initializes an in-memory SQLite database with test data for testing.
 func setupTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -145,6 +145,19 @@ func setupTestDB(t *testing.T) *sql.DB {
 	err = migration.Migrate(db, migrationsFS)
 	if err != nil {
 		t.Fatalf("failed to apply migrations: %v", err)
+	}
+
+	for groupID := 1; groupID <= 3; groupID++ {
+		_, err = db.Exec(
+			`INSERT INTO groups (id, name, image_url, created_at) VALUES (?, ?, ?, ?);`,
+			groupID,
+			"group-"+strconv.Itoa(groupID),
+			nil,
+			yesterday,
+		)
+		if err != nil {
+			t.Fatalf("failed to insert test group '%d': %v", groupID, err)
+		}
 	}
 
 	// Insert test users
