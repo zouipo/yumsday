@@ -34,7 +34,7 @@ var (
 			Avatar:             &enum.Avatar1,
 			Language:           enum.English,
 			AppTheme:           enum.Light,
-			LastVisitedGroupID: func() *int64 { v := int64(1); return &v }(),
+			LastVisitedGroupID: utils.Ptr(int64(1)),
 		},
 		{
 			Username:           "testuser2",
@@ -44,7 +44,7 @@ var (
 			Avatar:             &enum.Avatar2,
 			Language:           enum.French,
 			AppTheme:           enum.Dark,
-			LastVisitedGroupID: func() *int64 { v := int64(1); return &v }(),
+			LastVisitedGroupID: utils.Ptr(int64(2)),
 		},
 		{
 			Username:           "testuser3",
@@ -54,7 +54,7 @@ var (
 			Avatar:             &enum.Avatar3,
 			Language:           enum.English,
 			AppTheme:           enum.System,
-			LastVisitedGroupID: func() *int64 { v := int64(2); return &v }(),
+			LastVisitedGroupID: utils.Ptr(int64(3)),
 		},
 		{
 			Username:           "testuser4",

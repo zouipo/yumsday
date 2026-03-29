@@ -8,6 +8,11 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+// Ptr returns a pointer of type T initialized to v.
+func Ptr[T any](v T) *T {
+	return &v
+}
+
 // TimesApproximatelyEqual checks if two time values are approximately equal within a specified tolerance.
 func TimesApproximatelyEqual(t1, t2 time.Time, tolerance time.Duration) bool {
 	diff := t1.Sub(t2)
