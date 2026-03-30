@@ -122,12 +122,15 @@ func compareItems(actual, expected *model.Item, compareId bool) error {
 }
 
 // sortItemsByField sorts a slice of Item objects by the specified field and returns the sorted slice.
-func sortItemsByField(items []model.Item, sortBy string) []model.Item {
+func sortItemsByField(items []model.Item, sortBy string, descending bool) []model.Item {
 	sorted := append([]model.Item(nil), items...)
 
 	sort.Slice(sorted, func(i, j int) bool {
 		switch sortBy {
 		case "name":
+			if descending {
+				return sorted[i].Name > sorted[j].Name
+			}
 			return sorted[i].Name < sorted[j].Name
 		case "average_market_price":
 			if sorted[i].AverageMarketPrice == nil {
@@ -136,12 +139,24 @@ func sortItemsByField(items []model.Item, sortBy string) []model.Item {
 			if sorted[j].AverageMarketPrice == nil {
 				return false
 			}
+			if descending {
+				return *sorted[i].AverageMarketPrice > *sorted[j].AverageMarketPrice
+			}
 			return *sorted[i].AverageMarketPrice < *sorted[j].AverageMarketPrice
 		case "unit_type":
+			if descending {
+				return sorted[i].UnitType.String() > sorted[j].UnitType.String()
+			}
 			return sorted[i].UnitType.String() < sorted[j].UnitType.String()
 		case "item_categories.name":
+			if descending {
+				return sorted[i].ItemCategory.Name > sorted[j].ItemCategory.Name
+			}
 			return sorted[i].ItemCategory.Name < sorted[j].ItemCategory.Name
 		default:
+			if descending {
+				return sorted[i].ID > sorted[j].ID
+			}
 			return sorted[i].ID < sorted[j].ID
 		}
 	})
@@ -232,66 +247,82 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 	repo := NewItemRepository(db)
 
 	tests := []struct {
-		name      string
-		groupID   int64
-		sortBy    string
-		expected  []model.Item
-		expectErr error
+		name       string
+		groupID    int64
+		sortBy     string
+		descending bool
+		expected   []model.Item
+		expectErr  error
 	}{
 		{
-			name:      "Valid group ID with sorting by name",
-			groupID:   1,
-			sortBy:    "i.name",
-			expected:  sortItemsByField(expectedItems, "name"),
-			expectErr: nil,
+			name:       "Valid group ID with sorting by name",
+			groupID:    1,
+			sortBy:     "i.name",
+			descending: false,
+			expected:   sortItemsByField(expectedItems, "name", false),
+			expectErr:  nil,
 		},
 		{
-			name:      "Valid group ID with sorting by average market price",
-			groupID:   1,
-			sortBy:    "i.average_market_price",
-			expected:  sortItemsByField(expectedItems, "average_market_price"),
-			expectErr: nil,
+			name:       "Valid group ID with sorting by name",
+			groupID:    1,
+			sortBy:     "i.name",
+			descending: true,
+			expected:   sortItemsByField(expectedItems, "name", true),
+			expectErr:  nil,
 		},
 		{
-			name:      "Valid group ID with sorting by unit type",
-			groupID:   1,
-			sortBy:    "i.unit_type",
-			expected:  sortItemsByField(expectedItems, "unit_type"),
-			expectErr: nil,
+			name:       "Valid group ID with sorting by average market price",
+			groupID:    1,
+			sortBy:     "i.average_market_price",
+			descending: false,
+			expected:   sortItemsByField(expectedItems, "average_market_price", false),
+			expectErr:  nil,
 		},
 		{
-			name:      "Valid group ID with sorting by item category name",
-			groupID:   1,
-			sortBy:    "ic.name",
-			expected:  sortItemsByField(expectedItems, "item_categories.name"),
-			expectErr: nil,
+			name:       "Valid group ID with sorting by unit type",
+			groupID:    1,
+			sortBy:     "i.unit_type",
+			descending: false,
+			expected:   sortItemsByField(expectedItems, "unit_type", false),
+			expectErr:  nil,
 		},
 		{
-			name:      "Valid group ID with sorting by invalid field",
-			groupID:   1,
-			sortBy:    invalidFieldSort,
-			expected:  nil,
-			expectErr: customErrors.NewInternalError("Failed to fetch items", nil),
+			name:       "Valid group ID with sorting by item category name",
+			groupID:    1,
+			sortBy:     "ic.name",
+			descending: false,
+			expected:   sortItemsByField(expectedItems, "item_categories.name", false),
+			expectErr:  nil,
 		},
 		{
-			name:      "Invalid group ID",
-			groupID:   invalidGroupId,
-			sortBy:    "i.name",
-			expected:  []model.Item{},
-			expectErr: nil,
+			name:       "Valid group ID with sorting by invalid field",
+			groupID:    1,
+			sortBy:     invalidFieldSort,
+			descending: false,
+			expected:   nil,
+			expectErr:  customErrors.NewInternalError("Failed to fetch items", nil),
 		},
 		{
-			name:      "Invalid group ID",
-			groupID:   2,
-			sortBy:    "i.name",
-			expected:  []model.Item{},
-			expectErr: nil,
+			name:       "Invalid group ID",
+			groupID:    invalidGroupId,
+			sortBy:     "i.name",
+			descending: false,
+			expected:   []model.Item{},
+			expectErr:  nil,
+		},
+		{
+			name:       "Invalid group ID",
+			groupID:    2,
+			sortBy:     "i.name",
+			descending: false,
+			expected:   []model.Item{},
+			expectErr:  nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			items, err := repo.GetAllByGroupID(tt.groupID, tt.sortBy)
+			items, err := repo.GetAllByGroupID(tt.groupID, tt.sortBy, tt.descending)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {
@@ -326,13 +357,13 @@ func TestGetItemById(t *testing.T) {
 		{
 			name:      "Get item by valid ID 1",
 			id:        validItemID,
-			expected:  sortItemsByField(expectedItems, "id")[validItemID-1],
+			expected:  sortItemsByField(expectedItems, "id", false)[validItemID-1],
 			expectErr: nil,
 		},
 		{
 			name:      "Get item by valid ID 2",
 			id:        validItemID + 1,
-			expected:  sortItemsByField(expectedItems, "id")[validItemID],
+			expected:  sortItemsByField(expectedItems, "id", false)[validItemID],
 			expectErr: nil,
 		},
 		{
@@ -379,8 +410,8 @@ func TestGetItemByName(t *testing.T) {
 	}{
 		{
 			name:      "Get item by valid name",
-			itemName:  sortItemsByField(expectedItems, "name")[0].Name,
-			expected:  sortItemsByField(expectedItems, "name")[0],
+			itemName:  sortItemsByField(expectedItems, "name", false)[0].Name,
+			expected:  sortItemsByField(expectedItems, "name", false)[0],
 			expectErr: nil,
 		},
 		{
@@ -481,7 +512,7 @@ func TestCreateItem(t *testing.T) {
 				t.Errorf("expected non-zero item ID after creation, got %d", id)
 			}
 
-			lastId := sortItemsByField(expectedItems, "id")[len(expectedItems)-1].ID
+			lastId := sortItemsByField(expectedItems, "id", false)[len(expectedItems)-1].ID
 			if id <= lastId {
 				t.Errorf("expected item ID to be sequential: expected > %d, got %d", lastId, id)
 			}

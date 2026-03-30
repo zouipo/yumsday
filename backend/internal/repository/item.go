@@ -31,12 +31,10 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 }
 
 // GetAllByGroupID fetches all items by group ID, ordered by a specified column.
-func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, ordering bool) ([]model.Item, error) {
+func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
 	items := []model.Item{}
 
-	if ordering {
-		sort += " ASC"
-	} else {
+	if descending {
 		sort += " DESC"
 	}
 
