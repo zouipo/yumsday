@@ -102,7 +102,7 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 	return id, nil
 }
 
-// Update modifies an existing user, except the the createdAt field.
+// Update modifies an existing user, except the createdAt field.
 // Returns an AppError if update fails.
 func (r *UserRepository) Update(user *model.User) error {
 	existingUser, err := r.GetByID(user.ID)
