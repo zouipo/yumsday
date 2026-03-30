@@ -70,9 +70,14 @@ var (
 )
 
 func compareListUsers(actual, expected []model.User) error {
+	if len(actual) != (len(expected) + 1) {
+		return fmt.Errorf("expected %d users, got %d", len(expected)+1, len(actual))
+	}
+
 	sortUsersByID(actual)
 	sortUsersByID(expected)
 
+	// Start at 1 to skip the admin user created by the migration script
 	for i := 1; i < len(actual)-len(expected); i++ {
 		actualUser := actual[i]
 		expectedUser := expected[i]
@@ -187,16 +192,11 @@ func setupTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-// teardownTestDB closes the database connection.
-func teardownTestDB(db *sql.DB) {
-	db.Close()
-}
-
 /*** TEST CONSTRUCTOR ***/
 
 func TestNewUserRepository(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -211,9 +211,9 @@ func TestNewUserRepository(t *testing.T) {
 
 /*** READ OPERATIONS TESTS ***/
 
-func TestGetAll(t *testing.T) {
+func TestGetAllUsers(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -229,7 +229,7 @@ func TestGetAll(t *testing.T) {
 
 func TestGetByUserID(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -281,7 +281,7 @@ func TestGetByUserID(t *testing.T) {
 
 func TestGetByUsername(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -334,9 +334,9 @@ func TestGetByUsername(t *testing.T) {
 
 /*** CREATE OPERATIONS TESTS ***/
 
-func TestCreate(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -413,7 +413,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -515,7 +515,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateAdminRole(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -575,9 +575,9 @@ func TestUpdateAdminRole(t *testing.T) {
 
 /*** DELETE OPERATIONS TESTS ***/
 
-func TestDelete(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
@@ -631,7 +631,7 @@ func TestDelete(t *testing.T) {
 
 func TestDeleteThenGetAll(t *testing.T) {
 	db := setupTestDB(t)
-	defer teardownTestDB(db)
+	defer db.Close()
 
 	repo := NewUserRepository(db)
 
