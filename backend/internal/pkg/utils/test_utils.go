@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"cmp"
 	"errors"
+	"fmt"
 	"math"
+	"reflect"
+	"sort"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
@@ -55,4 +59,34 @@ func CompareErrors(actual, expected error) bool {
 	}
 
 	return true
+}
+
+func SortSliceByFieldName[T any](s []T, sortBy string, descending bool) []T {
+	sorted := append([]T{}, s...)
+	sort.Slice(sorted, func(i, j int) bool {
+		a := reflect.ValueOf(s[i]).FieldByName(sortBy)
+		b := reflect.ValueOf(s[j]).FieldByName(sortBy)
+		var res int
+
+		switch a.Kind() {
+		case reflect.String:
+			res = cmp.Compare(a.String(), b.String())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			res = cmp.Compare(a.Int(), b.Int())
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			res = cmp.Compare(a.Uint(), b.Uint())
+		case reflect.Float32, reflect.Float64:
+			res = cmp.Compare(a.Float(), b.Float())
+		default:
+			panic(fmt.Errorf("unhandled kind %v", a.Kind()))
+		}
+
+		if descending {
+			return res == 1
+		} else {
+			return res == -1
+		}
+	})
+
+	return sorted
 }
