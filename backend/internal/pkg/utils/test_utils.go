@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
@@ -63,30 +64,48 @@ func CompareErrors(actual, expected error) bool {
 
 func SortSliceByFieldName[T any](s []T, sortBy string, descending bool) []T {
 	sorted := append([]T{}, s...)
+	sortWords := strings.Split(sortBy, ".")
+
 	sort.Slice(sorted, func(i, j int) bool {
-		a := reflect.ValueOf(s[i]).FieldByName(sortBy)
-		b := reflect.ValueOf(s[j]).FieldByName(sortBy)
-		var res int
-
-		switch a.Kind() {
-		case reflect.String:
-			res = cmp.Compare(a.String(), b.String())
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			res = cmp.Compare(a.Int(), b.Int())
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			res = cmp.Compare(a.Uint(), b.Uint())
-		case reflect.Float32, reflect.Float64:
-			res = cmp.Compare(a.Float(), b.Float())
-		default:
-			panic(fmt.Errorf("unhandled kind %v", a.Kind()))
-		}
-
-		if descending {
-			return res == 1
-		} else {
-			return res == -1
-		}
+		return compareFieldsByName(sorted[i], sorted[j], sortWords, descending)
 	})
 
 	return sorted
+}
+
+func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool) bool {
+	a := reflect.ValueOf(t1).FieldByName(sortWords[0])
+	b := reflect.ValueOf(t2).FieldByName(sortWords[0])
+	var res bool
+
+	// Dereference pointers recursively (handles **int, ***int, etc.)
+	for a.Kind() == reflect.Pointer {
+		if a.IsNil() {
+			return true
+		}
+		a = a.Elem()
+	}
+	for b.Kind() == reflect.Pointer {
+		if b.IsNil() {
+			return false
+		}
+		b = b.Elem()
+	}
+
+	switch a.Kind() {
+	case reflect.String:
+		res = cmp.Less(a.String(), b.String())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		res = cmp.Less(a.Int(), b.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		res = cmp.Less(a.Uint(), b.Uint())
+	case reflect.Float32, reflect.Float64:
+		res = cmp.Less(a.Float(), b.Float())
+	case reflect.Struct:
+		return compareFieldsByName(a.Interface(), b.Interface(), sortWords[1:], descending)
+	default:
+		panic(fmt.Errorf("unhandled kind %v", a.Kind()))
+	}
+
+	return res != descending
 }
