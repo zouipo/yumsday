@@ -34,12 +34,12 @@ INSERT INTO users (username, password, app_admin, created_at, language, app_them
 -- Many-to-Many relationship between users and groups
 CREATE TABLE IF NOT EXISTS group_members (
     user_id INTEGER NOT NULL,
-    user_group_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
     admin BOOLEAN NOT NULL,
     joined_at TIMESTAMP NOT NULL,
-    PRIMARY KEY (user_id, user_group_id),
+    PRIMARY KEY (user_id, group_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (user_group_id) REFERENCES groups(id)
+    FOREIGN KEY (group_id) REFERENCES groups(id)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -92,15 +92,15 @@ CREATE TABLE IF NOT EXISTS recipes (
     created_at TIMESTAMP NOT NULL,
     public BOOLEAN NOT NULL,
     comment VARCHAR(1000000),
-    user_group_id INTEGER NOT NULL,
-    FOREIGN KEY (user_group_id) REFERENCES groups(id)
+    group_id INTEGER NOT NULL,
+    FOREIGN KEY (group_id) REFERENCES groups(id)
 );
 
 CREATE TABLE IF NOT EXISTS recipe_categories (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     name VARCHAR(1000) NOT NULL,
-    user_group_id INTEGER NOT NULL,
-    FOREIGN KEY (user_group_id) REFERENCES groups(id)
+    group_id INTEGER NOT NULL,
+    FOREIGN KEY (group_id) REFERENCES groups(id)
 );
 
 -- Many-to-Many relationship between recipes and recipe_categories
