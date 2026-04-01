@@ -1,6 +1,8 @@
 package service
 
 import (
+	"strings"
+
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/repository"
 
@@ -21,16 +23,17 @@ type ItemService struct {
 }
 
 // NewItemService creates a new ItemService using the provided ItemRepository.
-func NewItemService(repo repository.ItemRepositoryInterface) *ItemService {
+func NewItemService(itemRepo repository.ItemRepositoryInterface,
+	categoryRepo repository.ItemCategoryRepositoryInterface) *ItemService {
 	return &ItemService{
-		repo: repo,
+		repo: itemRepo,
 	}
 }
 
 /*** READ OPERATIONS ***/
 // GetAllByGroupID returns all items for a given group ID, sorted by the specified key and order.
 func (s *ItemService) GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	sortKey, err := s.mapSortKey(sort)
+	sortKey, err := s.mapSortKey(strings.ToLower(sort))
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +72,7 @@ func (s *ItemService) GetByName(name string) (*model.Item, error) {
 
 /*** CREATE OPERATIONS ***/
 func (s *ItemService) Create(item *model.Item) (int64, error) {
+
 	id, err := s.repo.Create(item)
 	if err != nil {
 		return 0, err
@@ -98,9 +102,10 @@ func (s *ItemService) Delete(id int64) error {
 }
 
 /*** HELPER FUNCTIONS ***/
+// mapSortKey maps the sort parameter to the corresponding database column.
 func (s *ItemService) mapSortKey(param string) (string, error) {
 	switch param {
-	case "name":
+	case "name", "":
 		return "i.name", nil
 	case "average_market_price":
 		return "i.average_market_price", nil
