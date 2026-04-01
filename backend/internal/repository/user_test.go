@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -74,8 +73,8 @@ func compareListUsers(actual, expected []model.User) error {
 		return fmt.Errorf("expected %d users, got %d", len(expected)+1, len(actual))
 	}
 
-	sortUsersByID(actual)
-	sortUsersByID(expected)
+	actual = utils.SortSliceByFieldName(actual, "ID", false)
+	expected = utils.SortSliceByFieldName(expected, "ID", false)
 
 	// Start at 1 to skip the admin user created by the migration script
 	for i := 1; i < len(actual)-len(expected); i++ {
@@ -130,12 +129,6 @@ func compareUsers(actual, expected *model.User) error {
 		return fmt.Errorf("LastVisitedGroupID = %d instead of %d", *actual.LastVisitedGroupID, *expected.LastVisitedGroupID)
 	}
 	return nil
-}
-
-func sortUsersByID(users []model.User) {
-	sort.Slice(users, func(i, j int) bool {
-		return users[i].ID < users[j].ID
-	})
 }
 
 // setupTestDB initializes an in-memory SQLite database with test data for testing.
