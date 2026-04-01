@@ -57,17 +57,17 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName returns the item that matches the provided name or an error.
-func (s *ItemService) GetByName(name string) (*model.Item, error) {
+func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 	if name == "" {
 		return nil, customErrors.NewNotFoundError("Item", name, nil)
 	}
 
-	item, err := s.repo.GetByName(name)
+	items, err := s.repo.GetByName(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return item, nil
+	return items, nil
 }
 
 /*** CREATE OPERATIONS ***/

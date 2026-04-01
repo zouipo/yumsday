@@ -405,26 +405,26 @@ func TestGetItemByName(t *testing.T) {
 	tests := []struct {
 		name      string
 		itemName  string
-		expected  model.Item
+		expected  []model.Item
 		expectErr error
 	}{
 		{
 			name:      "Get item by valid name",
 			itemName:  sortItemsByField(expectedItems, "name", false)[0].Name,
-			expected:  sortItemsByField(expectedItems, "name", false)[0],
+			expected:  []model.Item{sortItemsByField(expectedItems, "name", false)[0]},
 			expectErr: nil,
 		},
 		{
-			name:      "Get item by invalid name",
+			name:      "Get item by invalid name returns empty slice",
 			itemName:  invalidName,
-			expected:  model.Item{},
-			expectErr: customErrors.NewNotFoundError("Item", invalidName, nil),
+			expected:  []model.Item{},
+			expectErr: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item, err := repo.GetByName(tt.itemName)
+			items, err := repo.GetByName(tt.itemName)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {
@@ -437,7 +437,7 @@ func TestGetItemByName(t *testing.T) {
 				t.Fatalf("GetByName() unexpected error = %v", err)
 			}
 
-			if err := compareItems(item, &tt.expected, true); err != nil {
+			if err := compareListItems(items, tt.expected); err != nil {
 				t.Errorf("GetByName() items do not match expected: %v", err.Error())
 			}
 		})

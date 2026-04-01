@@ -13,7 +13,7 @@ import (
 type ItemRepositoryInterface interface {
 	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string) (*model.Item, error)
+	GetByName(name string) ([]model.Item, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -95,17 +95,48 @@ func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName retrieves an item from the database by its name.
-func (r *ItemRepository) GetByName(name string) (*model.Item, error) {
-	item, err := r.fetchItem("name", name)
+func (r *ItemRepository) GetByName(name string) ([]model.Item, error) {
+	items := []model.Item{}
 
+	query := `
+	SELECT i.*, ic.name
+	FROM items i
+	JOIN item_categories ic ON i.item_category_id = ic.id
+	WHERE i.name = ?`
+
+	rows, err := r.db.Query(query, name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Item", name, err)
+			return items, nil // Return empty slice if no items found with the given name
 		}
 		return nil, customErrors.NewInternalError("Failed to fetch item", err)
 	}
+	defer rows.Close()
 
-	return item, nil
+	for rows.Next() {
+		var item model.Item
+		err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.Description,
+			&item.AverageMarketPrice,
+			&item.UnitType,
+			&item.GroupID,
+			&item.ItemCategory.ID,
+			&item.ItemCategory.Name,
+		)
+		if err != nil {
+			return nil, customErrors.NewInternalError("Failed to scan item", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("Failed to iterate rows", err)
+	}
+
+	return items, nil
 }
 
 // Create inserts a new item into the database and returns the inserted ID.
