@@ -28,8 +28,8 @@ func NewGroupRepository(db *sql.DB) *GroupRepository {
 // GetByID retrieves a group from the database by its ID, including its members.
 func (r *GroupRepository) GetByID(id int64) (*model.Group, error) {
 	rows, err := r.db.Query(`
-	SELECT g.id, g.name, g.ImageURL, g.created_at, gm.user_id, gm.admin, gm.joined_at
-	FROM groups
+	SELECT g.id, g.name, g.image_url, g.created_at, gm.user_id, gm.admin, gm.joined_at
+	FROM groups g
 	JOIN group_members gm ON g.id = gm.group_id
 	WHERE g.id = ?`, id)
 
@@ -79,5 +79,10 @@ func (r *GroupRepository) GetByID(id int64) (*model.Group, error) {
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("Failed to iterate group rows", err)
 	}
+
+	if group == nil {
+		return nil, customErrors.NewNotFoundError("Group", strconv.FormatInt(id, 10), sql.ErrNoRows)
+	}
+
 	return group, nil
 }
