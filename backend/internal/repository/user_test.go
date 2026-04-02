@@ -138,8 +138,8 @@ func sortUsersByID(users []model.User) {
 	})
 }
 
-// setupTestDB initializes an in-memory SQLite database with test data for testing.
-func setupTestDB(t *testing.T) *sql.DB {
+// setupUserTestDB initializes an in-memory SQLite database with test data for testing.
+func setupUserTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
@@ -195,7 +195,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 /*** TEST CONSTRUCTOR ***/
 
 func TestNewUserRepository(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -212,7 +212,7 @@ func TestNewUserRepository(t *testing.T) {
 /*** READ OPERATIONS TESTS ***/
 
 func TestGetAllUsers(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -228,7 +228,7 @@ func TestGetAllUsers(t *testing.T) {
 }
 
 func TestGetByUserID(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -280,7 +280,7 @@ func TestGetByUserID(t *testing.T) {
 }
 
 func TestGetByUsername(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -335,7 +335,7 @@ func TestGetByUsername(t *testing.T) {
 /*** CREATE OPERATIONS TESTS ***/
 
 func TestCreateUser(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -412,7 +412,7 @@ func TestCreateUser(t *testing.T) {
 /*** UPDATE OPERATIONS TESTS ***/
 
 func TestUpdate(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -514,7 +514,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateAdminRole(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -576,7 +576,7 @@ func TestUpdateAdminRole(t *testing.T) {
 /*** DELETE OPERATIONS TESTS ***/
 
 func TestDeleteUser(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -630,7 +630,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteThenGetAll(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)

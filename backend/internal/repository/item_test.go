@@ -164,8 +164,8 @@ func sortItemsByField(items []model.Item, sortBy string, descending bool) []mode
 	return sorted
 }
 
-// setUpTestDB initializes an in-memory SQLite database, applies migrations, and inserts test data for items.
-func setUpTestDB(t *testing.T) *sql.DB {
+// setupItemTestDB initializes an in-memory SQLite database, applies migrations, and inserts test data for items.
+func setupItemTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
@@ -225,7 +225,7 @@ func setUpTestDB(t *testing.T) *sql.DB {
 
 /*** TEST CONSTRUCTOR ***/
 func TestNewItemRepository(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -241,7 +241,7 @@ func TestNewItemRepository(t *testing.T) {
 
 /*** READ OPERATIONS TESTS ***/
 func TestGetAllItemsByGroupID(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -343,7 +343,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 }
 
 func TestGetItemById(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -397,7 +397,7 @@ func TestGetItemById(t *testing.T) {
 }
 
 func TestGetItemByName(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -490,7 +490,7 @@ func TestCreateItem(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := setUpTestDB(t)
+			db := setupItemTestDB(t)
 			defer db.Close()
 
 			repo := NewItemRepository(db)
@@ -532,7 +532,7 @@ func TestCreateItem(t *testing.T) {
 
 /*** UPDATE OPERATIONS TESTS ***/
 func TestUpdateItem(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -665,7 +665,7 @@ func TestUpdateItem(t *testing.T) {
 
 /*** DELETE OPERATIONS TESTS ***/
 func TestDeleteItem(t *testing.T) {
-	db := setUpTestDB(t)
+	db := setupItemTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
