@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -25,6 +26,17 @@ func NewRecipeRepository(db *sql.DB) *RecipeRepository {
 	return &RecipeRepository{
 		db: db,
 	}
+}
+
+func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
+	recipes, err := r.fetchRecipes([]string{"id"}, []any{id})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, customErrors.NewNotFoundError("recipe", strconv.FormatInt(id, 10), err)
+		}
+		return nil, err
+	}
+	return &recipes[0], nil
 }
 
 func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.Recipe, error) {
@@ -50,7 +62,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 
 	rows, err := r.db.Query(query, value...)
 	if err != nil {
-		return nil, err
+		return nil, customErrors.NewInternalError("fetchRecipes failed", err)
 	}
 
 	m := make(map[int64]*model.Recipe)
@@ -82,10 +94,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 		)
 
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return []model.Recipe{}, nil
-			}
-			return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+			return nil, customErrors.NewInternalError("fetchRecipes failed", err)
 		}
 
 		id := tmpRecipe.ID
