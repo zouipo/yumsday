@@ -65,6 +65,8 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 	}
 
 	m := make(map[int64]*model.Recipe)
+	seenCategories := make(map[int64]map[int64]bool)
+	seenIngredients := make(map[int64]map[int64]bool)
 	tmpRecipe := &model.Recipe{}
 	tmpCategory := &model.RecipeCategory{}
 	tmpIngredient := &model.Ingredient{}
@@ -99,17 +101,26 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 		id := tmpRecipe.ID
 		if _, exists := m[id]; !exists {
 			m[id] = tmpRecipe
+			seenCategories[id] = make(map[int64]bool)
+			seenIngredients[id] = make(map[int64]bool)
 		}
 
-		m[id].Categories = append(m[id].Categories, *tmpCategory)
-		m[id].Ingredients = append(m[id].Ingredients, *tmpIngredient)
+		if !seenCategories[id][tmpCategory.ID] {
+			m[id].Categories = append(m[id].Categories, *tmpCategory)
+			seenCategories[id][tmpCategory.ID] = true
+		}
+
+		if !seenIngredients[id][tmpIngredient.ID] {
+			m[id].Ingredients = append(m[id].Ingredients, *tmpIngredient)
+			seenIngredients[id][tmpIngredient.ID] = true
+		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
 
-	ret := make([]model.Recipe, len(m))
+	ret := make([]model.Recipe, 0, len(m))
 	for _, recipe := range m {
 		ret = append(ret, *recipe)
 	}
