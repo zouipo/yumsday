@@ -15,16 +15,13 @@ import (
 var (
 	testCategories = []model.RecipeCategory{
 		{
-			Name:    "Dessert",
-			GroupID: 1,
+			Name: "Dessert",
 		},
 		{
-			Name:    "Main course",
-			GroupID: 1,
+			Name: "Main course",
 		},
 		{
-			Name:    "Cake",
-			GroupID: 1,
+			Name: "Cake",
 		},
 	}
 
@@ -56,7 +53,7 @@ var (
 			CreatedAt:          time.Now().UTC(),
 			Public:             true,
 			Comment:            utils.Ptr("best cheesecake !"),
-			GroupID:            0,
+			GroupID:            1,
 			Categories:         []model.RecipeCategory{},
 			Ingredients:        []model.Ingredient{},
 		},
@@ -70,7 +67,7 @@ var (
 )
 
 func setupRecipeTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "test.db")
+	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -129,6 +126,14 @@ func setupRecipeTestDB(t *testing.T) *sql.DB {
 			t.Fatalf("failed to insert test recipe '%s': %v", recipe.Name, err)
 		}
 		testRecipes[i].ID, _ = res.LastInsertId()
+
+		// fill this recipe's ingredients list
+		for _, ing := range testIngredients {
+			if ing.RecipeID == testRecipes[i].ID {
+				ing.RecipeID = 0
+				testRecipes[i].Ingredients = append(recipe.Ingredients, ing)
+			}
+		}
 	}
 
 	for k, v := range recipeCategoryJunction {
@@ -147,6 +152,7 @@ func setupRecipeTestDB(t *testing.T) *sql.DB {
 					err,
 				)
 			}
+			k.Categories = append(k.Categories, *cat)
 		}
 	}
 
@@ -162,8 +168,7 @@ func TestGetByID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("didn't expected error, got %v", err)
 	}
-	recipe.CreatedAt = testRecipes[0].CreatedAt
-	if !reflect.DeepEqual(recipe, testRecipes[0]) {
+	if !reflect.DeepEqual(*recipe, testRecipes[0]) {
 		t.Fatal("recipes should be equal")
 	}
 }
