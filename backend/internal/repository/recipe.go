@@ -44,8 +44,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 		panic("fetchRecipes: columns and values have different length")
 	}
 
-	query := `
-	SELECT r.*, cat.id, cat.name, ing.id, ing.quantity, ing.item_id, ing.unit_id
+	query := `SELECT r.*, cat.id, cat.name, ing.id, ing.quantity, ing.item_id, ing.unit_id
 	FROM recipes r
 	JOIN recipes_categories_junction rcj ON rcj.recipe_id = r.id
 	JOIN recipe_categories cat ON cat.id = rcj.category_id
@@ -53,7 +52,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 	WHERE `
 
 	for i := 0; i < len(column); i++ {
-		query += fmt.Sprintf("%v = ? ", column)
+		query += fmt.Sprintf("r.%v = ? ", column[i])
 		if i < len(column)-1 {
 			query += "AND "
 		}
@@ -62,7 +61,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 
 	rows, err := r.db.Query(query, value...)
 	if err != nil {
-		return nil, customErrors.NewInternalError("fetchRecipes failed", err)
+		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
 
 	m := make(map[int64]*model.Recipe)
@@ -94,7 +93,7 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 		)
 
 		if err != nil {
-			return nil, customErrors.NewInternalError("fetchRecipes failed", err)
+			return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 		}
 
 		id := tmpRecipe.ID
@@ -104,6 +103,10 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 
 		m[id].Categories = append(m[id].Categories, *tmpCategory)
 		m[id].Ingredients = append(m[id].Ingredients, *tmpIngredient)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
 
 	ret := make([]model.Recipe, len(m))
