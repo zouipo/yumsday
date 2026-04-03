@@ -3,13 +3,14 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
 
-func SessionInjector(sessionService service.SessionServiceInterface) Middleware {
+func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.WaitGroup) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s := sessionService.GetSession(r)
@@ -51,7 +52,7 @@ func SessionInjector(sessionService service.SessionServiceInterface) Middleware 
 
 			if r.URL.Path != "/logout" {
 				// Save session in dedicated goroutine to reduce response latency.
-				go sessionService.Save(s)
+				wg.Go(func() { sessionService.Save(s) })
 			}
 		})
 	}
