@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io/fs"
 	"net/http"
+	"sync"
 	"time"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -16,7 +17,7 @@ import (
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
-func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
+func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 	err := migration.Migrate(db, migrationsFs)
 	if err != nil {
 		panic(err)
@@ -33,6 +34,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 		"yumsday_session",
 		30*24*time.Hour,
 	)
+	sessionInjector := middleware.SessionInjector(sessionService, tasksWG)
 
 	authService := service.NewAuthService(sessionService, userService)
 	authHandler := handler.NewAuthHandler(authService)
@@ -40,14 +42,14 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS) http.Handler {
 	middlewareStack := middleware.Stack(
 		middleware.ResponseWriter,
 		middleware.Logger,
-		middleware.SessionInjector(sessionService),
+		sessionInjector,
 		middleware.UserInjector(userService),
 	)
 
 	authMiddlewareStack := middleware.Stack(
 		middleware.ResponseWriter,
 		middleware.Logger,
-		middleware.SessionInjector(sessionService),
+		sessionInjector,
 	)
 
 	swaggerMiddlewareStack := middleware.Stack(

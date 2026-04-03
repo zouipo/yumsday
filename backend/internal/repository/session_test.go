@@ -80,7 +80,7 @@ func compareSessions(actual, expected *model.Session) error {
 
 // setupTestDB initializes an in-memory SQLite database with test data for testing.
 func setupSessionTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}

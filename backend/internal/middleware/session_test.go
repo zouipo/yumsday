@@ -15,6 +15,7 @@ import (
 var (
 	cookieName = "session_id"
 	expiration = 1 * time.Hour
+	wg         sync.WaitGroup
 )
 
 // mockSessionHandler captures whether it was called and the request it received.
@@ -136,7 +137,7 @@ func TestSessionInjector_InjectsNewSessionIntoContext(t *testing.T) {
 	// 1. middleware := SessionInjector(svc)
 	// 2. handler := middleware(next)
 	// 3. handler.ServeHTTP(rr, req)
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")
@@ -175,7 +176,7 @@ func TestSessionInjector_UsesExistingSession(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: cookieName, Value: existingSessionID})
 	rr := httptest.NewRecorder()
 
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")
@@ -207,7 +208,7 @@ func TestSessionInjector_SetsCookie(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")
@@ -233,7 +234,7 @@ func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")
@@ -272,7 +273,7 @@ func TestSessionInjector_SavesSessionAfterHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")
@@ -295,7 +296,7 @@ func TestSessionInjector_DoesNotSaveSessionOnLogout(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	rr := httptest.NewRecorder()
 
-	SessionInjector(svc)(next).ServeHTTP(rr, req)
+	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
 	if !next.called {
 		t.Fatal("expected next handler to be called")

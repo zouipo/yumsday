@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -79,12 +80,15 @@ func run(cmd *cobra.Command, args []string) {
 	slog.SetDefault(logger)
 	defer slog.Debug("Closing app")
 
-	db, err := sql.Open("sqlite3", cfg.DBPath)
+	// SQLite DSN (data source name) format: "file:path/to/database.db?_foreign_keys=on".
+	// The query parameter "_foreign_keys=on" is required to enable foreign key constraints in SQLite.
+	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", cfg.DBPath)
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		slog.Error("Failed to open sqlite db", "error", err)
 		return
 	}
-	slog.Info("Opened db", "db_path", cfg.DBPath)
+	slog.Info("Opened db", "db_path", cfg.DBPath, "dsn", dsn)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -95,9 +99,13 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// WaitGroup used to synchronize tasks running in dedicated goroutines
+	// like the persistence of sessions in the db.
+	var tasksWG sync.WaitGroup
+
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), // TCP address to listen on, in the form "host:port"
-		Handler: backend.NewAPIServer(db, migrationsFs),
+		Handler: backend.NewAPIServer(db, migrationsFs, &tasksWG),
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
@@ -134,6 +142,7 @@ func run(cmd *cobra.Command, args []string) {
 	slog.Info(fmt.Sprintf("Swagger docs available at: http://%s:%d/swagger/index.html", cfg.Host, cfg.Port))
 
 	<-ctx.Done()
+	tasksWG.Wait()
 }
 
 func main() {

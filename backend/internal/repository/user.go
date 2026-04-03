@@ -90,8 +90,8 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
-			return 0, customErrors.NewInternalError("Failed to create user", err)
 		}
+		return 0, customErrors.NewInternalError("Failed to create user", err)
 	}
 
 	id, err := result.LastInsertId()
@@ -102,7 +102,7 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 	return id, nil
 }
 
-// Update updates an existing user, except the the createdAt field.
+// Update modifies an existing user, except the createdAt field.
 // Returns an AppError if update fails.
 func (r *UserRepository) Update(user *model.User) error {
 	existingUser, err := r.GetByID(user.ID)
@@ -229,12 +229,12 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 }
 
 // fetchUser executes the provided query and returns a single user.
-func (r *UserRepository) fetchUser(column string, args ...any) (*model.User, error) {
+func (r *UserRepository) fetchUser(column string, value any) (*model.User, error) {
 	user := &model.User{}
 
 	query := "SELECT * FROM users WHERE " + column + " = ?"
 
-	row := r.db.QueryRow(query, args...)
+	row := r.db.QueryRow(query, value)
 
 	err := row.Scan(
 		&user.ID,
