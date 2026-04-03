@@ -34,8 +34,8 @@ var (
 			UnitID:   3,
 		},
 		{
-			Quantity: utils.Ptr(3.0),
-			RecipeID: 4,
+			Quantity: utils.Ptr(10.0),
+			RecipeID: 2,
 			ItemID:   5,
 			UnitID:   6,
 		},
@@ -55,14 +55,29 @@ var (
 			Public:             true,
 			Comment:            utils.Ptr("best cheesecake !"),
 			GroupID:            1,
-			Categories:         []model.RecipeCategory{},
-			Ingredients:        []model.Ingredient{},
+		},
+		{
+			Name:               "Olive Cake",
+			Description:        utils.Ptr("Olive cake yummy"),
+			ImageURL:           utils.Ptr("http://example.com/image2"),
+			OriginalLink:       nil,
+			PreparationTimeMin: utils.Ptr(60),
+			CookingTimeMin:     utils.Ptr(30),
+			Servings:           utils.Ptr(8),
+			Instructions:       utils.Ptr("[\"Cake it damn it !!\"]"),
+			CreatedAt:          time.Now().UTC(),
+			Public:             false,
+			Comment:            nil,
+			GroupID:            1,
 		},
 	}
 
 	recipeCategoryJunction = map[*model.Recipe][]*model.RecipeCategory{
 		&testRecipes[0]: {
 			&testCategories[0], &testCategories[2],
+		},
+		&testRecipes[1]: {
+			&testCategories[1], &testCategories[2],
 		},
 	}
 )
@@ -176,6 +191,11 @@ func TestGetByID(t *testing.T) {
 			nil,
 		},
 		{
+			"valid id 2",
+			2,
+			nil,
+		},
+		{
 			"non existing id",
 			-1,
 			customErrors.NewNotFoundError("recipe", "id", nil),
@@ -196,7 +216,7 @@ func TestGetByID(t *testing.T) {
 			t.Fatalf("didn't expected error, got %v", err)
 		}
 
-		if !reflect.DeepEqual(*recipe, testRecipes[0]) {
+		if !reflect.DeepEqual(*recipe, testRecipes[tt.id-1]) {
 			t.Fatal("recipes should be equal")
 		}
 	}
