@@ -2,9 +2,8 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"strconv"
+	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -31,16 +30,13 @@ func NewRecipeRepository(db *sql.DB) *RecipeRepository {
 func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
 	recipes, err := r.fetchRecipes([]string{"id"}, []any{id})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("recipe", strconv.FormatInt(id, 10), err)
-		}
 		return nil, err
 	}
 	return &recipes[0], nil
 }
 
-func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.Recipe, error) {
-	if len(column) != len(value) {
+func (r *RecipeRepository) fetchRecipes(columns []string, values []any) ([]model.Recipe, error) {
+	if len(columns) != len(values) {
 		panic("fetchRecipes: columns and values have different length")
 	}
 
@@ -51,15 +47,15 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 	JOIN ingredients ing ON ing.recipe_id = r.id
 	WHERE `
 
-	for i := 0; i < len(column); i++ {
-		query += fmt.Sprintf("r.%v = ? ", column[i])
-		if i < len(column)-1 {
+	for i := 0; i < len(columns); i++ {
+		query += fmt.Sprintf("r.%v = ? ", columns[i])
+		if i < len(columns)-1 {
 			query += "AND "
 		}
 	}
 	query += ";"
 
-	rows, err := r.db.Query(query, value...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
@@ -118,6 +114,10 @@ func (r *RecipeRepository) fetchRecipes(column []string, value []any) ([]model.R
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+	}
+
+	if len(m) == 0 {
+		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(columns, ","), err)
 	}
 
 	ret := make([]model.Recipe, 0, len(m))
