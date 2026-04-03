@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -98,9 +99,13 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// WaitGroup used to synchronize tasks running in dedicated goroutines
+	// like the persistence of sessions in the db.
+	var tasksWG sync.WaitGroup
+
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), // TCP address to listen on, in the form "host:port"
-		Handler: backend.NewAPIServer(db, migrationsFs),
+		Handler: backend.NewAPIServer(db, migrationsFs, &tasksWG),
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.
@@ -137,6 +142,7 @@ func run(cmd *cobra.Command, args []string) {
 	slog.Info(fmt.Sprintf("Swagger docs available at: http://%s:%d/swagger/index.html", cfg.Host, cfg.Port))
 
 	<-ctx.Done()
+	tasksWG.Wait()
 }
 
 func main() {
