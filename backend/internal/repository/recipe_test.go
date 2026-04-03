@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
@@ -162,13 +163,41 @@ func setupRecipeTestDB(t *testing.T) *sql.DB {
 func TestGetByID(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()
-
 	repo := NewRecipeRepository(db)
-	recipe, err := repo.GetByID(1)
-	if err != nil {
-		t.Fatalf("didn't expected error, got %v", err)
+
+	tests := []struct {
+		name string
+		id   int64
+		err  error
+	}{
+		{
+			"valid id",
+			1,
+			nil,
+		},
+		{
+			"non existing id",
+			-1,
+			customErrors.NewNotFoundError("recipe", "id", nil),
+		},
 	}
-	if !reflect.DeepEqual(*recipe, testRecipes[0]) {
-		t.Fatal("recipes should be equal")
+
+	for _, tt := range tests {
+		recipe, err := repo.GetByID(tt.id)
+
+		if tt.err != nil {
+			if !utils.CompareErrors(err, tt.err) {
+				t.Fatalf("expected error %v, got %v", tt.err, err)
+			}
+			return
+		}
+
+		if err != nil {
+			t.Fatalf("didn't expected error, got %v", err)
+		}
+
+		if !reflect.DeepEqual(*recipe, testRecipes[0]) {
+			t.Fatal("recipes should be equal")
+		}
 	}
 }
