@@ -198,7 +198,7 @@ func TestGetByID(t *testing.T) {
 		{
 			"non existing id",
 			-1,
-			customErrors.NewNotFoundError("recipe", "id", nil),
+			customErrors.NewNotFoundError("recipe", "recipes.id", nil),
 		},
 	}
 

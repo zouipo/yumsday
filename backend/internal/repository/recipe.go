@@ -7,6 +7,7 @@ import (
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
 type RecipeRepositoryInterface interface {
@@ -28,34 +29,26 @@ func NewRecipeRepository(db *sql.DB) *RecipeRepository {
 }
 
 func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
-	recipes, err := r.fetchRecipes([]string{"id"}, []any{id})
+	opt := utils.NewSelectFilteringOptions([]string{"recipes.id"}, []any{id}, "", false)
+	recipes, err := r.fetchRecipes(opt)
 	if err != nil {
 		return nil, err
 	}
 	return &recipes[0], nil
 }
 
-func (r *RecipeRepository) fetchRecipes(columns []string, values []any) ([]model.Recipe, error) {
-	if len(columns) != len(values) {
-		panic("fetchRecipes: columns and values have different length")
-	}
+func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]model.Recipe, error) {
+	query := fmt.Sprintf(`SELECT
+	recipes.*,
+	recipe_categories.id, recipe_categories.name,
+	ingredients.id, ingredients.quantity, ingredients.item_id, ingredients.unit_id
+	FROM recipes
+	JOIN recipes_categories_junction ON recipes_categories_junction.recipe_id = recipes.id
+	JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
+	JOIN ingredients ON ingredients.recipe_id = recipes.id
+	%s;`, utils.MakeSelectFiltering(opt))
 
-	query := `SELECT r.*, cat.id, cat.name, ing.id, ing.quantity, ing.item_id, ing.unit_id
-	FROM recipes r
-	JOIN recipes_categories_junction rcj ON rcj.recipe_id = r.id
-	JOIN recipe_categories cat ON cat.id = rcj.category_id
-	JOIN ingredients ing ON ing.recipe_id = r.id
-	WHERE `
-
-	for i := 0; i < len(columns); i++ {
-		query += fmt.Sprintf("r.%v = ? ", columns[i])
-		if i < len(columns)-1 {
-			query += "AND "
-		}
-	}
-	query += ";"
-
-	rows, err := r.db.Query(query, values...)
+	rows, err := r.db.Query(query, opt.WhereValues...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
@@ -117,7 +110,7 @@ func (r *RecipeRepository) fetchRecipes(columns []string, values []any) ([]model
 	}
 
 	if len(m) == 0 {
-		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(columns, ","), err)
+		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns, ","), err)
 	}
 
 	ret := make([]model.Recipe, 0, len(m))
