@@ -6,10 +6,10 @@ import (
 )
 
 type SelectFilteringOptions struct {
-	whereColumns      []string
-	whereValues       []any
-	orderByColumn     string
-	orderByDescending bool
+	WhereColumns      []string
+	WhereValues       []any
+	OrderByColumn     string
+	OrderByDescending bool
 }
 
 func NewSelectFilteringOptions(
@@ -22,29 +22,29 @@ func NewSelectFilteringOptions(
 		panic("SelectFilteringOptions: columns and values list must have the same length")
 	}
 	return &SelectFilteringOptions{
-		whereColumns:      whereColumns,
-		whereValues:       whereValues,
-		orderByColumn:     orderByColumn,
-		orderByDescending: orderByDescending,
+		WhereColumns:      whereColumns,
+		WhereValues:       whereValues,
+		OrderByColumn:     orderByColumn,
+		OrderByDescending: orderByDescending,
 	}
 }
 
 func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 	filter := ""
 
-	if len(opt.whereColumns) > 0 {
+	if len(opt.WhereColumns) > 0 {
 		filter = "WHERE "
-		for i := range opt.whereColumns {
-			filter += fmt.Sprintf("%v = ? ", opt.whereColumns[i])
-			if i < len(opt.whereColumns)-1 {
+		for i := range opt.WhereColumns {
+			filter += fmt.Sprintf("%v = ? ", opt.WhereColumns[i])
+			if i < len(opt.WhereColumns)-1 {
 				filter += "AND "
 			}
 		}
 	}
 
-	if opt.orderByColumn != "" {
-		filter += fmt.Sprintf("ORDER BY %v ", opt.orderByColumn)
-		if opt.orderByDescending {
+	if opt.OrderByColumn != "" {
+		filter += fmt.Sprintf("ORDER BY %v ", opt.OrderByColumn)
+		if opt.OrderByDescending {
 			filter += "DESC "
 		}
 	}
