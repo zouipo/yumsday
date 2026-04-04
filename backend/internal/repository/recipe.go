@@ -29,7 +29,11 @@ func NewRecipeRepository(db *sql.DB) *RecipeRepository {
 }
 
 func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
-	opt := utils.NewSelectFilteringOptions([]string{"recipes.id"}, []any{id}, "", false)
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "recipes.id", Values: []any{id}},
+		},
+	}
 	recipes, err := r.fetchRecipes(opt)
 	if err != nil {
 		return nil, err
@@ -41,14 +45,16 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	query := fmt.Sprintf(`SELECT
 	recipes.*,
 	recipe_categories.id, recipe_categories.name,
-	ingredients.id, ingredients.quantity, ingredients.item_id, ingredients.unit_id
+	ingredients.id, ingredients.quantity, ingredients.unit_id,
+	items.id, items.name
 	FROM recipes
 	JOIN recipes_categories_junction ON recipes_categories_junction.recipe_id = recipes.id
 	JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
 	JOIN ingredients ON ingredients.recipe_id = recipes.id
+	JOIN items ON items.id = ingredients.item_id
 	%s;`, utils.MakeSelectFiltering(opt))
 
-	rows, err := r.db.Query(query, opt.WhereValues...)
+	rows, err := r.db.Query(query, opt.WhereValues()...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
@@ -79,8 +85,9 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 			&tmpCategory.Name,
 			&tmpIngredient.ID,
 			&tmpIngredient.Quantity,
-			&tmpIngredient.ItemID,
 			&tmpIngredient.UnitID,
+			&tmpIngredient.Item.ID,
+			&tmpIngredient.Item.Name,
 		)
 
 		if err != nil {
@@ -110,7 +117,7 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	}
 
 	if len(m) == 0 {
-		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns, ","), err)
+		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), err)
 	}
 
 	ret := make([]model.Recipe, 0, len(m))
