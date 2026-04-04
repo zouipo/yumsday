@@ -5,6 +5,22 @@ import (
 	"testing"
 )
 
+func TestWhereColumns(t *testing.T) {
+	opt := &SelectFilteringOptions{
+		Where: []WhereClause{
+			{Column: "test", Values: []any{1}},
+			{Column: "test2", Values: []any{1}},
+		},
+	}
+	expected := []string{"test", "test2"}
+
+	actual := opt.WhereColumns()
+
+	if !slices.Equal(actual, expected) {
+		t.Fatalf("expected where columns '%v', got '%v'", expected, actual)
+	}
+}
+
 func TestWhereValues(t *testing.T) {
 	opt := &SelectFilteringOptions{
 		Where: []WhereClause{
