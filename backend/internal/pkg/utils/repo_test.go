@@ -1,36 +1,42 @@
 package utils
 
 import (
+	"slices"
 	"testing"
 )
 
-func TestNewSelectFilteringOptions_DifferentListsLength(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
+func TestGeneratePlaceholders(t *testing.T) {
+	opt := &SelectFilteringOptions{
+		Where: []WhereClause{
+			{Column: "id", Values: []any{1, 2, 3}},
+			{Column: "test", Values: []any{"aoh", 4}},
+		},
+	}
+	expected := []any{1, 2, 3, "aoh", 4}
 
-	NewSelectFilteringOptions([]string{"test", "test"}, []any{1}, "", false)
+	actual := opt.ConcatWhereValues()
+
+	if !slices.Equal(actual, expected) {
+		t.Fatalf("expected where values '%v', got '%v'", expected, actual)
+	}
 }
 
 func TestMakeSelectFiltering_EmptyFilter(t *testing.T) {
-	tests := []*SelectFilteringOptions{
-		NewSelectFilteringOptions([]string{}, []any{}, "", false),
-		NewSelectFilteringOptions([]string{}, []any{}, "", true),
-	}
+	actual := MakeSelectFiltering(&SelectFilteringOptions{})
 
-	for _, tt := range tests {
-		actual := MakeSelectFiltering(tt)
-		if actual != "" {
-			t.Fatalf("filter should be empty, got %s", actual)
-		}
+	if actual != "" {
+		t.Fatalf("filter should be empty, got %s", actual)
 	}
 }
 
 func TestMakeSelectFiltering_OneWhere(t *testing.T) {
 	expected := "WHERE id = ?"
-	opt := NewSelectFilteringOptions([]string{"id"}, []any{1}, "", false)
+	opt := &SelectFilteringOptions{
+		Where: []WhereClause{
+			{Column: "id", Values: []any{1}},
+		},
+	}
+
 	actual := MakeSelectFiltering(opt)
 
 	if actual != expected {
@@ -39,13 +45,14 @@ func TestMakeSelectFiltering_OneWhere(t *testing.T) {
 }
 
 func TestMakeSelectFiltering_MultipleWhere(t *testing.T) {
-	expected := "WHERE id = ? AND name = ?"
-	opt := NewSelectFilteringOptions(
-		[]string{"id", "name"},
-		[]any{1, "test"},
-		"",
-		false,
-	)
+	expected := "WHERE id IN (?, ?, ?) AND test = ?"
+	opt := &SelectFilteringOptions{
+		Where: []WhereClause{
+			{Column: "id", Values: []any{1, 2, 3}},
+			{Column: "test", Values: []any{"aoh"}},
+		},
+	}
+
 	actual := MakeSelectFiltering(opt)
 
 	if actual != expected {
@@ -55,7 +62,12 @@ func TestMakeSelectFiltering_MultipleWhere(t *testing.T) {
 
 func TestMakeSelectFiltering_OrderBy(t *testing.T) {
 	expected := "ORDER BY name"
-	opt := NewSelectFilteringOptions([]string{}, []any{}, "name", false)
+	opt := &SelectFilteringOptions{
+		OrderBy: []OrderByClause{
+			{Column: "name"},
+		},
+	}
+
 	actual := MakeSelectFiltering(opt)
 
 	if actual != expected {
@@ -65,7 +77,28 @@ func TestMakeSelectFiltering_OrderBy(t *testing.T) {
 
 func TestMakeSelectFiltering_OrderByDesc(t *testing.T) {
 	expected := "ORDER BY name DESC"
-	opt := NewSelectFilteringOptions([]string{}, []any{}, "name", true)
+	opt := &SelectFilteringOptions{
+		OrderBy: []OrderByClause{
+			{Column: "name", Descending: true},
+		},
+	}
+
+	actual := MakeSelectFiltering(opt)
+
+	if actual != expected {
+		t.Fatalf("expected '%s', got '%s'", expected, actual)
+	}
+}
+
+func TestMakeSelectFiltering_MultipleOrderBy(t *testing.T) {
+	expected := "ORDER BY name DESC, test"
+	opt := &SelectFilteringOptions{
+		OrderBy: []OrderByClause{
+			{Column: "name", Descending: true},
+			{Column: "test"},
+		},
+	}
+
 	actual := MakeSelectFiltering(opt)
 
 	if actual != expected {
@@ -74,8 +107,19 @@ func TestMakeSelectFiltering_OrderByDesc(t *testing.T) {
 }
 
 func TestMakeSelectFiltering_AllTogether(t *testing.T) {
-	expected := "WHERE id = ? AND name = ? ORDER BY value DESC"
-	opt := NewSelectFilteringOptions([]string{"id", "name"}, []any{1, "test"}, "value", true)
+	expected := "WHERE id IN (?, ?, ?) AND test = ? AND test2 IN (?, ?) ORDER BY value DESC, value2"
+	opt := &SelectFilteringOptions{
+		Where: []WhereClause{
+			{Column: "id", Values: []any{1, "2", 3.0}},
+			{Column: "test", Values: []any{4}},
+			{Column: "test2", Values: []any{"yes", "no"}},
+		},
+		OrderBy: []OrderByClause{
+			{Column: "value", Descending: true},
+			{Column: "value2"},
+		},
+	}
+
 	actual := MakeSelectFiltering(opt)
 
 	if actual != expected {
