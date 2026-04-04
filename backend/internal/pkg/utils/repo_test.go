@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGeneratePlaceholders(t *testing.T) {
+func TestWhereValues(t *testing.T) {
 	opt := &SelectFilteringOptions{
 		Where: []WhereClause{
 			{Column: "id", Values: []any{1, 2, 3}},
@@ -14,7 +14,7 @@ func TestGeneratePlaceholders(t *testing.T) {
 	}
 	expected := []any{1, 2, 3, "aoh", 4}
 
-	actual := opt.ConcatWhereValues()
+	actual := opt.WhereValues()
 
 	if !slices.Equal(actual, expected) {
 		t.Fatalf("expected where values '%v', got '%v'", expected, actual)

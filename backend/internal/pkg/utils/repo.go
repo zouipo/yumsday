@@ -21,7 +21,7 @@ type SelectFilteringOptions struct {
 	OrderBy []OrderByClause
 }
 
-func (s *SelectFilteringOptions) ConcatWhereValues() []any {
+func (s *SelectFilteringOptions) WhereValues() []any {
 	ret := []any{}
 	for _, w := range s.Where {
 		ret = append(ret, w.Values...)
