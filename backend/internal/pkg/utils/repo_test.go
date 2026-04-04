@@ -15,7 +15,7 @@ func TestNewSelectFilteringOptions_DifferentListsLength(t *testing.T) {
 }
 
 func TestMakeSelectFiltering_EmptyFilter(t *testing.T) {
-	tests := []*selectFilteringOptions{
+	tests := []*SelectFilteringOptions{
 		NewSelectFilteringOptions([]string{}, []any{}, "", false),
 		NewSelectFilteringOptions([]string{}, []any{}, "", true),
 	}

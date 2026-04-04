@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-type selectFilteringOptions struct {
+type SelectFilteringOptions struct {
 	whereColumns      []string
 	whereValues       []any
 	orderByColumn     string
@@ -17,11 +17,11 @@ func NewSelectFilteringOptions(
 	whereValues []any,
 	orderByColumn string,
 	orderByDescending bool,
-) *selectFilteringOptions {
+) *SelectFilteringOptions {
 	if len(whereColumns) != len(whereValues) {
 		panic("SelectFilteringOptions: columns and values list must have the same length")
 	}
-	return &selectFilteringOptions{
+	return &SelectFilteringOptions{
 		whereColumns:      whereColumns,
 		whereValues:       whereValues,
 		orderByColumn:     orderByColumn,
@@ -29,7 +29,7 @@ func NewSelectFilteringOptions(
 	}
 }
 
-func MakeSelectFiltering(opt *selectFilteringOptions) string {
+func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 	filter := ""
 
 	if len(opt.whereColumns) > 0 {
