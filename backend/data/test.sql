@@ -53,7 +53,7 @@ INSERT INTO item_categories (name, group_id) VALUES
     ('VEGETABLES', (SELECT id FROM groups WHERE name = 'Friends')),
     ('SNACKS', (SELECT id FROM groups WHERE name = 'Friends')),
     ('CANNED GOODS', (SELECT id FROM groups WHERE name = 'Friends')),
-    ('BEVERAGE', (SELECT id FROM groups WHERE name = 'Family'));
+    ('BEVERAGE', (SELECT id FROM groups WHERE name = 'Friends'));
 
 INSERT INTO items (name, description, average_market_price, unit_type, item_category_id, group_id) VALUES
     ('Flour', 'All-purpose flour', 2.50, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'GRAINS AND PASTA'), (SELECT id FROM groups WHERE name = 'Family')),

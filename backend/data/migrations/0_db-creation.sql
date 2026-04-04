@@ -27,8 +27,8 @@ INSERT INTO users (username, password, app_admin, created_at, language, app_them
     "$2a$12$L4zK2tkbTZFR37/jFJvbgObzhyqoogNuLaLUatMfGH3QGRKBnLrNS",
     true,
     (unixepoch()),
-    "en",
-    "system"
+    "EN",
+    "SYSTEM"
 );
 
 -- Many-to-Many relationship between users and groups
