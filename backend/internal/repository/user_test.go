@@ -77,9 +77,9 @@ func compareListUsers(actual, expected []model.User) error {
 	expected = utils.SortSliceByFieldName(expected, "ID", false)
 
 	// Start at 1 to skip the admin user created by the migration script
-	for i := 1; i < len(actual)-len(expected); i++ {
+	for i := 1; i < len(actual); i++ {
 		actualUser := actual[i]
-		expectedUser := expected[i]
+		expectedUser := expected[i-1]
 
 		if err := compareUsers(&actualUser, &expectedUser); err != nil {
 			return err
