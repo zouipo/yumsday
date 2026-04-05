@@ -73,8 +73,8 @@ INSERT INTO items (name, description, average_market_price, unit_type, item_cate
     ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Friends'));
 
 INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, group_id) VALUES
-    ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', 0, 1, 'Family favorite!', 1),
     ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', 0, 1, NULL, 1),
+    ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', 0, 1, 'Family favorite!', 1),
     ('Tomato Soup', 'Creamy tomato soup', '/static/recipes/soup.jpg', 'https://example.com/soup', 10, 30, 6, 'Cook tomatoes with onions and blend', 0, 0, 'Great for winter', 2),
     ('Quick Salad', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, 1),
     ('Secret Recipe', 'Top secret family recipe', NULL, NULL, 5, 15, 2, 'Cannot reveal instructions', 0, 0, 'Do not share!', 2);
@@ -90,23 +90,23 @@ INSERT INTO recipe_categories (name, group_id) VALUES
     ('GLUTEN FREE', 2);
 
 INSERT INTO recipes_categories_junction (recipe_id, category_id) VALUES
-    (1, 1),  -- Cookies -> DESSERT
-    (2, 2),  -- Chicken -> MAIN COURSE
+    (1, 2),  -- Chicken -> MAIN COURSE
+    (2, 1),  -- Cookies -> DESSERT
     (3, 3),  -- Soup -> SOUP
     (3, 4),  -- Soup -> VEGETARIAN
     (4, 5),  -- Salad -> SALAD
     (4, 7);  -- Salad -> VEGAN
 
 INSERT INTO ingredients (quantity, item_id, unit_id, recipe_id) VALUES
-    -- Chocolate Chip Cookies ingredients
-    (2.0, 1, 1, 1),      -- 2 cups flour
-    (1.0, 2, 1, 1),      -- 1 cup sugar
-    (0.5, 6, 1, 1),      -- 0.5 cup butter
-    (2.0, 4, 8, 1),      -- 2 eggs
     -- Grilled Chicken ingredients
-    (4.0, 7, 8, 2),      -- 4 pieces chicken breast
-    (2.0, 10, 2, 2),     -- 2 cloves garlic
-    (0.5, 3, 7, 2),      -- 0.5 tsp salt
+    (4.0, 7, 8, 1),      -- 4 pieces chicken breast
+    (2.0, 10, 2, 1),     -- 2 cloves garlic
+    (0.5, 3, 7, 1),      -- 0.5 tsp salt
+    -- Chocolate Chip Cookies ingredients
+    (2.0, 1, 1, 2),      -- 2 cups flour
+    (1.0, 2, 1, 2),      -- 1 cup sugar
+    (0.5, 6, 1, 2),      -- 0.5 cup butter
+    (2.0, 4, 8, 2),      -- 2 eggs
     -- Tomato Soup ingredients
     (6.0, 8, 8, 3),      -- 6 tomatoes
     (1.0, 9, 8, 3),      -- 1 onion
@@ -118,15 +118,15 @@ INSERT INTO ingredients (quantity, item_id, unit_id, recipe_id) VALUES
     (NULL, 12, 11, 4);   -- Pepper with NULL quantity and undefined unit
 
 -- Dishes
-INSERT INTO dishes (portion, bought, datetime, recipe_id, group_id) VALUES
-    (4, 0, datetime('now', '-1 day', '+6 hours'), 2, 1),  -- Grilled chicken for dinner
-    (6, 0, datetime('now', '-1 day', '+12 hours'), 3, 1),  -- Tomato soup for lunch
-    (12, 1, datetime('now', '-1 day', '+15 hours'), 1, 1); -- Cookies (bought)
+INSERT INTO dishes (portion, bought, datetime, group_id) VALUES
+    (4, 0, datetime('now', '-1 day', '+6 hours'), 1),  -- Grilled chicken for dinner
+    (6, 0, datetime('now', '-1 day', '+12 hours'), 1),  -- Tomato soup for lunch
+    (12, 1, datetime('now', '-1 day', '+15 hours'), 1); -- Cookies (bought)
 
 INSERT INTO recipes_dishes_junction (recipe_id, dish_id) VALUES
-    (2, 1), -- 1st dish: Grilled Chicken
+    (1, 1), -- 1st dish: Grilled Chicken
     (3, 2), -- 2nd dish: Tomato soup
-    (1, 3); -- 3rd dish: Cookies
+    (2, 3); -- 3rd dish: Cookies
 
 -- Grocery List
 INSERT INTO groceries (quantity_bought, user_quantity, item_id, unit_id, group_id) VALUES
