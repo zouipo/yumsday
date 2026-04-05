@@ -128,9 +128,7 @@ CREATE TABLE IF NOT EXISTS dishes (
     portion INTEGER NOT NULL,
     bought BOOLEAN DEFAULT FALSE NOT NULL,
     datetime TIMESTAMP NOT NULL,
-    recipe_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
     FOREIGN KEY (group_id) REFERENCES groups(id)
 );
 
