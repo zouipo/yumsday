@@ -7,7 +7,8 @@ INSERT INTO users (username, password, app_admin, created_at, avatar, language, 
 INSERT INTO groups (name, image_url, created_at) VALUES
     ('Family', '/static/images/family.jpg', 0),
     ('Friends', '/static/images/friends.jpg', 0),
-    ('Work', NULL, 0);
+    ('Work', NULL, 0),
+    ('NoRecipe', NULL, 0);
 
 -- Update users with last_visited_group_id
 UPDATE users

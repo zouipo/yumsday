@@ -198,20 +198,58 @@ func TestGetByGroupID(t *testing.T) {
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
-	groupID := int64(1)
-	expected := []model.Recipe{
-		testRecipes[1],
-		testRecipes[0],
-		testRecipes[3],
+	tests := []struct {
+		name     string
+		groupID  int64
+		expected []model.Recipe
+		err      error
+	}{
+		{
+			name:    "group with one recipe",
+			groupID: 2,
+			expected: []model.Recipe{
+				testRecipes[2],
+			},
+		},
+		{
+			name:    "group with multiple recipes",
+			groupID: 1,
+			expected: []model.Recipe{
+				testRecipes[1],
+				testRecipes[0],
+				testRecipes[3],
+			},
+		},
+		{
+			name:     "group without recipe",
+			groupID:  4,
+			expected: []model.Recipe{},
+		},
+		{
+			name:     "unknown group",
+			groupID:  -1,
+			expected: []model.Recipe{},
+		},
 	}
 
-	actual, err := repo.GetByGroupID(groupID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetByGroupID(tt.groupID)
 
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
+			if tt.err != nil {
+				if !utils.CompareErrors(err, tt.err) {
+					t.Fatalf("expected error %v, got %v", tt.err, err)
+				}
+				return
+			}
 
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("expected to get the right recipes")
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			if !reflect.DeepEqual(actual, tt.expected) {
+				t.Fatal("recipes should be equal")
+			}
+		})
 	}
 }

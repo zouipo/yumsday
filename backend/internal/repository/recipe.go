@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -53,6 +54,9 @@ func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
 	}
 	recipes, err := r.fetchRecipes(opt)
 	if err != nil {
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return []model.Recipe{}, nil
+		}
 		return nil, err
 	}
 	return recipes, nil
@@ -140,7 +144,7 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	}
 
 	if len(m) == 0 {
-		return []model.Recipe{}, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), err)
+		return nil, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), err)
 	}
 
 	ret := make([]model.Recipe, 0, len(m))
