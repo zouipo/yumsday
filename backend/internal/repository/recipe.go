@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -41,6 +42,22 @@ func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
 	return &recipes[0], nil
 }
 
+func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "recipes.group_id", Values: []any{groupID}},
+		},
+		OrderBy: []utils.OrderByClause{
+			{Column: "recipes.name"},
+		},
+	}
+	recipes, err := r.fetchRecipes(opt)
+	if err != nil {
+		return nil, err
+	}
+	return recipes, nil
+}
+
 func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]model.Recipe, error) {
 	query := fmt.Sprintf(`SELECT
 	recipes.*,
@@ -56,6 +73,8 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	JOIN units ON units.id = ingredients.unit_id
 	%s;`, utils.MakeSelectFiltering(opt))
 
+	slog.Debug("fetching recipes", "query", query)
+
 	rows, err := r.db.Query(query, opt.WhereValues()...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
@@ -64,11 +83,12 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	m := make(map[int64]*model.Recipe)
 	seenCategories := make(map[int64]map[int64]bool)
 	seenIngredients := make(map[int64]map[int64]bool)
-	tmpRecipe := &model.Recipe{}
-	tmpCategory := &model.RecipeCategory{}
-	tmpIngredient := &model.Ingredient{}
 
 	for rows.Next() {
+		tmpRecipe := &model.Recipe{}
+		tmpCategory := &model.RecipeCategory{}
+		tmpIngredient := &model.Ingredient{}
+
 		err := rows.Scan(
 			&tmpRecipe.ID,
 			&tmpRecipe.Name,

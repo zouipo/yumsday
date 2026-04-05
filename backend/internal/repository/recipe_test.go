@@ -21,9 +21,31 @@ var (
 		8:  {ID: 8, Name: "Piece"},
 		11: {ID: 11, Name: "Undefined"},
 	}
+
 	testRecipes = []model.Recipe{
 		{
 			ID:                 1,
+			Name:               "Grilled Chicken",
+			Description:        new("Simple grilled chicken breast with herbs"),
+			ImageURL:           new("/static/recipes/chicken.jpg"),
+			PreparationTimeMin: new(10),
+			CookingTimeMin:     new(20),
+			Servings:           new(4),
+			Instructions:       new("Season and grill until cooked through"),
+			CreatedAt:          time.Unix(0, 0).UTC(),
+			Public:             true,
+			GroupID:            1,
+			Categories: []model.RecipeCategory{
+				{ID: 2, Name: "MAIN COURSE"},
+			},
+			Ingredients: []model.Ingredient{
+				{ID: 1, Quantity: new(4.0), Unit: testUnit[8], Item: model.Item{ID: 7, Name: "Chicken Breast"}},
+				{ID: 2, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
+				{ID: 3, Quantity: new(0.5), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+			},
+		},
+		{
+			ID:                 2,
 			Name:               "Chocolate Chip Cookies",
 			Description:        new("Classic homemade chocolate chip cookies"),
 			ImageURL:           new("/static/recipes/cookies.jpg"),
@@ -40,31 +62,10 @@ var (
 				{ID: 1, Name: "DESSERT"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 1, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
-				{ID: 2, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
-				{ID: 3, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
-				{ID: 4, Quantity: new(2.0), Unit: testUnit[8], Item: model.Item{ID: 4, Name: "Eggs"}},
-			},
-		},
-		{
-			ID:                 2,
-			Name:               "Grilled Chicken",
-			Description:        new("Simple grilled chicken breast with herbs"),
-			ImageURL:           new("/static/recipes/chicken.jpg"),
-			PreparationTimeMin: new(10),
-			CookingTimeMin:     new(20),
-			Servings:           new(4),
-			Instructions:       new("Season and grill until cooked through"),
-			CreatedAt:          time.Unix(0, 0).UTC(),
-			Public:             true,
-			GroupID:            1,
-			Categories: []model.RecipeCategory{
-				{ID: 2, Name: "MAIN COURSE"},
-			},
-			Ingredients: []model.Ingredient{
-				{ID: 5, Quantity: new(4.0), Unit: testUnit[8], Item: model.Item{ID: 7, Name: "Chicken Breast"}},
-				{ID: 6, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
-				{ID: 7, Quantity: new(0.5), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+				{ID: 4, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+				{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+				{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+				{ID: 7, Quantity: new(2.0), Unit: testUnit[8], Item: model.Item{ID: 4, Name: "Eggs"}},
 			},
 		},
 		{
@@ -189,5 +190,28 @@ func TestGetByID(t *testing.T) {
 				t.Fatal("recipes should be equal")
 			}
 		})
+	}
+}
+
+func TestGetByGroupID(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	groupID := int64(1)
+	expected := []model.Recipe{
+		testRecipes[1],
+		testRecipes[0],
+		testRecipes[3],
+	}
+
+	actual, err := repo.GetByGroupID(groupID)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected to get the right recipes")
 	}
 }
