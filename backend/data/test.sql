@@ -1,13 +1,13 @@
 INSERT INTO users (username, password, app_admin, created_at, avatar, language, app_theme, last_visited_group_id) VALUES
-    ('testuser1', '$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm', 0, datetime('now', '-1 day'), '/static/assets/avatar1.jpg', 'EN', 'LIGHT', NULL),
-    ('testuser2', '$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2', 1, datetime('now', '-1 day'), '/static/assets/avatar2.jpg', 'FR', 'DARK', NULL),
-    ('testuser3', '$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy', 0, datetime('now', '-1 day'), '/static/assets/avatar3.jpg', 'EN', 'SYSTEM', NULL),
-    ('testuser4', '$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa', 0, datetime('now', '-1 day'), NULL, 'EN', 'LIGHT', NULL);
+    ('testuser1', '$2a$12$q7Nm8q9c9g9unKbhjqcWS.Y7tQplxJvgTi8wjsWh7IOPE9ilUwNVm', 0, 0, '/static/assets/avatar1.jpg', 'EN', 'LIGHT', NULL),
+    ('testuser2', '$2a$12$Z30jTp2WrTWT1jOcnZiXvOcIcqhFNyNnKt7yS7FcUUaIHdgVPy3k2', 1, 0, '/static/assets/avatar2.jpg', 'FR', 'DARK', NULL),
+    ('testuser3', '$2a$12$flHptXw2TVYQs3b74duKJO.AkxIoaFPctDSp0AtquuTc82xte4wwy', 0, 0, '/static/assets/avatar3.jpg', 'EN', 'SYSTEM', NULL),
+    ('testuser4', '$2a$12$8dCvoylHH5QIRHlpurXJ3ORMqeGwRkfP3XzytQUVxuPjoIbzj9PWa', 0, 0, NULL, 'EN', 'LIGHT', NULL);
 
 INSERT INTO groups (name, image_url, created_at) VALUES
-    ('Family', '/static/images/family.jpg', datetime('now', '-1 day')),
-    ('Friends', '/static/images/friends.jpg', datetime('now', '-1 day')),
-    ('Work', NULL, datetime('now', '-1 day'));
+    ('Family', '/static/images/family.jpg', 0),
+    ('Friends', '/static/images/friends.jpg', 0),
+    ('Work', NULL, 0);
 
 -- Update users with last_visited_group_id
 UPDATE users
@@ -18,18 +18,18 @@ UPDATE users
 SET last_visited_group_id = (SELECT id FROM groups WHERE name = 'Friends')
 WHERE username = 'testuser3';
 
-INSERT INTO group_members (user_id, user_group_id, admin, joined_at) VALUES
-    ((SELECT id FROM users WHERE username = 'testuser1'), (SELECT id FROM groups WHERE name = 'Family'), 1, datetime('now', '-1 day')),
-    ((SELECT id FROM users WHERE username = 'testuser2'), (SELECT id FROM groups WHERE name = 'Family'), 1, datetime('now', '-1 day')),
-    ((SELECT id FROM users WHERE username = 'testuser3'), (SELECT id FROM groups WHERE name = 'Family'), 0, datetime('now', '-1 day')),
-    ((SELECT id FROM users WHERE username = 'testuser1'), (SELECT id FROM groups WHERE name = 'Friends'), 0, datetime('now', '-1 day')),
-    ((SELECT id FROM users WHERE username = 'testuser3'), (SELECT id FROM groups WHERE name = 'Friends'), 1, datetime('now', '-1 day'));
+INSERT INTO group_members (user_id, group_id, admin, joined_at) VALUES
+    ((SELECT id FROM users WHERE username = 'testuser1'), (SELECT id FROM groups WHERE name = 'Family'), 1, 0),
+    ((SELECT id FROM users WHERE username = 'testuser2'), (SELECT id FROM groups WHERE name = 'Family'), 1, 0),
+    ((SELECT id FROM users WHERE username = 'testuser3'), (SELECT id FROM groups WHERE name = 'Family'), 0, 0),
+    ((SELECT id FROM users WHERE username = 'testuser1'), (SELECT id FROM groups WHERE name = 'Friends'), 0, 0),
+    ((SELECT id FROM users WHERE username = 'testuser3'), (SELECT id FROM groups WHERE name = 'Friends'), 1, 0);
 
 INSERT INTO sessions (id, created_at, last_activity, ip_address, user_agent, user_id) VALUES
-    ('session123abc', datetime('now', '-1 day'), datetime('now', '-1 day', '+5 hours'), '192.168.1.100', 'Mozilla/5.0', (SELECT id FROM users WHERE username = 'testuser1')),
-    ('session456def', datetime('now', '-1 day'), datetime('now', '-1 day', '+1 hour'), '192.168.1.101', 'Chrome/120.0', (SELECT id FROM users WHERE username = 'testuser2')),
-    ('session789ghi', datetime('now', '-1 day'), datetime('now', '-1 day', '+2 hours'), '192.168.1.102', 'Safari/17.0', (SELECT id FROM users WHERE username = 'testuser3')),
-    ('session999xyz', datetime('now', '-1 day'), datetime('now', '-1 day', '+3 hours'), '192.168.1.103', NULL, (SELECT id FROM users WHERE username = 'testuser4'));
+    ('session123abc', 0, datetime('now', '-1 day', '+5 hours'), '192.168.1.100', 'Mozilla/5.0', (SELECT id FROM users WHERE username = 'testuser1')),
+    ('session456def', 0, datetime('now', '-1 day', '+1 hour'), '192.168.1.101', 'Chrome/120.0', (SELECT id FROM users WHERE username = 'testuser2')),
+    ('session789ghi', 0, datetime('now', '-1 day', '+2 hours'), '192.168.1.102', 'Safari/17.0', (SELECT id FROM users WHERE username = 'testuser3')),
+    ('session999xyz', 0, datetime('now', '-1 day', '+3 hours'), '192.168.1.103', NULL, (SELECT id FROM users WHERE username = 'testuser4'));
 
 INSERT INTO units (name, factor, unit_type) VALUES
     ('Kilogram', 1000.0, 'WEIGHT'),
@@ -52,7 +52,8 @@ INSERT INTO item_categories (name, group_id) VALUES
     ('MEAT', (SELECT id FROM groups WHERE name = 'Friends')),
     ('VEGETABLES', (SELECT id FROM groups WHERE name = 'Friends')),
     ('SNACKS', (SELECT id FROM groups WHERE name = 'Friends')),
-    ('CANNED GOODS', (SELECT id FROM groups WHERE name = 'Friends'));
+    ('CANNED GOODS', (SELECT id FROM groups WHERE name = 'Friends')),
+    ('BEVERAGE', (SELECT id FROM groups WHERE name = 'Friends'));
 
 INSERT INTO items (name, description, average_market_price, unit_type, item_category_id, group_id) VALUES
     ('Flour', 'All-purpose flour', 2.50, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'GRAINS AND PASTA'), (SELECT id FROM groups WHERE name = 'Family')),
@@ -65,20 +66,20 @@ INSERT INTO items (name, description, average_market_price, unit_type, item_cate
     ('Tomatoes', 'Fresh tomatoes', 3.00, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'VEGETABLES'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Onions', 'Yellow onions', 1.50, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'VEGETABLES'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Garlic', 'Fresh garlic', 2.00, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'VEGETABLES'), (SELECT id FROM groups WHERE name = 'Friends')),
-    ('Water', NULL, NULL, 'VOLUME', NULL, (SELECT id FROM groups WHERE name = 'Friends')),
+    ('Water', NULL, NULL, 'VOLUME', (SELECT id FROM item_categories WHERE name = 'BEVERAGE'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Pepper', NULL, 1.20, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
     ('Olive Oil', 'Extra virgin olive oil', NULL, 'VOLUME', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
     ('Potato Chips', 'Salted potato chips', 2.99, 'BAG', (SELECT id FROM item_categories WHERE name = 'SNACKS'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Friends'));
 
-INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, user_group_id) VALUES
-    ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', datetime('now', '-1 day'), 1, 'Family favorite!', 1),
-    ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', datetime('now', '-1 day'), 1, NULL, 1),
-    ('Tomato Soup', 'Creamy tomato soup', '/static/recipes/soup.jpg', 'https://example.com/soup', 10, 30, 6, 'Cook tomatoes with onions and blend', datetime('now', '-1 day'), 0, 'Great for winter', 2),
-    ('Quick Salad', NULL, NULL, NULL, NULL, NULL, NULL, NULL, datetime('now', '-1 day'), 1, NULL, 1),
-    ('Secret Recipe', 'Top secret family recipe', NULL, NULL, 5, 15, 2, 'Cannot reveal instructions', datetime('now', '-1 day'), 0, 'Do not share!', 2);
+INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, group_id) VALUES
+    ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', 0, 1, 'Family favorite!', 1),
+    ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', 0, 1, NULL, 1),
+    ('Tomato Soup', 'Creamy tomato soup', '/static/recipes/soup.jpg', 'https://example.com/soup', 10, 30, 6, 'Cook tomatoes with onions and blend', 0, 0, 'Great for winter', 2),
+    ('Quick Salad', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, 1),
+    ('Secret Recipe', 'Top secret family recipe', NULL, NULL, 5, 15, 2, 'Cannot reveal instructions', 0, 0, 'Do not share!', 2);
 
-INSERT INTO recipe_categories (name, user_group_id) VALUES
+INSERT INTO recipe_categories (name, group_id) VALUES
     ('DESSERT', 1),
     ('MAIN COURSE', 1),
     ('SOUP', 1),
@@ -121,6 +122,11 @@ INSERT INTO dishes (portion, bought, datetime, recipe_id, group_id) VALUES
     (4, 0, datetime('now', '-1 day', '+6 hours'), 2, 1),  -- Grilled chicken for dinner
     (6, 0, datetime('now', '-1 day', '+12 hours'), 3, 1),  -- Tomato soup for lunch
     (12, 1, datetime('now', '-1 day', '+15 hours'), 1, 1); -- Cookies (bought)
+
+INSERT INTO recipes_dishes_junction (recipe_id, dish_id) VALUES
+    (2, 1), -- 1st dish: Grilled Chicken
+    (3, 2), -- 2nd dish: Tomato soup
+    (1, 3); -- 3rd dish: Cookies
 
 -- Grocery List
 INSERT INTO groceries (quantity_bought, user_quantity, item_id, unit_id, group_id) VALUES
