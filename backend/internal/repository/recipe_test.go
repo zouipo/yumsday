@@ -14,6 +14,13 @@ import (
 )
 
 var (
+	testUnit = map[int64]model.Unit{
+		1:  {ID: 1, Name: "Kilogram"},
+		2:  {ID: 2, Name: "Gram"},
+		7:  {ID: 7, Name: "Teaspoon"},
+		8:  {ID: 8, Name: "Piece"},
+		11: {ID: 11, Name: "Undefined"},
+	}
 	testRecipes = []model.Recipe{
 		{
 			ID:                 1,
@@ -33,10 +40,10 @@ var (
 				{ID: 1, Name: "DESSERT"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 1, Quantity: new(2.0), UnitID: 1, Item: model.Item{ID: 1, Name: "Flour"}},
-				{ID: 2, Quantity: new(1.0), UnitID: 1, Item: model.Item{ID: 2, Name: "Sugar"}},
-				{ID: 3, Quantity: new(0.5), UnitID: 1, Item: model.Item{ID: 6, Name: "Butter"}},
-				{ID: 4, Quantity: new(2.0), UnitID: 8, Item: model.Item{ID: 4, Name: "Eggs"}},
+				{ID: 1, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+				{ID: 2, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+				{ID: 3, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+				{ID: 4, Quantity: new(2.0), Unit: testUnit[8], Item: model.Item{ID: 4, Name: "Eggs"}},
 			},
 		},
 		{
@@ -55,9 +62,9 @@ var (
 				{ID: 2, Name: "MAIN COURSE"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 5, Quantity: new(4.0), UnitID: 8, Item: model.Item{ID: 7, Name: "Chicken Breast"}},
-				{ID: 6, Quantity: new(2.0), UnitID: 2, Item: model.Item{ID: 10, Name: "Garlic"}},
-				{ID: 7, Quantity: new(0.5), UnitID: 7, Item: model.Item{ID: 3, Name: "Salt"}},
+				{ID: 5, Quantity: new(4.0), Unit: testUnit[8], Item: model.Item{ID: 7, Name: "Chicken Breast"}},
+				{ID: 6, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
+				{ID: 7, Quantity: new(0.5), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
 			},
 		},
 		{
@@ -79,10 +86,10 @@ var (
 				{ID: 4, Name: "VEGETARIAN"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 8, Quantity: new(6.0), UnitID: 8, Item: model.Item{ID: 8, Name: "Tomatoes"}},
-				{ID: 9, Quantity: new(1.0), UnitID: 8, Item: model.Item{ID: 9, Name: "Onions"}},
-				{ID: 10, Quantity: new(2.0), UnitID: 2, Item: model.Item{ID: 10, Name: "Garlic"}},
-				{ID: 11, Quantity: new(1.0), UnitID: 7, Item: model.Item{ID: 3, Name: "Salt"}},
+				{ID: 8, Quantity: new(6.0), Unit: testUnit[8], Item: model.Item{ID: 8, Name: "Tomatoes"}},
+				{ID: 9, Quantity: new(1.0), Unit: testUnit[8], Item: model.Item{ID: 9, Name: "Onions"}},
+				{ID: 10, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
+				{ID: 11, Quantity: new(1.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
 			},
 		},
 		{
@@ -96,9 +103,9 @@ var (
 				{ID: 7, Name: "VEGAN"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 12, Quantity: nil, UnitID: 8, Item: model.Item{ID: 8, Name: "Tomatoes"}},
-				{ID: 13, Quantity: new(1.0), UnitID: 11, Item: model.Item{ID: 13, Name: "Olive Oil"}},
-				{ID: 14, Quantity: nil, UnitID: 11, Item: model.Item{ID: 12, Name: "Pepper"}},
+				{ID: 12, Quantity: nil, Unit: testUnit[8], Item: model.Item{ID: 8, Name: "Tomatoes"}},
+				{ID: 13, Quantity: new(1.0), Unit: testUnit[11], Item: model.Item{ID: 13, Name: "Olive Oil"}},
+				{ID: 14, Quantity: nil, Unit: testUnit[11], Item: model.Item{ID: 12, Name: "Pepper"}},
 			},
 		},
 	}

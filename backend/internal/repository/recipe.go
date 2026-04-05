@@ -45,13 +45,15 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	query := fmt.Sprintf(`SELECT
 	recipes.*,
 	recipe_categories.id, recipe_categories.name,
-	ingredients.id, ingredients.quantity, ingredients.unit_id,
-	items.id, items.name
+	ingredients.id, ingredients.quantity,
+	items.id, items.name,
+	units.id, units.name
 	FROM recipes
 	JOIN recipes_categories_junction ON recipes_categories_junction.recipe_id = recipes.id
 	JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
 	JOIN ingredients ON ingredients.recipe_id = recipes.id
 	JOIN items ON items.id = ingredients.item_id
+	JOIN units ON units.id = ingredients.unit_id
 	%s;`, utils.MakeSelectFiltering(opt))
 
 	rows, err := r.db.Query(query, opt.WhereValues()...)
@@ -85,9 +87,10 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 			&tmpCategory.Name,
 			&tmpIngredient.ID,
 			&tmpIngredient.Quantity,
-			&tmpIngredient.UnitID,
 			&tmpIngredient.Item.ID,
 			&tmpIngredient.Item.Name,
+			&tmpIngredient.Unit.ID,
+			&tmpIngredient.Unit.Name,
 		)
 
 		if err != nil {
