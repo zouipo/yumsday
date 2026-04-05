@@ -68,6 +68,7 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 
 	if len(opt.OrderBy) > 0 {
 		clauses := make([]string, 0, len(opt.OrderBy))
+		// build strings like 'column1', 'column2 DESC', 'column3'
 		for _, o := range opt.OrderBy {
 			if o.Column == "" {
 				panic("MakeSelectFiltering: column string cannot be empty")
@@ -78,6 +79,7 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 			}
 			clauses = append(clauses, clause)
 		}
+		// build a string like 'ORDER BY column1, column2 DESC, column3'
 		filter += " ORDER BY " + strings.Join(clauses, ", ")
 	}
 
