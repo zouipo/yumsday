@@ -37,6 +37,51 @@ func TestWhereValues(t *testing.T) {
 	}
 }
 
+func TestMakeSelectFiltering_Panic(t *testing.T) {
+	panicCheck := func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}
+
+	tests := []struct {
+		name string
+		opt  *SelectFilteringOptions
+	}{
+		{
+			name: "where column empty",
+			opt: &SelectFilteringOptions{
+				Where: []WhereClause{
+					{Column: "", Values: []any{"test"}},
+				},
+			},
+		},
+		{
+			name: "where values empty",
+			opt: &SelectFilteringOptions{
+				Where: []WhereClause{
+					{Column: "test", Values: []any{}},
+				},
+			},
+		},
+		{
+			name: "orderby column empty",
+			opt: &SelectFilteringOptions{
+				OrderBy: []OrderByClause{
+					{Column: ""},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer panicCheck()
+			MakeSelectFiltering(tt.opt)
+		})
+	}
+}
+
 func TestMakeSelectFiltering_EmptyFilter(t *testing.T) {
 	actual := MakeSelectFiltering(&SelectFilteringOptions{})
 
