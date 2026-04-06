@@ -135,9 +135,19 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
 
-	m := make(map[int64]*model.Recipe)
-	seenCategories := make(map[int64]map[int64]bool)
-	seenIngredients := make(map[int64]map[int64]bool)
+	ret := []model.Recipe{}
+
+	// The query joins recipes_categories_junction and ingredients on recipes.id,
+	// so the number of rows returned is a product
+	// e.g. 3 categories * 5 ingredients = 15 rows returned.
+	// We have to deduplicate all these rows lest we add duplicated stuff in our returned data.
+	// This struct contains the data used to do this bookkeeping.
+	type state struct {
+		retIndex        int64
+		seenCategories  map[int64]bool
+		seenIngredients map[int64]bool
+	}
+	stateMap := make(map[int64]state)
 
 	for rows.Next() {
 		tmpRecipe := &model.Recipe{}
@@ -173,20 +183,25 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 		}
 
 		id := tmpRecipe.ID
-		if _, exists := m[id]; !exists {
-			m[id] = tmpRecipe
-			seenCategories[id] = make(map[int64]bool)
-			seenIngredients[id] = make(map[int64]bool)
+		if _, exists := stateMap[id]; !exists {
+			ret = append(ret, *tmpRecipe)
+			stateMap[id] = state{
+				retIndex:        int64(len(ret) - 1),
+				seenCategories:  make(map[int64]bool),
+				seenIngredients: make(map[int64]bool),
+			}
 		}
 
-		if !seenCategories[id][tmpCategory.ID] {
-			m[id].Categories = append(m[id].Categories, *tmpCategory)
-			seenCategories[id][tmpCategory.ID] = true
+		i := stateMap[id].retIndex
+
+		if !stateMap[id].seenCategories[tmpCategory.ID] {
+			ret[i].Categories = append(ret[i].Categories, *tmpCategory)
+			stateMap[id].seenCategories[tmpCategory.ID] = true
 		}
 
-		if !seenIngredients[id][tmpIngredient.ID] {
-			m[id].Ingredients = append(m[id].Ingredients, *tmpIngredient)
-			seenIngredients[id][tmpIngredient.ID] = true
+		if !stateMap[id].seenIngredients[tmpIngredient.ID] {
+			ret[i].Ingredients = append(ret[i].Ingredients, *tmpIngredient)
+			stateMap[id].seenIngredients[tmpIngredient.ID] = true
 		}
 	}
 
@@ -194,13 +209,8 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
 
-	if len(m) == 0 {
+	if len(ret) == 0 {
 		return nil, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), err)
-	}
-
-	ret := make([]model.Recipe, 0, len(m))
-	for _, recipe := range m {
-		ret = append(ret, *recipe)
 	}
 
 	return ret, nil
