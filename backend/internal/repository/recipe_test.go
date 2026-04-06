@@ -115,7 +115,6 @@ var (
 
 func setupRecipeTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
-	//db, err := sql.Open("sqlite3", "test.db")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
