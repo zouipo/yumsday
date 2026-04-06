@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
 	"testing"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -12,6 +11,18 @@ import (
 )
 
 var invalidItemCategoryRepositoryID = int64(-1)
+
+var testItemCategories = []model.ItemCategory{
+	{ID: 1, Name: "GRAINS AND PASTA", GroupID: 1},
+	{ID: 2, Name: "BAKED GOODS", GroupID: 1},
+	{ID: 3, Name: "SPICES AND CONDIMENTS", GroupID: 1},
+	{ID: 4, Name: "DAIRY", GroupID: 1},
+	{ID: 5, Name: "MEAT", GroupID: 2},
+	{ID: 6, Name: "VEGETABLES", GroupID: 2},
+	{ID: 7, Name: "SNACKS", GroupID: 2},
+	{ID: 8, Name: "CANNED GOODS", GroupID: 2},
+	{ID: 9, Name: "BEVERAGE", GroupID: 2},
+}
 
 func compareItemCategory(actual, expected *model.ItemCategory) error {
 	if actual.ID != expected.ID {
@@ -28,7 +39,7 @@ func compareItemCategory(actual, expected *model.ItemCategory) error {
 }
 
 func TestNewItemCategoryRepository(t *testing.T) {
-	db := setUpTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewItemCategoryRepository(db)
@@ -43,7 +54,7 @@ func TestNewItemCategoryRepository(t *testing.T) {
 }
 
 func TestGetItemCategoryByID(t *testing.T) {
-	db := setUpTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewItemCategoryRepository(db)
@@ -56,21 +67,15 @@ func TestGetItemCategoryByID(t *testing.T) {
 	}{
 		{
 			name:       "Get item category by valid ID",
-			categoryID: 1,
-			expected:   &model.ItemCategory{ID: 1, Name: "Baking"},
-			expectErr:  nil,
-		},
-		{
-			name:       "Get item category by second valid ID",
-			categoryID: 2,
-			expected:   &model.ItemCategory{ID: 2, Name: "Vegetables"},
+			categoryID: testItemCategories[0].ID,
+			expected:   &testItemCategories[0],
 			expectErr:  nil,
 		},
 		{
 			name:       "Get item category by invalid ID",
 			categoryID: invalidItemCategoryRepositoryID,
 			expected:   nil,
-			expectErr:  customErrors.NewNotFoundError("Item category", strconv.FormatInt(invalidItemCategoryRepositoryID, 10), sql.ErrNoRows),
+			expectErr:  customErrors.NewNotFoundError("ItemCategory", "item_categories.id", sql.ErrNoRows),
 		},
 	}
 

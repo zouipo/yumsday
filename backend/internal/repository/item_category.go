@@ -2,11 +2,13 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
-	"strconv"
+	"fmt"
+	"log/slog"
+	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
 type ItemCategoryRepositoryInterface interface {
@@ -23,37 +25,60 @@ func NewItemCategoryRepository(db *sql.DB) *ItemCategoryRepository {
 	}
 }
 
+// GetByID retrieves an item category from the database by its ID.
 func (r *ItemCategoryRepository) GetByID(id int64) (*model.ItemCategory, error) {
-	category, err := r.fetchCategoryItem("id", id)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Item category", strconv.FormatInt(id, 10), err)
-		}
-		return nil, customErrors.NewInternalError("Failed to fetch item category", err)
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "item_categories.id", Values: []any{id}},
+		},
 	}
 
-	return category, nil
-}
-
-func (r *ItemCategoryRepository) fetchCategoryItem(column string, value any) (*model.ItemCategory, error) {
-	category := &model.ItemCategory{}
-
-	query := `
-	SELECT id, name
-	FROM item_categories
-	WHERE ` + column + ` = ?`
-
-	row := r.db.QueryRow(query, value)
-
-	err := row.Scan(
-		&category.ID,
-		&category.Name,
-	)
-
+	itemCategories, err := r.fetchItemCategories(opt)
 	if err != nil {
 		return nil, err
 	}
 
-	return category, nil
+	return &itemCategories[0], nil
+}
+
+// fetchItemCategories is a helper method to retrieve multiple item categories based on filtering options.
+func (r *ItemCategoryRepository) fetchItemCategories(opt *utils.SelectFilteringOptions) ([]model.ItemCategory, error) {
+	query := fmt.Sprintf(`
+	SELECT item_categories.*
+	FROM item_categories
+	%s;`, utils.MakeSelectFiltering(opt))
+
+	slog.Debug("fetching item categories", "query", query)
+
+	rows, err := r.db.Query(query, opt.WhereValues()...)
+	if err != nil {
+		return nil, customErrors.NewInternalError("failed to fetch item categories", err)
+	}
+
+	itemCategories := []model.ItemCategory{}
+
+	for rows.Next() {
+		var itemCategory model.ItemCategory
+		err := rows.Scan(
+			&itemCategory.ID,
+			&itemCategory.Name,
+			&itemCategory.GroupID,
+		)
+
+		if err != nil {
+			return nil, customErrors.NewInternalError("failed to fetch item categories", err)
+		}
+
+		itemCategories = append(itemCategories, itemCategory)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("failed to iterate rows", err)
+	}
+
+	if len(itemCategories) == 0 {
+		return nil, customErrors.NewNotFoundError("ItemCategory", strings.Join(opt.WhereColumns(), ","), err)
+	}
+
+	return itemCategories, nil
 }
