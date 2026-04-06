@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -143,7 +142,7 @@ func (r *ItemRepository) Update(item *model.Item) error {
 
 	// If no rows were updated, it means the item was not found.
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("Item", strconv.FormatInt(item.ID, 10), err)
+		return customErrors.NewNotFoundError("Item", "items.id", err)
 	}
 
 	return nil
