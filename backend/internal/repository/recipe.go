@@ -62,6 +62,48 @@ func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
 	return recipes, nil
 }
 
+func (r *RecipeRepository) Create(recipe *model.Recipe) (int64, error) {
+	res, err := r.db.Exec(
+		`INSERT INTO recipes(
+			name,
+			description,
+			image_url,
+			original_link,
+			preparation_time_min,
+			cooking_time_min,
+			servings,
+			instructions,
+			created_at,
+			public,
+			comment,
+			group_id
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+		recipe.Name,
+		recipe.Description,
+		recipe.ImageURL,
+		recipe.OriginalLink,
+		recipe.PreparationTimeMin,
+		recipe.CookingTimeMin,
+		recipe.Servings,
+		recipe.Instructions,
+		recipe.CreatedAt,
+		recipe.Public,
+		recipe.Comment,
+		recipe.GroupID,
+	)
+	if err != nil {
+		return 0, customErrors.NewInternalError("Failed to create recipe", err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, customErrors.NewInternalError("Failed to retrieve recipe ID", err)
+	}
+
+	return id, nil
+}
+
 func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]model.Recipe, error) {
 	query := fmt.Sprintf(`SELECT
 	recipes.*,
@@ -70,11 +112,11 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	items.id, items.name,
 	units.id, units.name
 	FROM recipes
-	JOIN recipes_categories_junction ON recipes_categories_junction.recipe_id = recipes.id
-	JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
-	JOIN ingredients ON ingredients.recipe_id = recipes.id
-	JOIN items ON items.id = ingredients.item_id
-	JOIN units ON units.id = ingredients.unit_id
+	LEFT JOIN recipes_categories_junction ON recipes_categories_junction.recipe_id = recipes.id
+	LEFT JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
+	LEFT JOIN ingredients ON ingredients.recipe_id = recipes.id
+	LEFT JOIN items ON items.id = ingredients.item_id
+	LEFT JOIN units ON units.id = ingredients.unit_id
 	%s;`, utils.MakeSelectFiltering(opt))
 
 	slog.Debug("fetching recipes", "query", query)

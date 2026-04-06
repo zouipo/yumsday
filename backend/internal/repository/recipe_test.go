@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
@@ -114,6 +115,7 @@ var (
 
 func setupRecipeTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	//db, err := sql.Open("sqlite3", "test.db")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -132,6 +134,28 @@ func setupRecipeTestDB(t *testing.T) *sql.DB {
 	}
 
 	return db
+}
+
+func areRecipesEqual(r1 *model.Recipe, r2 *model.Recipe) bool {
+	r1.Categories = utils.SortSliceByFieldName(r1.Categories, "ID", false)
+	r2.Categories = utils.SortSliceByFieldName(r2.Categories, "ID", false)
+	r1.Ingredients = utils.SortSliceByFieldName(r1.Ingredients, "ID", false)
+	r2.Ingredients = utils.SortSliceByFieldName(r2.Ingredients, "ID", false)
+	return reflect.DeepEqual(r1, r2)
+}
+
+func areRecipeSlicesEqual(s1 []model.Recipe, s2 []model.Recipe) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i := range s1 {
+		if !areRecipesEqual(&s1[i], &s2[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func TestGetByID(t *testing.T) {
@@ -247,9 +271,48 @@ func TestGetByGroupID(t *testing.T) {
 				t.Fatalf("didn't expected error, got %v", err)
 			}
 
-			if !reflect.DeepEqual(actual, tt.expected) {
+			if !areRecipeSlicesEqual(actual, tt.expected) {
 				t.Fatal("recipes should be equal")
 			}
 		})
+	}
+}
+
+func TestRecipeRepositoryCreate(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	newRecipe := &model.Recipe{
+		Name:               "test",
+		Description:        new("description"),
+		ImageURL:           new("http://example.com/test"),
+		OriginalLink:       new("http://marmiton/test"),
+		PreparationTimeMin: new(4),
+		CookingTimeMin:     new(2),
+		Servings:           new(1),
+		Instructions:       new("[\"faire cuire !!\"]"),
+		CreatedAt:          time.Now().UTC(),
+		Public:             true,
+		Comment:            new("comment !!"),
+		GroupID:            1,
+	}
+
+	id, err := repo.Create(newRecipe)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	newRecipe.ID = id
+
+	actual, err := repo.GetByID(id)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	if !reflect.DeepEqual(actual, newRecipe) {
+		actualJson, _ := json.MarshalIndent(actual, "", "  ")
+		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
+		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
 	}
 }
