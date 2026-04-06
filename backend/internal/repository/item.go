@@ -3,9 +3,13 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strconv"
+	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
+	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 )
@@ -31,50 +35,23 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 }
 
 // GetAllByGroupID fetches all items by group ID, ordered by a specified column.
-func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	items := []model.Item{}
-
-	if descending {
-		sort += " DESC"
+func (r *ItemRepository) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "items.group_id", Values: []any{groupID}},
+		},
+		OrderBy: []utils.OrderByClause{
+			{Column: sort, Descending: descending},
+		},
 	}
 
-	rows, err := r.db.Query(`
-	SELECT i.*, ic.name
-	FROM items i
-	JOIN item_categories ic ON i.item_category_id = ic.id
-	WHERE i.group_id = ?
-	ORDER BY `+sort, groupID)
-
+	items, err := r.fetchItems(opt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return items, nil // Return empty slice if no items found for the group ID
+		// Returns an empty slice if no items were found for this group ID
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return []model.Item{}, nil
 		}
-		return nil, customErrors.NewInternalError("Failed to fetch items", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var item model.Item
-		err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Description,
-			&item.AverageMarketPrice,
-			&item.UnitType,
-			&item.GroupID,
-			&item.ItemCategory.ID,
-			&item.ItemCategory.Name,
-		)
-
-		if err != nil {
-			return nil, customErrors.NewInternalError("Failed to scan item", err)
-		}
-
-		items = append(items, item)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, customErrors.NewInternalError("Failed to iterate rows", err)
+		return nil, err
 	}
 
 	return items, nil
@@ -82,58 +59,35 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending 
 
 // GetByID retrieves an item from the database by its ID.
 func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
-	item, err := r.fetchItem("id", id)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Item", strconv.FormatInt(id, 10), err)
-		}
-		return nil, customErrors.NewInternalError("Failed to fetch item", err)
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "items.id", Values: []any{id}},
+		},
 	}
 
-	return item, nil
+	items, err := r.fetchItems(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &items[0], nil
 }
 
 // GetByName retrieves an item from the database by its name.
 func (r *ItemRepository) GetByName(name string) ([]model.Item, error) {
-	items := []model.Item{}
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "items.name", Values: []any{name}},
+		},
+	}
 
-	query := `
-	SELECT i.*, ic.name
-	FROM items i
-	JOIN item_categories ic ON i.item_category_id = ic.id
-	WHERE i.name = ?`
-
-	rows, err := r.db.Query(query, name)
+	items, err := r.fetchItems(opt)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return items, nil // Return empty slice if no items found with the given name
+		// Returns an empty slice if no items were found for this group ID
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return []model.Item{}, nil
 		}
-		return nil, customErrors.NewInternalError("Failed to fetch item", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var item model.Item
-		err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Description,
-			&item.AverageMarketPrice,
-			&item.UnitType,
-			&item.GroupID,
-			&item.ItemCategory.ID,
-			&item.ItemCategory.Name,
-		)
-		if err != nil {
-			return nil, customErrors.NewInternalError("Failed to scan item", err)
-		}
-
-		items = append(items, item)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, customErrors.NewInternalError("Failed to iterate rows", err)
+		return nil, err
 	}
 
 	return items, nil
@@ -153,12 +107,12 @@ func (r *ItemRepository) Create(item *model.Item) (int64, error) {
 	)
 
 	if err != nil {
-		return 0, customErrors.NewInternalError("Failed to create item", err)
+		return 0, customErrors.NewInternalError("failed to create item", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, customErrors.NewInternalError("Failed to retrieve last insert ID", err)
+		return 0, customErrors.NewInternalError("failed to retrieve last insert ID", err)
 	}
 
 	return id, nil
@@ -179,12 +133,12 @@ func (r *ItemRepository) Update(item *model.Item) error {
 	)
 
 	if err != nil {
-		return customErrors.NewInternalError("Failed to update item", err)
+		return customErrors.NewInternalError("failed to update item", err)
 	}
 
 	updatedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalError("Failed to retrieve updated item", err)
+		return customErrors.NewInternalError("failed to retrieve updated item", err)
 	}
 
 	// If no rows were updated, it means the item was not found.
@@ -199,48 +153,66 @@ func (r *ItemRepository) Update(item *model.Item) error {
 func (r *ItemRepository) Delete(id int64) error {
 	result, err := r.db.Exec("DELETE FROM items WHERE id = ?", id)
 	if err != nil {
-		return customErrors.NewInternalError("Failed to delete item", err)
+		return customErrors.NewInternalError("failed to delete item", err)
 	}
 
 	deletedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalError("Failed to retrieve deleted item", err)
+		return customErrors.NewInternalError("failed to retrieve deleted item", err)
 	}
 
 	// If no rows were deleted, it means the item was not found.
 	if deletedRow == 0 {
-		return customErrors.NewNotFoundError("Item", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("Item", "items.id", err)
 	}
 
 	return nil
 }
 
-// fetchItem is a helper method to retrieve an item based on a specific column and value.
-func (r *ItemRepository) fetchItem(column string, value any) (*model.Item, error) {
-	item := &model.Item{}
+// fetchItems is a helper method to retrieve multiple items based on filtering options.
+func (r *ItemRepository) fetchItems(opt *utils.SelectFilteringOptions) ([]model.Item, error) {
+	query := fmt.Sprintf(`
+	SELECT items.*, item_categories.name
+	FROM items
+	JOIN item_categories ON items.item_category_id = item_categories.id
+	%s;`, utils.MakeSelectFiltering(opt))
 
-	query := `
-	SELECT i.*, ic.name
-	FROM items i
-	JOIN item_categories ic ON i.item_category_id = ic.id
-	WHERE i.` + column + ` = ?`
+	slog.Debug("fetching items", "query", query)
 
-	row := r.db.QueryRow(query, value)
-
-	err := row.Scan(
-		&item.ID,
-		&item.Name,
-		&item.Description,
-		&item.AverageMarketPrice,
-		&item.UnitType,
-		&item.GroupID,
-		&item.ItemCategory.ID,
-		&item.ItemCategory.Name,
-	)
-
+	rows, err := r.db.Query(query, opt.WhereValues()...)
 	if err != nil {
-		return nil, err
+		return nil, customErrors.NewInternalError("failed to fetch items", err)
 	}
 
-	return item, nil
+	items := []model.Item{}
+
+	for rows.Next() {
+		var item model.Item
+		err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.Description,
+			&item.AverageMarketPrice,
+			&item.UnitType,
+			&item.GroupID,
+			&item.ItemCategory.ID,
+			&item.ItemCategory.Name,
+		)
+
+		if err != nil {
+			return nil, customErrors.NewInternalError("failed to fetch items", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("failed to iterate rows", err)
+	}
+
+	if len(items) == 0 {
+		return nil, customErrors.NewNotFoundError("Item", strings.Join(opt.WhereColumns(), ","), err)
+	}
+
+	return items, nil
 }

@@ -240,7 +240,7 @@ func TestNewItemRepository(t *testing.T) {
 }
 
 /*** READ OPERATIONS TESTS ***/
-func TestGetAllItemsByGroupID(t *testing.T) {
+func TestGetItemsByGroupID(t *testing.T) {
 	db := setupItemTestDB(t)
 	defer db.Close()
 
@@ -257,7 +257,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by name",
 			groupID:    1,
-			sortBy:     "i.name",
+			sortBy:     "items.name",
 			descending: false,
 			expected:   sortItemsByField(expectedItems, "name", false),
 			expectErr:  nil,
@@ -265,7 +265,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by name",
 			groupID:    1,
-			sortBy:     "i.name",
+			sortBy:     "items.name",
 			descending: true,
 			expected:   sortItemsByField(expectedItems, "name", true),
 			expectErr:  nil,
@@ -273,7 +273,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by average market price",
 			groupID:    1,
-			sortBy:     "i.average_market_price",
+			sortBy:     "items.average_market_price",
 			descending: false,
 			expected:   sortItemsByField(expectedItems, "average_market_price", false),
 			expectErr:  nil,
@@ -281,7 +281,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by unit type",
 			groupID:    1,
-			sortBy:     "i.unit_type",
+			sortBy:     "items.unit_type",
 			descending: false,
 			expected:   sortItemsByField(expectedItems, "unit_type", false),
 			expectErr:  nil,
@@ -289,7 +289,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by item category name",
 			groupID:    1,
-			sortBy:     "ic.name",
+			sortBy:     "item_categories.name",
 			descending: false,
 			expected:   sortItemsByField(expectedItems, "item_categories.name", false),
 			expectErr:  nil,
@@ -300,12 +300,12 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 			sortBy:     invalidFieldSort,
 			descending: false,
 			expected:   nil,
-			expectErr:  customErrors.NewInternalError("Failed to fetch items", nil),
+			expectErr:  customErrors.NewInternalError("failed to fetch items", nil),
 		},
 		{
 			name:       "Invalid group ID",
 			groupID:    invalidGroupId,
-			sortBy:     "i.name",
+			sortBy:     "items.name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -313,7 +313,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 		{
 			name:       "Invalid group ID",
 			groupID:    2,
-			sortBy:     "i.name",
+			sortBy:     "items.name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -322,7 +322,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			items, err := repo.GetAllByGroupID(tt.groupID, tt.sortBy, tt.descending)
+			items, err := repo.GetByGroupID(tt.groupID, tt.sortBy, tt.descending)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {
@@ -332,11 +332,11 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Fatalf("GetAllByGroupID() unexpected error = %v", err)
+				t.Fatalf("GetByGroupID() unexpected error = %v", err)
 			}
 
 			if err := compareListItems(items, tt.expected); err != nil {
-				t.Errorf("GetAllByGroupID() items do not match expected: %v", err.Error())
+				t.Errorf("GetByGroupID() items do not match expected: %v", err.Error())
 			}
 		})
 	}
@@ -370,7 +370,7 @@ func TestGetItemById(t *testing.T) {
 			name:      "Get item by invalid ID",
 			id:        invalidItemId,
 			expected:  model.Item{},
-			expectErr: customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), nil),
+			expectErr: customErrors.NewNotFoundError("Item", "items.id", nil),
 		},
 	}
 
@@ -472,7 +472,7 @@ func TestCreateItem(t *testing.T) {
 				Name:    "Invalid Group Item",
 				GroupID: invalidGroupId,
 			},
-			expectErr: customErrors.NewInternalError("Failed to create item", nil),
+			expectErr: customErrors.NewInternalError("failed to create item", nil),
 		},
 		{
 			name: "Create item with invalid category ID",
@@ -484,7 +484,7 @@ func TestCreateItem(t *testing.T) {
 					Name: "Invalid Category",
 				},
 			},
-			expectErr: customErrors.NewInternalError("Failed to create item", nil),
+			expectErr: customErrors.NewInternalError("failed to create item", nil),
 		},
 	}
 
@@ -631,7 +631,7 @@ func TestUpdateItem(t *testing.T) {
 				},
 			},
 			expectedItem: model.Item{},
-			expectErr:    customErrors.NewInternalError("Failed to update item", nil),
+			expectErr:    customErrors.NewInternalError("failed to update item", nil),
 		},
 	}
 
@@ -683,7 +683,7 @@ func TestDeleteItem(t *testing.T) {
 		{
 			name:      "Delete non-existing item",
 			id:        invalidItemId,
-			expectErr: customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), sql.ErrNoRows),
+			expectErr: customErrors.NewNotFoundError("Item", "items.id", sql.ErrNoRows),
 		},
 	}
 
@@ -702,9 +702,12 @@ func TestDeleteItem(t *testing.T) {
 				t.Fatalf("Delete() unexpected error = %v", err)
 			}
 
+			items, _ := repo.GetByGroupID(1, "items.name", false)
+			fmt.Print(items)
+
 			// Verify the item was deleted
 			_, err = repo.GetByID(tt.id)
-			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", strconv.FormatInt(tt.id, 10), sql.ErrNoRows)) {
+			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", "items.id", sql.ErrNoRows)) {
 				t.Errorf("expected item to be deleted, but it still exists")
 			}
 		})
