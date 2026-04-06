@@ -283,6 +283,8 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
+	recipeID := new(int64(0))
+
 	newRecipe := &model.Recipe{
 		Name:               "test",
 		Description:        new("description"),
@@ -296,6 +298,34 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		Public:             true,
 		Comment:            new("comment !!"),
 		GroupID:            1,
+		Categories: []model.RecipeCategory{
+			{
+				ID:   1,
+				Name: "DESSERT",
+			},
+			{
+				ID:   2,
+				Name: "MAIN COURSE",
+			},
+			{
+				ID:   3,
+				Name: "SOUP",
+			},
+		},
+		Ingredients: []model.Ingredient{
+			{
+				Quantity: new(3.0),
+				RecipeID: *recipeID,
+				Item:     model.Item{ID: 1, Name: "Flour"},
+				Unit:     model.Unit{ID: 1, Name: "Kilogram"},
+			},
+			{
+				Quantity: new(3.0),
+				RecipeID: *recipeID,
+				Item:     model.Item{ID: 2, Name: "Sugar"},
+				Unit:     model.Unit{ID: 2, Name: "Gram"},
+			},
+		},
 	}
 
 	id, err := repo.Create(newRecipe)
@@ -303,11 +333,17 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		t.Fatalf("expected no error, got '%s'", err)
 	}
 
+	*recipeID = id
 	newRecipe.ID = id
 
 	actual, err := repo.GetByID(id)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	// Or get the last two inserted IDs in the ingredients table instead
+	for i := range actual.Ingredients {
+		actual.Ingredients[i].ID = 0
 	}
 
 	if !reflect.DeepEqual(actual, newRecipe) {

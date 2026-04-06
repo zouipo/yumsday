@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -96,12 +97,20 @@ func (r *RecipeRepository) Create(recipe *model.Recipe) (int64, error) {
 		return 0, customErrors.NewInternalError("Failed to create recipe", err)
 	}
 
-	id, err := res.LastInsertId()
+	recipe.ID, err = res.LastInsertId()
 	if err != nil {
 		return 0, customErrors.NewInternalError("Failed to retrieve recipe ID", err)
 	}
 
-	return id, nil
+	if err = r.createRecipeCategoryJunction(recipe); err != nil {
+		return 0, err
+	}
+
+	if err = r.createIngredients(recipe); err != nil {
+		return 0, err
+	}
+
+	return recipe.ID, nil
 }
 
 func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]model.Recipe, error) {
@@ -195,4 +204,42 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	}
 
 	return ret, nil
+}
+
+func (r *RecipeRepository) createRecipeCategoryJunction(recipe *model.Recipe) error {
+	query := "INSERT INTO recipes_categories_junction(recipe_id, category_id) VALUES " +
+		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ")
+
+	values := make([]any, 0, len(recipe.Categories)*2)
+	for _, c := range recipe.Categories {
+		values = append(values, recipe.ID, c.ID)
+	}
+
+	slog.Debug("inserting recipe category junctions", "query", query)
+
+	_, err := r.db.Exec(query, values...)
+	if err != nil {
+		return customErrors.NewInternalError("failed to insert recipe category junctions", err)
+	}
+
+	return nil
+}
+
+func (r *RecipeRepository) createIngredients(recipe *model.Recipe) error {
+	query := "INSERT INTO ingredients(quantity, recipe_id, item_id, unit_id) VALUES " +
+		strings.Join(slices.Repeat([]string{"(?, ?, ?, ?)"}, len(recipe.Ingredients)), ", ")
+
+	values := make([]any, 0, len(recipe.Ingredients)*4)
+	for _, i := range recipe.Ingredients {
+		values = append(values, i.Quantity, recipe.ID, i.Item.ID, i.Unit.ID)
+	}
+
+	slog.Debug("inserting ingredients", "query", query)
+
+	_, err := r.db.Exec(query, values...)
+	if err != nil {
+		return customErrors.NewInternalError("failed to insert ingredients", err)
+	}
+
+	return nil
 }
