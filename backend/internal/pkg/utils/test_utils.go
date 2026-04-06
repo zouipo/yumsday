@@ -2,15 +2,19 @@ package utils
 
 import (
 	"cmp"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/zouipo/yumsday/backend/internal/migration"
 )
 
 // Ptr returns a pointer of type T initialized to v.
@@ -108,4 +112,26 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	}
 
 	return res != descending
+}
+
+func SetUpTestDB(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("failed to open test database: %v", err)
+	}
+
+	// Apply migrations using the migration package
+	migrationsFS := os.DirFS("../../data/migrations")
+	err = migration.Migrate(db, migrationsFS)
+	if err != nil {
+		t.Fatalf("failed to apply migrations: %v", err)
+	}
+
+	testScript, _ := os.ReadFile("../../data/test.sql")
+	_, err = db.Exec(string(testScript))
+	if err != nil {
+		t.Fatalf("failed to run test.sql: %v", err)
+	}
+
+	return db
 }

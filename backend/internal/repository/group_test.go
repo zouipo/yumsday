@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
-	"strconv"
 	"testing"
 	"time"
 
@@ -15,7 +14,46 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
-var invalidGroupRepositoryID = int64(-1)
+var (
+	invalidGroupRepositoryID = int64(-1)
+
+	testGroups = newTestGroups()
+)
+
+func newTestGroups() []model.Group {
+	epoch := time.Unix(0, 0)
+
+	return []model.Group{
+		{
+			ID:        1,
+			Name:      "Family",
+			ImageURL:  utils.Ptr("/static/images/family.jpg"),
+			CreatedAt: epoch,
+			Members: []model.GroupMember{
+				{UserID: 2, GroupId: 1, Admin: true, JoinedAt: epoch},
+				{UserID: 3, GroupId: 1, Admin: true, JoinedAt: epoch},
+				{UserID: 4, GroupId: 1, Admin: false, JoinedAt: epoch},
+			},
+		},
+		{
+			ID:        2,
+			Name:      "Friends",
+			ImageURL:  utils.Ptr("/static/images/friends.jpg"),
+			CreatedAt: epoch,
+			Members: []model.GroupMember{
+				{UserID: 2, GroupId: 2, Admin: false, JoinedAt: epoch},
+				{UserID: 4, GroupId: 2, Admin: true, JoinedAt: epoch},
+			},
+		},
+		{
+			ID:        3,
+			Name:      "Work",
+			ImageURL:  nil,
+			CreatedAt: epoch,
+			Members:   []model.GroupMember{},
+		},
+	}
+}
 
 func compareGroupMembers(actual, expected []model.GroupMember) error {
 	if len(actual) != len(expected) {
@@ -65,56 +103,8 @@ func compareGroup(actual, expected *model.Group) error {
 	return nil
 }
 
-func setupGroupTestDB(t *testing.T) (*sql.DB, *model.Group) {
-	db := setUpTestDB(t)
-
-	createdAt := time.Now().UTC()
-	joinedAtOne := createdAt.Add(-2 * time.Hour)
-	joinedAtTwo := createdAt.Add(-time.Hour)
-
-	_, err := db.Exec(
-		`INSERT INTO users (username, password, app_admin, created_at, language, app_theme)
-		VALUES (?, ?, ?, ?, ?, ?);`,
-		"group-member-1",
-		"password-1",
-		false,
-		createdAt,
-		"EN",
-		"LIGHT",
-	)
-	if err != nil {
-		t.Fatalf("failed to insert test user: %v", err)
-	}
-
-	_, err = db.Exec(`UPDATE groups SET image_url = ?, created_at = ? WHERE id = ?;`, nil, createdAt, 1)
-	if err != nil {
-		t.Fatalf("failed to update test group: %v", err)
-	}
-
-	_, err = db.Exec(
-		`INSERT INTO group_members (user_id, group_id, admin, joined_at)
-		VALUES (?, ?, ?, ?), (?, ?, ?, ?);`,
-		1, 1, true, joinedAtOne,
-		2, 1, false, joinedAtTwo,
-	)
-	if err != nil {
-		t.Fatalf("failed to insert test group members: %v", err)
-	}
-
-	return db, &model.Group{
-		ID:        1,
-		Name:      "Test Group",
-		ImageURL:  nil,
-		CreatedAt: createdAt,
-		Members: []model.GroupMember{
-			{UserID: 1, GroupId: 1, Admin: true, JoinedAt: joinedAtOne},
-			{UserID: 2, GroupId: 1, Admin: false, JoinedAt: joinedAtTwo},
-		},
-	}
-}
-
 func TestNewGroupRepository(t *testing.T) {
-	db, _ := setupGroupTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewGroupRepository(db)
@@ -129,7 +119,7 @@ func TestNewGroupRepository(t *testing.T) {
 }
 
 func TestGetGroupByID(t *testing.T) {
-	db, expected := setupGroupTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewGroupRepository(db)
@@ -143,14 +133,14 @@ func TestGetGroupByID(t *testing.T) {
 		{
 			name:      "Get group by valid ID",
 			groupID:   1,
-			expected:  expected,
+			expected:  &testGroups[0],
 			expectErr: nil,
 		},
 		{
 			name:      "Get group by invalid ID",
 			groupID:   invalidGroupRepositoryID,
 			expected:  nil,
-			expectErr: customErrors.NewNotFoundError("Group", strconv.FormatInt(invalidGroupRepositoryID, 10), sql.ErrNoRows),
+			expectErr: customErrors.NewNotFoundError("Group", "groups.id", sql.ErrNoRows),
 		},
 	}
 
