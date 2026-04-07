@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
@@ -21,9 +22,31 @@ var (
 		8:  {ID: 8, Name: "Piece"},
 		11: {ID: 11, Name: "Undefined"},
 	}
+
 	testRecipes = []model.Recipe{
 		{
 			ID:                 1,
+			Name:               "Grilled Chicken",
+			Description:        new("Simple grilled chicken breast with herbs"),
+			ImageURL:           new("/static/recipes/chicken.jpg"),
+			PreparationTimeMin: new(10),
+			CookingTimeMin:     new(20),
+			Servings:           new(4),
+			Instructions:       new("Season and grill until cooked through"),
+			CreatedAt:          time.Unix(0, 0).UTC(),
+			Public:             true,
+			GroupID:            1,
+			Categories: []model.RecipeCategory{
+				{ID: 2, Name: "MAIN COURSE"},
+			},
+			Ingredients: []model.Ingredient{
+				{ID: 1, Quantity: new(4.0), Unit: testUnit[8], Item: model.Item{ID: 7, Name: "Chicken Breast"}},
+				{ID: 2, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
+				{ID: 3, Quantity: new(0.5), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+			},
+		},
+		{
+			ID:                 2,
 			Name:               "Chocolate Chip Cookies",
 			Description:        new("Classic homemade chocolate chip cookies"),
 			ImageURL:           new("/static/recipes/cookies.jpg"),
@@ -40,31 +63,10 @@ var (
 				{ID: 1, Name: "DESSERT"},
 			},
 			Ingredients: []model.Ingredient{
-				{ID: 1, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
-				{ID: 2, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
-				{ID: 3, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
-				{ID: 4, Quantity: new(2.0), Unit: testUnit[8], Item: model.Item{ID: 4, Name: "Eggs"}},
-			},
-		},
-		{
-			ID:                 2,
-			Name:               "Grilled Chicken",
-			Description:        new("Simple grilled chicken breast with herbs"),
-			ImageURL:           new("/static/recipes/chicken.jpg"),
-			PreparationTimeMin: new(10),
-			CookingTimeMin:     new(20),
-			Servings:           new(4),
-			Instructions:       new("Season and grill until cooked through"),
-			CreatedAt:          time.Unix(0, 0).UTC(),
-			Public:             true,
-			GroupID:            1,
-			Categories: []model.RecipeCategory{
-				{ID: 2, Name: "MAIN COURSE"},
-			},
-			Ingredients: []model.Ingredient{
-				{ID: 5, Quantity: new(4.0), Unit: testUnit[8], Item: model.Item{ID: 7, Name: "Chicken Breast"}},
-				{ID: 6, Quantity: new(2.0), Unit: testUnit[2], Item: model.Item{ID: 10, Name: "Garlic"}},
-				{ID: 7, Quantity: new(0.5), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+				{ID: 4, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+				{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+				{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+				{ID: 7, Quantity: new(2.0), Unit: testUnit[8], Item: model.Item{ID: 4, Name: "Eggs"}},
 			},
 		},
 		{
@@ -133,6 +135,28 @@ func setupRecipeTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func areRecipesEqual(r1 *model.Recipe, r2 *model.Recipe) bool {
+	r1.Categories = utils.SortSliceByFieldName(r1.Categories, "ID", false)
+	r2.Categories = utils.SortSliceByFieldName(r2.Categories, "ID", false)
+	r1.Ingredients = utils.SortSliceByFieldName(r1.Ingredients, "ID", false)
+	r2.Ingredients = utils.SortSliceByFieldName(r2.Ingredients, "ID", false)
+	return reflect.DeepEqual(r1, r2)
+}
+
+func areRecipeSlicesEqual(s1 []model.Recipe, s2 []model.Recipe) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i := range s1 {
+		if !areRecipesEqual(&s1[i], &s2[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func TestGetByID(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()
@@ -189,5 +213,141 @@ func TestGetByID(t *testing.T) {
 				t.Fatal("recipes should be equal")
 			}
 		})
+	}
+}
+
+func TestGetByGroupID(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	tests := []struct {
+		name     string
+		groupID  int64
+		expected []model.Recipe
+		err      error
+	}{
+		{
+			name:    "group with one recipe",
+			groupID: 2,
+			expected: []model.Recipe{
+				testRecipes[2],
+			},
+		},
+		{
+			name:    "group with multiple recipes",
+			groupID: 1,
+			expected: []model.Recipe{
+				testRecipes[1],
+				testRecipes[0],
+				testRecipes[3],
+			},
+		},
+		{
+			name:     "group without recipe",
+			groupID:  4,
+			expected: []model.Recipe{},
+		},
+		{
+			name:     "unknown group",
+			groupID:  -1,
+			expected: []model.Recipe{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetByGroupID(tt.groupID)
+
+			if tt.err != nil {
+				if !utils.CompareErrors(err, tt.err) {
+					t.Fatalf("expected error %v, got %v", tt.err, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			if !areRecipeSlicesEqual(actual, tt.expected) {
+				t.Fatal("recipes should be equal")
+			}
+		})
+	}
+}
+
+func TestRecipeRepositoryCreate(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	recipeID := new(int64(0))
+
+	newRecipe := &model.Recipe{
+		Name:               "test",
+		Description:        new("description"),
+		ImageURL:           new("http://example.com/test"),
+		OriginalLink:       new("http://marmiton/test"),
+		PreparationTimeMin: new(4),
+		CookingTimeMin:     new(2),
+		Servings:           new(1),
+		Instructions:       new("[\"faire cuire !!\"]"),
+		CreatedAt:          time.Now().UTC(),
+		Public:             true,
+		Comment:            new("comment !!"),
+		GroupID:            1,
+		Categories: []model.RecipeCategory{
+			{
+				ID:   1,
+				Name: "DESSERT",
+			},
+			{
+				ID:   2,
+				Name: "MAIN COURSE",
+			},
+			{
+				ID:   3,
+				Name: "SOUP",
+			},
+		},
+		Ingredients: []model.Ingredient{
+			{
+				Quantity: new(3.0),
+				RecipeID: *recipeID,
+				Item:     model.Item{ID: 1, Name: "Flour"},
+				Unit:     model.Unit{ID: 1, Name: "Kilogram"},
+			},
+			{
+				Quantity: new(3.0),
+				RecipeID: *recipeID,
+				Item:     model.Item{ID: 2, Name: "Sugar"},
+				Unit:     model.Unit{ID: 2, Name: "Gram"},
+			},
+		},
+	}
+
+	id, err := repo.Create(newRecipe)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	*recipeID = id
+	newRecipe.ID = id
+
+	actual, err := repo.GetByID(id)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	// Or get the last two inserted IDs in the ingredients table instead
+	for i := range actual.Ingredients {
+		actual.Ingredients[i].ID = 0
+	}
+
+	if !reflect.DeepEqual(actual, newRecipe) {
+		actualJson, _ := json.MarshalIndent(actual, "", "  ")
+		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
+		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
 	}
 }
