@@ -44,7 +44,7 @@ func (r *GroupRepository) fetchGroups(opt *utils.SelectFilteringOptions) ([]mode
 	query := fmt.Sprintf(`
 	SELECT groups.id, groups.name, groups.image_url, groups.created_at, group_members.user_id, group_members.admin, group_members.joined_at
 	FROM groups
-	JOIN group_members ON groups.id = group_members.group_id
+	LEFT JOIN group_members ON groups.id = group_members.group_id
 	%s;`, utils.MakeSelectFiltering(opt))
 
 	slog.Debug("fetching groups", "query", query)

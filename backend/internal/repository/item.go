@@ -173,7 +173,7 @@ func (r *ItemRepository) fetchItems(opt *utils.SelectFilteringOptions) ([]model.
 	query := fmt.Sprintf(`
 	SELECT items.*, item_categories.name
 	FROM items
-	JOIN item_categories ON items.item_category_id = item_categories.id
+	LEFT JOIN item_categories ON items.item_category_id = item_categories.id
 	%s;`, utils.MakeSelectFiltering(opt))
 
 	slog.Debug("fetching items", "query", query)
