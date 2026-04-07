@@ -19,14 +19,19 @@ type ItemServiceInterface interface {
 }
 
 type ItemService struct {
-	repo repository.ItemRepositoryInterface
+	repo           repository.ItemRepositoryInterface
+	recipeService  RecipeServiceInterface
+	groceryService GroceryServiceInterface
 }
 
 // NewItemService creates a new ItemService using the provided ItemRepository.
 func NewItemService(itemRepo repository.ItemRepositoryInterface,
-	categoryRepo repository.ItemCategoryRepositoryInterface) *ItemService {
+	recipeService RecipeServiceInterface,
+	groceryService GroceryServiceInterface) *ItemService {
 	return &ItemService{
-		repo: itemRepo,
+		repo:           itemRepo,
+		recipeService:  recipeService,
+		groceryService: groceryService,
 	}
 }
 
@@ -92,8 +97,28 @@ func (s *ItemService) Update(item *model.Item) error {
 }
 
 /*** DELETE OPERATIONS ***/
+// Delete removes the item identified by id from the database.
+// It checks for any dependencies in recipes and groceries before deletion.
 func (s *ItemService) Delete(id int64) error {
-	err := s.repo.Delete(id)
+	r, err := s.recipeService.GetByItemID(id)
+	if err != nil {
+		return err
+	}
+
+	if len(r) > 0 {
+		return customErrors.NewConflictError("Item", "can't delete item used by recipes", nil)
+	}
+
+	b, err := s.groceryService.HasItem(id)
+	if err != nil {
+		return err
+	}
+
+	if b {
+		return customErrors.NewConflictError("Item", "can't delete item used in groceries", nil)
+	}
+
+	err = s.repo.Delete(id)
 	if err != nil {
 		return err
 	}
