@@ -277,6 +277,60 @@ func TestGetByGroupID(t *testing.T) {
 	}
 }
 
+func TestGetByItemID(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	tests := []struct {
+		name     string
+		itemID   int64
+		expected []model.Recipe
+	}{
+		{
+			name:   "item in multiple recipes",
+			itemID: 10,
+			expected: []model.Recipe{
+				{ID: testRecipes[0].ID, Name: testRecipes[0].Name, ImageURL: testRecipes[0].ImageURL},
+				{ID: testRecipes[2].ID, Name: testRecipes[2].Name, ImageURL: testRecipes[2].ImageURL},
+			},
+		},
+		{
+			name:   "item in one recipe",
+			itemID: 13,
+			expected: []model.Recipe{
+				{ID: testRecipes[3].ID, Name: testRecipes[3].Name, ImageURL: testRecipes[3].ImageURL},
+			},
+		},
+		{
+			name:     "existing item in no recipe",
+			itemID:   11,
+			expected: []model.Recipe{},
+		},
+		{
+			name:     "unknown item",
+			itemID:   -1,
+			expected: []model.Recipe{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetByItemID(tt.itemID)
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			actual = utils.SortSliceByFieldName(actual, "ID", false)
+			tt.expected = utils.SortSliceByFieldName(tt.expected, "ID", false)
+
+			if !reflect.DeepEqual(actual, tt.expected) {
+				t.Fatalf("expected %v, got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
 func TestRecipeRepositoryCreate(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()
