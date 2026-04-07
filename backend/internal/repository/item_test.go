@@ -292,6 +292,16 @@ func TestGetItemsByGroupID(t *testing.T) {
 	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
+	result, err := db.Exec("INSERT INTO groups (name, image_url, created_at) VALUES (?, ?, ?)", "EmptyGroupForItems", nil, 0)
+	if err != nil {
+		t.Fatalf("failed to create empty group for test: %v", err)
+	}
+
+	emptyGroupID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("failed to get empty group ID: %v", err)
+	}
+
 	repo := NewItemRepository(db)
 
 	tests := []struct {
@@ -369,6 +379,14 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID 3 with no items",
 			groupID:    3,
+			sortBy:     "items.name",
+			descending: false,
+			expected:   []model.Item{},
+			expectErr:  nil,
+		},
+		{
+			name:       "Existing group with no items returns empty list",
+			groupID:    emptyGroupID,
 			sortBy:     "items.name",
 			descending: false,
 			expected:   []model.Item{},
