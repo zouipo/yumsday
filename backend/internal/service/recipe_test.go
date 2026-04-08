@@ -62,7 +62,7 @@ func TestNewRecipeService(t *testing.T) {
 	}
 }
 
-func TestRecipeServiceGetByItemID(t *testing.T) {
+func TestGetByItemID(t *testing.T) {
 	tests := []struct {
 		name     string
 		itemID   int64
