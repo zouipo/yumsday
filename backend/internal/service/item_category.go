@@ -6,6 +6,7 @@ import (
 )
 
 type ItemCategoryServiceInterface interface {
+	GetByID(id int64) (*model.ItemCategory, error)
 }
 
 type ItemCategoryService struct {
