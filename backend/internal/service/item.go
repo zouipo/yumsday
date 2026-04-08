@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -19,19 +20,25 @@ type ItemServiceInterface interface {
 }
 
 type ItemService struct {
-	repo           repository.ItemRepositoryInterface
-	recipeService  RecipeServiceInterface
-	groceryService GroceryServiceInterface
+	repo                repository.ItemRepositoryInterface
+	recipeService       RecipeServiceInterface
+	groceryService      GroceryServiceInterface
+	groupService        GroupServiceInterface
+	itemCategoryService ItemCategoryServiceInterface
 }
 
 // NewItemService creates a new ItemService using the provided ItemRepository.
 func NewItemService(itemRepo repository.ItemRepositoryInterface,
 	recipeService RecipeServiceInterface,
-	groceryService GroceryServiceInterface) *ItemService {
+	groceryService GroceryServiceInterface,
+	groupService GroupServiceInterface,
+	itemCategoryService ItemCategoryServiceInterface) *ItemService {
 	return &ItemService{
-		repo:           itemRepo,
-		recipeService:  recipeService,
-		groceryService: groceryService,
+		repo:                itemRepo,
+		recipeService:       recipeService,
+		groceryService:      groceryService,
+		groupService:        groupService,
+		itemCategoryService: itemCategoryService,
 	}
 }
 
@@ -77,6 +84,9 @@ func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 
 /*** CREATE OPERATIONS ***/
 func (s *ItemService) Create(item *model.Item) (int64, error) {
+	if err := s.validateItem(item); err != nil {
+		return 0, err
+	}
 
 	id, err := s.repo.Create(item)
 	if err != nil {
@@ -88,6 +98,10 @@ func (s *ItemService) Create(item *model.Item) (int64, error) {
 
 /*** UPDATE OPERATIONS ***/
 func (s *ItemService) Update(item *model.Item) error {
+	if err := s.validateItem(item); err != nil {
+		return err
+	}
+
 	err := s.repo.Update(item)
 	if err != nil {
 		return err
@@ -141,4 +155,45 @@ func (s *ItemService) mapSortKey(param string) (string, error) {
 	default:
 		return "", customErrors.NewInvalidParamsError(param, nil)
 	}
+}
+
+func (s *ItemService) validateItem(item *model.Item) error {
+	err := checkSimpleFields(item)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.itemCategoryService.GetByID(item.ItemCategory.ID)
+
+	if err != nil {
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return customErrors.NewConflictError("ItemCategory", "item category must exists", nil)
+		}
+		return err
+	}
+
+	_, err = s.groupService.GetByID(item.GroupID)
+
+	if err != nil {
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return customErrors.NewConflictError("ItemCategory", "item category must exists", nil)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func checkSimpleFields(item *model.Item) error {
+	if item.Name == "" {
+		return customErrors.NewValidationError("name", "item must have a name", nil)
+	}
+
+	// Is it really necessary, because enums implement UnmarshalJSON
+	if item.UnitType.String() == "" {
+		return customErrors.NewValidationError("unit type", "item must have a unit type", nil)
+	}
+
+	return nil
 }
