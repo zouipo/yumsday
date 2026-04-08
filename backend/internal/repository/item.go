@@ -14,7 +14,7 @@ import (
 )
 
 type ItemRepositoryInterface interface {
-	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
+	GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
 	GetByName(name string) ([]model.Item, error)
 	Create(item *model.Item) (int64, error)

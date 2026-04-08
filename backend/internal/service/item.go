@@ -37,13 +37,13 @@ func NewItemService(itemRepo repository.ItemRepositoryInterface,
 
 /*** READ OPERATIONS ***/
 // GetAllByGroupID returns all items for a given group ID, sorted by the specified key and order.
-func (s *ItemService) GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
+func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
 	sortKey, err := s.mapSortKey(strings.ToLower(sort))
 	if err != nil {
 		return nil, err
 	}
 
-	items, err := s.repo.GetAllByGroupID(groupID, sortKey, descending)
+	items, err := s.repo.GetByGroupID(groupID, sortKey, descending)
 	if err != nil {
 		return nil, err
 	}
