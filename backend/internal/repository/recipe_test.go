@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"os"
@@ -327,7 +328,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		},
 	}
 
-	id, err := repo.Create(newRecipe)
+	id, err := repo.Create(context.Background(), newRecipe, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
 	}

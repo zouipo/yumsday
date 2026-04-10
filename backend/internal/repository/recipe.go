@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -63,8 +64,11 @@ func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
 	return recipes, nil
 }
 
-func (r *RecipeRepository) Create(recipe *model.Recipe) (int64, error) {
-	res, err := r.db.Exec(
+func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx,
 		`INSERT INTO recipes(
 			name,
 			description,
@@ -102,14 +106,15 @@ func (r *RecipeRepository) Create(recipe *model.Recipe) (int64, error) {
 		return 0, customErrors.NewInternalError("Failed to retrieve recipe ID", err)
 	}
 
-	if err = r.createRecipeCategoryJunction(recipe); err != nil {
+	if err = r.createRecipeCategoryJunction(ctx, tx, recipe); err != nil {
 		return 0, err
 	}
 
-	if err = r.createIngredients(recipe); err != nil {
+	if err = r.createIngredients(ctx, tx, recipe); err != nil {
 		return 0, err
 	}
 
+	tx.Commit()
 	return recipe.ID, nil
 }
 
@@ -210,13 +215,13 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	}
 
 	if len(ret) == 0 {
-		return nil, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), err)
+		return nil, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), nil)
 	}
 
 	return ret, nil
 }
 
-func (r *RecipeRepository) createRecipeCategoryJunction(recipe *model.Recipe) error {
+func (r *RecipeRepository) createRecipeCategoryJunction(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
 	query := "INSERT INTO recipes_categories_junction(recipe_id, category_id) VALUES " +
 		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ")
 
@@ -227,7 +232,7 @@ func (r *RecipeRepository) createRecipeCategoryJunction(recipe *model.Recipe) er
 
 	slog.Debug("inserting recipe category junctions", "query", query)
 
-	_, err := r.db.Exec(query, values...)
+	_, err := tx.ExecContext(ctx, query, values...)
 	if err != nil {
 		return customErrors.NewInternalError("failed to insert recipe category junctions", err)
 	}
@@ -235,7 +240,7 @@ func (r *RecipeRepository) createRecipeCategoryJunction(recipe *model.Recipe) er
 	return nil
 }
 
-func (r *RecipeRepository) createIngredients(recipe *model.Recipe) error {
+func (r *RecipeRepository) createIngredients(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
 	query := "INSERT INTO ingredients(quantity, recipe_id, item_id, unit_id) VALUES " +
 		strings.Join(slices.Repeat([]string{"(?, ?, ?, ?)"}, len(recipe.Ingredients)), ", ")
 
@@ -246,7 +251,7 @@ func (r *RecipeRepository) createIngredients(recipe *model.Recipe) error {
 
 	slog.Debug("inserting ingredients", "query", query)
 
-	_, err := r.db.Exec(query, values...)
+	_, err := tx.ExecContext(ctx, query, values...)
 	if err != nil {
 		return customErrors.NewInternalError("failed to insert ingredients", err)
 	}
