@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -350,5 +352,63 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		actualJson, _ := json.MarshalIndent(actual, "", "  ")
 		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
 		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
+func TestRecipeRepositoryDelete(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		id   int64
+		err  error
+	}{
+		{
+			name: "valid id",
+			id:   1,
+			err:  nil,
+		},
+		{
+			name: "invalid id",
+			id:   -1,
+			err:  customErrors.NewNotFoundError("recipes", "id", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := repo.Delete(ctx, tt.id)
+			if tt.err != nil {
+				if !utils.CompareErrors(err, tt.err) {
+					t.Fatalf("expected error '%v', got '%v'", tt.err, err)
+				}
+			}
+
+			_, err = repo.GetByID(tt.id)
+			if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
+				t.Fatalf("recipe %d should have been deleted but is still in db", tt.id)
+			}
+
+			checkDeps := func(tableName string) {
+				var count int
+				row := db.QueryRow(
+					fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE recipe_id = ?", tableName),
+					tt.id,
+				)
+				if err := row.Scan(&count); err != nil {
+					panic(fmt.Sprintf("failed to count %s", tableName))
+				}
+
+				if count != 0 {
+					t.Fatalf("expected 0 %s, got %d", tableName, count)
+				}
+			}
+			checkDeps("recipes_categories_junction")
+			checkDeps("recipes_dishes_junction")
+			checkDeps("ingredients")
+		})
 	}
 }
