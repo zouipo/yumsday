@@ -411,6 +411,26 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 		expectedJson, _ := json.MarshalIndent(expected, "", "  ")
 		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
 	}
+
+	var count int
+
+	row := db.QueryRow("SELECT COUNT(*) FROM recipes_categories_junction WHERE recipe_id = 2 AND category_id = 1")
+	if err := row.Scan(&count); err != nil {
+		panic(fmt.Sprintf("failed to count recipes_categories_junction that should have been removed: %s", err))
+	}
+
+	if count != 0 {
+		t.Fatal("recipes_categories_junction with recipe_id = 2 and category_id = 1 should have been removed")
+	}
+
+	row = db.QueryRow("SELECT COUNT(*) FROM ingredients WHERE id = 7")
+	if err := row.Scan(&count); err != nil {
+		panic(fmt.Sprintf("failed to count ingredients with ID that should have been removed: %s", err))
+	}
+
+	if count != 0 {
+		t.Fatalf("ingredient with ID 7 should have been removed")
+	}
 }
 
 func TestRecipeRepositoryDelete(t *testing.T) {
