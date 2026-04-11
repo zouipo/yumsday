@@ -1,8 +1,11 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -115,6 +118,7 @@ var (
 
 func setupRecipeTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	//db, err := sql.Open("sqlite3", "test.db")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -327,7 +331,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		},
 	}
 
-	id, err := repo.Create(newRecipe)
+	id, err := repo.Create(context.Background(), newRecipe, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
 	}
@@ -349,5 +353,140 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		actualJson, _ := json.MarshalIndent(actual, "", "  ")
 		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
 		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
+func TestRecipeRepositoryUpdate(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	expected := &model.Recipe{
+		ID:                 2,
+		Name:               "Chocolate Chip Cookies MODIFIED",
+		Description:        new("Classic homemade chocolate chip cookies"),
+		ImageURL:           new("/static/recipes/cookies.jpg"),
+		OriginalLink:       new("https://example.com/cookies"),
+		PreparationTimeMin: new(16),
+		CookingTimeMin:     new(13),
+		Servings:           new(25),
+		Instructions:       new("Mix ingredients and bake at 350°C"),
+		CreatedAt:          time.Unix(0, 0).UTC(),
+		Public:             true,
+		Comment:            new("my favorite"),
+		GroupID:            1,
+		Categories: []model.RecipeCategory{
+			{ID: 6, Name: "BREAKFAST"},
+		},
+		Ingredients: []model.Ingredient{
+			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+			{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+			{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+			{ID: 0, Quantity: new(1.0), Unit: testUnit[2], Item: model.Item{ID: 8, Name: "Tomatoes"}},
+			{ID: 0, Quantity: new(10.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+		},
+	}
+
+	err := repo.Update(context.Background(), expected)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	actual, err := repo.GetByID(expected.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	if len(actual.Ingredients) != len(expected.Ingredients) {
+		t.Fatal("ingredients list lengths should be equal")
+	}
+
+	for i := range actual.Ingredients {
+		actual.Ingredients[i].ID = 0
+		expected.Ingredients[i].ID = 0
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		actualJson, _ := json.MarshalIndent(actual, "", "  ")
+		expectedJson, _ := json.MarshalIndent(expected, "", "  ")
+		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+
+	var count int
+
+	row := db.QueryRow("SELECT COUNT(*) FROM recipes_categories_junction WHERE recipe_id = 2 AND category_id = 1")
+	if err := row.Scan(&count); err != nil {
+		panic(fmt.Sprintf("failed to count recipes_categories_junction that should have been removed: %s", err))
+	}
+
+	if count != 0 {
+		t.Fatal("recipes_categories_junction with recipe_id = 2 and category_id = 1 should have been removed")
+	}
+
+	row = db.QueryRow("SELECT COUNT(*) FROM ingredients WHERE id = 7")
+	if err := row.Scan(&count); err != nil {
+		panic(fmt.Sprintf("failed to count ingredients with ID that should have been removed: %s", err))
+	}
+
+	if count != 0 {
+		t.Fatalf("ingredient with ID 7 should have been removed")
+	}
+}
+
+func TestRecipeRepositoryDelete(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		id   int64
+		err  error
+	}{
+		{
+			name: "valid id",
+			id:   1,
+			err:  nil,
+		},
+		{
+			name: "invalid id",
+			id:   -1,
+			err:  customErrors.NewNotFoundError("recipes", "id", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := repo.Delete(ctx, tt.id)
+			if tt.err != nil {
+				if !utils.CompareErrors(err, tt.err) {
+					t.Fatalf("expected error '%v', got '%v'", tt.err, err)
+				}
+			}
+
+			_, err = repo.GetByID(tt.id)
+			if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
+				t.Fatalf("recipe %d should have been deleted but is still in db", tt.id)
+			}
+
+			checkDeps := func(tableName string) {
+				var count int
+				row := db.QueryRow(
+					fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE recipe_id = ?", tableName),
+					tt.id,
+				)
+				if err := row.Scan(&count); err != nil {
+					panic(fmt.Sprintf("failed to count %s", tableName))
+				}
+
+				if count != 0 {
+					t.Fatalf("expected 0 %s, got %d", tableName, count)
+				}
+			}
+			checkDeps("recipes_categories_junction")
+			checkDeps("recipes_dishes_junction")
+			checkDeps("ingredients")
+		})
 	}
 }
