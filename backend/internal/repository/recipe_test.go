@@ -355,6 +355,52 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 	}
 }
 
+func TestRecipeRepositoryUpdate(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	expected := &model.Recipe{
+		ID:                 2,
+		Name:               "Chocolate Chip Cookies MODIFIED",
+		Description:        new("Classic homemade chocolate chip cookies"),
+		ImageURL:           new("/static/recipes/cookies.jpg"),
+		OriginalLink:       new("https://example.com/cookies"),
+		PreparationTimeMin: new(16),
+		CookingTimeMin:     new(13),
+		Servings:           new(25),
+		Instructions:       new("Mix ingredients and bake at 350°C"),
+		CreatedAt:          time.Unix(0, 0).UTC(),
+		Public:             true,
+		Comment:            new("my favorite"),
+		GroupID:            1,
+		Categories: []model.RecipeCategory{
+			{ID: 6, Name: "BREAKFAST"},
+		},
+		Ingredients: []model.Ingredient{
+			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+			{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+			{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+		},
+	}
+
+	err := repo.Update(context.Background(), expected)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	actual, err := repo.GetByID(expected.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		actualJson, _ := json.MarshalIndent(actual, "", "  ")
+		expectedJson, _ := json.MarshalIndent(expected, "", "  ")
+		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
 func TestRecipeRepositoryDelete(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()

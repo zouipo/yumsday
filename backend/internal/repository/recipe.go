@@ -65,7 +65,7 @@ func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
 }
 
 func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, _ := r.db.BeginTx(ctx, nil)
 	defer tx.Rollback()
 
 	res, err := tx.ExecContext(ctx,
@@ -118,8 +118,55 @@ func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, tes
 	return recipe.ID, nil
 }
 
+func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) error {
+	tx, _ := r.db.BeginTx(ctx, nil)
+	defer tx.Rollback()
+
+	tx.ExecContext(
+		ctx,
+		`UPDATE recipes
+		SET
+			name = ?,
+			description = ?,
+			image_url = ?,
+			original_link = ?,
+			preparation_time_min = ?,
+			cooking_time_min = ?,
+			servings = ?,
+			instructions = ?,
+			created_at = ?,
+			public = ?,
+			comment = ?,
+			group_id = ?
+		WHERE id = ?`,
+		recipe.Name,
+		recipe.Description,
+		recipe.ImageURL,
+		recipe.OriginalLink,
+		recipe.PreparationTimeMin,
+		recipe.CookingTimeMin,
+		recipe.Servings,
+		recipe.Instructions,
+		recipe.CreatedAt,
+		recipe.Public,
+		recipe.Comment,
+		recipe.GroupID,
+		recipe.ID,
+	)
+
+	if err := r.updateRecipesCategoriesJunction(ctx, tx, recipe); err != nil {
+		return err
+	}
+	if err := r.updateIngredients(ctx, tx, recipe); err != nil {
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, _ := r.db.BeginTx(ctx, nil)
 	defer tx.Rollback()
 
 	cleanupDeps := func(ctx context.Context, tx *sql.Tx, tableName string, id int64) error {
@@ -311,6 +358,75 @@ func (r *RecipeRepository) createIngredients(ctx context.Context, tx *sql.Tx, re
 	_, err := tx.ExecContext(ctx, query, values...)
 	if err != nil {
 		return customErrors.NewInternalError("failed to insert ingredients", err)
+	}
+
+	return nil
+}
+
+func (r *RecipeRepository) updateRecipesCategoriesJunction(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
+	query := "INSERT INTO recipes_categories_junction (recipe_id, category_id) VALUES " +
+		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ") + " " +
+		`ON CONFLICT(recipe_id,category_id) DO UPDATE SET
+			recipe_id = EXCLUDED.recipe_id,
+			category_id = EXCLUDED.category_id`
+
+	values := make([]any, 0, len(recipe.Categories)*2)
+	for _, c := range recipe.Categories {
+		values = append(values, recipe.ID, c.ID)
+	}
+
+	slog.Debug("update recipe category junctions", "query", query)
+
+	if _, err := tx.ExecContext(ctx, query, values...); err != nil {
+		return customErrors.NewInternalError("failed to update recipe category junctions", err)
+	}
+
+	query = `DELETE FROM recipes_categories_junction
+			WHERE recipe_id = ? and (recipe_id, category_id) NOT IN (` +
+		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ") + ")"
+
+	values = slices.Concat([]any{recipe.ID}, values)
+
+	slog.Debug("deleting obsolete recipes_categories_junction", "query", query)
+
+	if _, err := tx.ExecContext(ctx, query, values...); err != nil {
+		return customErrors.NewInternalError("failed to delete obsolete recipes_categories_junction", err)
+	}
+
+	return nil
+}
+
+func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
+	upsertValues := make([]any, 0, len(recipe.Ingredients)*5)
+	deleteValues := make([]any, 0, len(recipe.Ingredients)+1)
+	deleteValues = append(deleteValues, recipe.ID)
+	for _, ing := range recipe.Ingredients {
+		upsertValues = append(upsertValues, ing.ID, ing.Quantity, recipe.ID, ing.Item.ID, ing.Unit.ID)
+		deleteValues = append(deleteValues, ing.ID)
+	}
+
+	query := "INSERT INTO ingredients (id, quantity, recipe_id, item_id, unit_id) VALUES " +
+		strings.Join(slices.Repeat([]string{"(?, ?, ?, ?, ?)"}, len(recipe.Ingredients)), ", ") + " " +
+		`ON CONFLICT(id) DO UPDATE SET
+			quantity = EXCLUDED.quantity,
+			recipe_id = EXCLUDED.recipe_id,
+			item_id = EXCLUDED.item_id,
+			unit_id = EXCLUDED.unit_id`
+
+	slog.Debug("update ingredients", "query", query)
+
+	if _, err := tx.ExecContext(ctx, query, upsertValues...); err != nil {
+		return customErrors.NewInternalError("failed to update ingredients", err)
+	}
+
+	query = `DELETE FROM ingredients 
+			WHERE recipe_id = ? and id NOT IN (` +
+		strings.Join(slices.Repeat([]string{"?"}, len(recipe.Ingredients)), ", ") + ")"
+
+	slog.Debug("deleting obsolete ingredients", "query", query)
+
+	if _, err := tx.ExecContext(ctx, query, deleteValues...); err != nil {
+		return customErrors.NewInternalError("failed to delete obsolete ingredients", err)
 	}
 
 	return nil
