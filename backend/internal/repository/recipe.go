@@ -401,8 +401,13 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 	deleteValues := make([]any, 0, len(recipe.Ingredients)+1)
 	deleteValues = append(deleteValues, recipe.ID)
 	for _, ing := range recipe.Ingredients {
-		upsertValues = append(upsertValues, ing.ID, ing.Quantity, recipe.ID, ing.Item.ID, ing.Unit.ID)
-		deleteValues = append(deleteValues, ing.ID)
+		var id any = ing.ID
+		// If ingredient's ID is 0, we set it to nil which is interpreted as NULL by the db
+		// that way it generates a new ID for it.
+		if ing.ID == 0 {
+			id = nil
+		}
+		upsertValues = append(upsertValues, id, ing.Quantity, recipe.ID, ing.Item.ID, ing.Unit.ID)
 	}
 
 	query := "INSERT INTO ingredients (id, quantity, recipe_id, item_id, unit_id) VALUES " +
@@ -411,12 +416,22 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 			quantity = EXCLUDED.quantity,
 			recipe_id = EXCLUDED.recipe_id,
 			item_id = EXCLUDED.item_id,
-			unit_id = EXCLUDED.unit_id`
+			unit_id = EXCLUDED.unit_id
+			RETURNING id`
 
 	slog.Debug("update ingredients", "query", query)
 
-	if _, err := tx.ExecContext(ctx, query, upsertValues...); err != nil {
+	rows, err := tx.QueryContext(ctx, query, upsertValues...)
+	if err != nil {
 		return customErrors.NewInternalError("failed to update ingredients", err)
+	}
+
+	var newId int64
+	for rows.Next() {
+		if err := rows.Scan(&newId); err != nil {
+			return customErrors.NewInternalError("failed to update ingredients", err)
+		}
+		deleteValues = append(deleteValues, newId)
 	}
 
 	query = `DELETE FROM ingredients 
@@ -425,6 +440,7 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 
 	slog.Debug("deleting obsolete ingredients", "query", query)
 
+	// deleteValues contains the ID of the recipe and its updated ingredients
 	if _, err := tx.ExecContext(ctx, query, deleteValues...); err != nil {
 		return customErrors.NewInternalError("failed to delete obsolete ingredients", err)
 	}

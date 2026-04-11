@@ -118,6 +118,7 @@ var (
 
 func setupRecipeTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	//db, err := sql.Open("sqlite3", "test.db")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -381,6 +382,8 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
 			{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
 			{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+			{ID: 0, Quantity: new(1.0), Unit: testUnit[2], Item: model.Item{ID: 8, Name: "Tomatoes"}},
+			{ID: 0, Quantity: new(10.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
 		},
 	}
 
@@ -392,6 +395,15 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 	actual, err := repo.GetByID(expected.ID)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	if len(actual.Ingredients) != len(expected.Ingredients) {
+		t.Fatal("ingredients list lengths should be equal")
+	}
+
+	for i := range actual.Ingredients {
+		actual.Ingredients[i].ID = 0
+		expected.Ingredients[i].ID = 0
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
