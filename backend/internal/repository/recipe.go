@@ -136,8 +136,7 @@ func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) err
 			instructions = ?,
 			created_at = ?,
 			public = ?,
-			comment = ?,
-			group_id = ?
+			comment = ?
 		WHERE id = ?`,
 		recipe.Name,
 		recipe.Description,
@@ -150,7 +149,6 @@ func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) err
 		recipe.CreatedAt,
 		recipe.Public,
 		recipe.Comment,
-		recipe.GroupID,
 		recipe.ID,
 	)
 
