@@ -64,6 +64,7 @@ var (
 			GroupID:            1,
 			Categories: []model.RecipeCategory{
 				{ID: 1, Name: "DESSERT"},
+				{ID: 4, Name: "VEGETARIAN"},
 			},
 			Ingredients: []model.Ingredient{
 				{ID: 4, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
@@ -376,6 +377,7 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 		Comment:            new("my favorite"),
 		GroupID:            1,
 		Categories: []model.RecipeCategory{
+			{ID: 4, Name: "VEGETARIAN"},
 			{ID: 6, Name: "BREAKFAST"},
 		},
 		Ingredients: []model.Ingredient{
