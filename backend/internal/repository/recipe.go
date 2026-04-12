@@ -395,8 +395,6 @@ func (r *RecipeRepository) updateRecipesCategoriesJunction(ctx context.Context, 
 
 func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
 	upsertValues := make([]any, 0, len(recipe.Ingredients)*5)
-	deleteValues := make([]any, 0, len(recipe.Ingredients)+1)
-	deleteValues = append(deleteValues, recipe.ID)
 	for _, ing := range recipe.Ingredients {
 		var id any = ing.ID
 		// If ingredient's ID is 0, we set it to nil which is interpreted as NULL by the db
@@ -423,12 +421,14 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 		return customErrors.NewInternalError("failed to update ingredients", err)
 	}
 
-	var newId int64
+	deleteValues := make([]any, 0, len(recipe.Ingredients)+1)
+	deleteValues = append(deleteValues, recipe.ID)
 	for rows.Next() {
-		if err := rows.Scan(&newId); err != nil {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
 			return customErrors.NewInternalError("failed to update ingredients", err)
 		}
-		deleteValues = append(deleteValues, newId)
+		deleteValues = append(deleteValues, id)
 	}
 
 	query = `DELETE FROM ingredients 
