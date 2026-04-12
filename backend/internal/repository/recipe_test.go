@@ -442,10 +442,14 @@ func TestRecipeRepositoryDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := repo.Delete(ctx, tt.id)
-			if tt.err != nil {
-				if !utils.CompareErrors(err, tt.err) {
-					t.Fatalf("expected error '%v', got '%v'", tt.err, err)
+			if err != nil {
+				if tt.err != nil {
+					if !utils.CompareErrors(err, tt.err) {
+						t.Fatalf("expected error '%v', got '%v'", tt.err, err)
+					}
+					return
 				}
+				t.Fatalf("unexpected error %v", err)
 			}
 
 			_, err = repo.GetByID(tt.id)
