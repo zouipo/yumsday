@@ -195,9 +195,7 @@ func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
 	}
 
 	if err := deleteFunc(ctx, tx, "recipes_categories_junction", "recipe_id", id); err != nil {
-		if _, ok := errors.AsType[*customErrors.NotFoundError](err); ok {
-			slog.WarnContext(ctx, "removing a recipe that has no recipes_categories_junction", "id", id)
-		} else {
+		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
 			return err
 		}
 	}
@@ -207,9 +205,7 @@ func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
 		}
 	}
 	if err := deleteFunc(ctx, tx, "ingredients", "recipe_id", id); err != nil {
-		if _, ok := errors.AsType[*customErrors.NotFoundError](err); ok {
-			slog.WarnContext(ctx, "removing a recipe that has no ingredients", "id", id)
-		} else {
+		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
 			return err
 		}
 	}
