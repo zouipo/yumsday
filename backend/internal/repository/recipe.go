@@ -379,7 +379,7 @@ func (r *RecipeRepository) updateRecipesCategoriesJunction(ctx context.Context, 
 	}
 
 	query = `DELETE FROM recipes_categories_junction
-			WHERE recipe_id = ? and (recipe_id, category_id) NOT IN (` +
+			WHERE recipe_id = ? AND (recipe_id, category_id) NOT IN (` +
 		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ") + ")"
 
 	values = slices.Concat([]any{recipe.ID}, values)
@@ -432,7 +432,7 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 	}
 
 	query = `DELETE FROM ingredients 
-			WHERE recipe_id = ? and id NOT IN (` +
+			WHERE recipe_id = ? AND id NOT IN (` +
 		strings.Join(slices.Repeat([]string{"?"}, len(recipe.Ingredients)), ", ") + ")"
 
 	slog.Debug("deleting obsolete ingredients", "query", query)
