@@ -106,11 +106,11 @@ func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, tes
 		return 0, customErrors.NewInternalError("Failed to retrieve recipe ID", err)
 	}
 
-	if err = r.createRecipeCategoryJunction(ctx, tx, recipe); err != nil {
+	if err = r.updateRecipesCategoriesJunction(ctx, tx, recipe); err != nil {
 		return 0, err
 	}
 
-	if err = r.createIngredients(ctx, tx, recipe); err != nil {
+	if err = r.updateIngredients(ctx, tx, recipe); err != nil {
 		return 0, err
 	}
 
@@ -322,44 +322,6 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	}
 
 	return ret, nil
-}
-
-func (r *RecipeRepository) createRecipeCategoryJunction(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
-	query := "INSERT INTO recipes_categories_junction(recipe_id, category_id) VALUES " +
-		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ")
-
-	values := make([]any, 0, len(recipe.Categories)*2)
-	for _, c := range recipe.Categories {
-		values = append(values, recipe.ID, c.ID)
-	}
-
-	slog.Debug("inserting recipe category junctions", "query", query)
-
-	_, err := tx.ExecContext(ctx, query, values...)
-	if err != nil {
-		return customErrors.NewInternalError("failed to insert recipe category junctions", err)
-	}
-
-	return nil
-}
-
-func (r *RecipeRepository) createIngredients(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
-	query := "INSERT INTO ingredients(quantity, recipe_id, item_id, unit_id) VALUES " +
-		strings.Join(slices.Repeat([]string{"(?, ?, ?, ?)"}, len(recipe.Ingredients)), ", ")
-
-	values := make([]any, 0, len(recipe.Ingredients)*4)
-	for _, i := range recipe.Ingredients {
-		values = append(values, i.Quantity, recipe.ID, i.Item.ID, i.Unit.ID)
-	}
-
-	slog.Debug("inserting ingredients", "query", query)
-
-	_, err := tx.ExecContext(ctx, query, values...)
-	if err != nil {
-		return customErrors.NewInternalError("failed to insert ingredients", err)
-	}
-
-	return nil
 }
 
 func (r *RecipeRepository) updateRecipesCategoriesJunction(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
