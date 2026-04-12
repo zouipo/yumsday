@@ -363,28 +363,30 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 
 	expected := &model.Recipe{
 		ID:                 2,
-		Name:               "Chocolate Chip Cookies MODIFIED",
+		Name:               "Chocolate Chip Cookies MODIFIED", // modified
 		Description:        new("Classic homemade chocolate chip cookies"),
 		ImageURL:           new("/static/recipes/cookies.jpg"),
 		OriginalLink:       new("https://example.com/cookies"),
-		PreparationTimeMin: new(16),
-		CookingTimeMin:     new(13),
-		Servings:           new(25),
-		Instructions:       new("Mix ingredients and bake at 350°C"),
+		PreparationTimeMin: new(16),                                  // modified
+		CookingTimeMin:     new(13),                                  // modified
+		Servings:           new(25),                                  // modified
+		Instructions:       new("Mix ingredients and bake at 350°C"), // modified
 		CreatedAt:          time.Unix(0, 0).UTC(),
 		Public:             true,
-		Comment:            new("my favorite"),
+		Comment:            new("my favorite"), // modified
 		GroupID:            1,
 		Categories: []model.RecipeCategory{
+			// removed category 1 (DESSERT)
 			{ID: 4, Name: "VEGETARIAN"},
-			{ID: 6, Name: "BREAKFAST"},
+			{ID: 6, Name: "BREAKFAST"}, // added
 		},
 		Ingredients: []model.Ingredient{
-			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
+			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}}, // modified
 			{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
 			{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
-			{ID: 0, Quantity: new(1.0), Unit: testUnit[2], Item: model.Item{ID: 8, Name: "Tomatoes"}},
-			{ID: 0, Quantity: new(10.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},
+			// removed ingredient 7 (butter)
+			{ID: 0, Quantity: new(1.0), Unit: testUnit[2], Item: model.Item{ID: 8, Name: "Tomatoes"}}, // added
+			{ID: 0, Quantity: new(10.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},    // added
 		},
 	}
 
