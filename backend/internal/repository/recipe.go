@@ -371,7 +371,6 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 		strings.Join(slices.Repeat([]string{"(?, ?, ?, ?, ?)"}, len(recipe.Ingredients)), ", ") + " " +
 		`ON CONFLICT(id) DO UPDATE SET
 			quantity = EXCLUDED.quantity,
-			recipe_id = EXCLUDED.recipe_id,
 			item_id = EXCLUDED.item_id,
 			unit_id = EXCLUDED.unit_id
 			RETURNING id`
