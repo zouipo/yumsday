@@ -365,9 +365,7 @@ func (r *RecipeRepository) createIngredients(ctx context.Context, tx *sql.Tx, re
 func (r *RecipeRepository) updateRecipesCategoriesJunction(ctx context.Context, tx *sql.Tx, recipe *model.Recipe) error {
 	query := "INSERT INTO recipes_categories_junction (recipe_id, category_id) VALUES " +
 		strings.Join(slices.Repeat([]string{"(?, ?)"}, len(recipe.Categories)), ", ") + " " +
-		`ON CONFLICT(recipe_id,category_id) DO UPDATE SET
-			recipe_id = EXCLUDED.recipe_id,
-			category_id = EXCLUDED.category_id`
+		`ON CONFLICT(recipe_id,category_id) DO NOTHING`
 
 	values := make([]any, 0, len(recipe.Categories)*2)
 	for _, c := range recipe.Categories {
