@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 )
@@ -9,6 +8,7 @@ import (
 type WhereClause struct {
 	Column string
 	Values []any
+	Like   bool
 }
 
 type OrderByClause struct {
@@ -49,17 +49,23 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 			if len(w.Values) == 0 {
 				panic("MakeSelectFiltering: values list cannot be empty")
 			}
+
+			pattern := "?"
+			if w.Like {
+				pattern = "%?%"
+			}
+
 			if len(w.Values) > 1 {
 				clause := "(" + strings.Join(
 					slices.Repeat(
-						[]string{"WHERE " + w.Column + " = ?"},
+						[]string{"WHERE " + w.Column + " = " + pattern},
 						len(w.Values),
 					),
 					" OR ",
 				) + ")"
 				clauses = append(clauses, clause)
 			} else {
-				clause := fmt.Sprintf("WHERE %v = ?", w.Column)
+				clause := "WHERE " + w.Column + " = " + pattern
 				clauses = append(clauses, clause)
 			}
 		}
