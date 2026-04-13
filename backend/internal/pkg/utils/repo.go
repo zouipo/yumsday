@@ -50,22 +50,22 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 				panic("MakeSelectFiltering: values list cannot be empty")
 			}
 
-			pattern := "?"
+			pattern := "= ?"
 			if w.Like {
-				pattern = "%?%"
+				pattern = "LIKE %?%"
 			}
 
 			if len(w.Values) > 1 {
 				clause := "(" + strings.Join(
 					slices.Repeat(
-						[]string{"WHERE " + w.Column + " = " + pattern},
+						[]string{"WHERE " + w.Column + " " + pattern},
 						len(w.Values),
 					),
 					" OR ",
 				) + ")"
 				clauses = append(clauses, clause)
 			} else {
-				clause := "WHERE " + w.Column + " = " + pattern
+				clause := "WHERE " + w.Column + " " + pattern
 				clauses = append(clauses, clause)
 			}
 		}
