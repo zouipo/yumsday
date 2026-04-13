@@ -1,8 +1,11 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -61,6 +64,7 @@ var (
 			GroupID:            1,
 			Categories: []model.RecipeCategory{
 				{ID: 1, Name: "DESSERT"},
+				{ID: 4, Name: "VEGETARIAN"},
 			},
 			Ingredients: []model.Ingredient{
 				{ID: 4, Quantity: new(2.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}},
@@ -381,7 +385,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		},
 	}
 
-	id, err := repo.Create(newRecipe)
+	id, err := repo.Create(context.Background(), newRecipe, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
 	}
@@ -403,5 +407,127 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		actualJson, _ := json.MarshalIndent(actual, "", "  ")
 		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
 		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
+func TestRecipeRepositoryUpdate(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	expected := &model.Recipe{
+		ID:                 2,
+		Name:               "Chocolate Chip Cookies MODIFIED", // modified
+		Description:        new("Classic homemade chocolate chip cookies"),
+		ImageURL:           new("/static/recipes/cookies.jpg"),
+		OriginalLink:       new("https://example.com/cookies"),
+		PreparationTimeMin: new(16),                                  // modified
+		CookingTimeMin:     new(13),                                  // modified
+		Servings:           new(25),                                  // modified
+		Instructions:       new("Mix ingredients and bake at 350°C"), // modified
+		CreatedAt:          time.Unix(0, 0).UTC(),
+		Public:             true,
+		Comment:            new("my favorite"), // modified
+		GroupID:            1,
+		Categories: []model.RecipeCategory{
+			// removed category 1 (DESSERT)
+			{ID: 4, Name: "VEGETARIAN"},
+			{ID: 6, Name: "BREAKFAST"}, // added
+		},
+		Ingredients: []model.Ingredient{
+			{ID: 4, Quantity: new(3.0), Unit: testUnit[1], Item: model.Item{ID: 1, Name: "Flour"}}, // modified
+			{ID: 5, Quantity: new(1.0), Unit: testUnit[1], Item: model.Item{ID: 2, Name: "Sugar"}},
+			{ID: 6, Quantity: new(0.5), Unit: testUnit[1], Item: model.Item{ID: 6, Name: "Butter"}},
+			// removed ingredient 7 (butter)
+			{ID: 0, Quantity: new(1.0), Unit: testUnit[2], Item: model.Item{ID: 8, Name: "Tomatoes"}}, // added
+			{ID: 0, Quantity: new(10.0), Unit: testUnit[7], Item: model.Item{ID: 3, Name: "Salt"}},    // added
+		},
+	}
+
+	err := repo.Update(context.Background(), expected)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	actual, err := repo.GetByID(expected.ID)
+	if err != nil {
+		t.Fatalf("expected no error, got '%s'", err)
+	}
+
+	if len(actual.Ingredients) != len(expected.Ingredients) {
+		t.Fatal("ingredients list lengths should be equal")
+	}
+
+	for i := range actual.Ingredients {
+		actual.Ingredients[i].ID = 0
+		expected.Ingredients[i].ID = 0
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		actualJson, _ := json.MarshalIndent(actual, "", "  ")
+		expectedJson, _ := json.MarshalIndent(expected, "", "  ")
+		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
+func TestRecipeRepositoryDelete(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		id   int64
+		err  error
+	}{
+		{
+			name: "valid id",
+			id:   1,
+			err:  nil,
+		},
+		{
+			name: "invalid id",
+			id:   -1,
+			err:  customErrors.NewNotFoundError("recipes", "id", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := repo.Delete(ctx, tt.id)
+			if err != nil {
+				if tt.err != nil {
+					if !utils.CompareErrors(err, tt.err) {
+						t.Fatalf("expected error '%v', got '%v'", tt.err, err)
+					}
+					return
+				}
+				t.Fatalf("unexpected error %v", err)
+			}
+
+			_, err = repo.GetByID(tt.id)
+			if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
+				t.Fatalf("recipe %d should have been deleted but is still in db", tt.id)
+			}
+
+			checkDeps := func(tableName string) {
+				var count int
+				row := db.QueryRow(
+					fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE recipe_id = ?", tableName),
+					tt.id,
+				)
+				if err := row.Scan(&count); err != nil {
+					panic(fmt.Sprintf("failed to count %s", tableName))
+				}
+
+				if count != 0 {
+					t.Fatalf("expected 0 %s, got %d", tableName, count)
+				}
+			}
+			checkDeps("recipes_categories_junction")
+			checkDeps("recipes_dishes_junction")
+			checkDeps("ingredients")
+		})
 	}
 }

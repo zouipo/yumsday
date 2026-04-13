@@ -92,6 +92,7 @@ INSERT INTO recipe_categories (name, group_id) VALUES
 INSERT INTO recipes_categories_junction (recipe_id, category_id) VALUES
     (1, 2),  -- Chicken -> MAIN COURSE
     (2, 1),  -- Cookies -> DESSERT
+    (2, 4),  -- Cookies -> VEGETARIAN
     (3, 3),  -- Soup -> SOUP
     (3, 4),  -- Soup -> VEGETARIAN
     (4, 5),  -- Salad -> SALAD
