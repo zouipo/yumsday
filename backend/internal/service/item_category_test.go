@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	icID        = 1
-	invalidIcID = -1
+	icID             = 1
+	invalidIcID      = -1
+	invalidICGroupID = int64(-1)
+	invalidICName    = "UNKNOWN"
 )
 
 type MockItemCategoryRepository struct {
@@ -51,7 +53,7 @@ func (m *MockItemCategoryRepository) GetByNameAndGroupID(name string, groupID in
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "items.name and items.group_id", nil)
+	return nil, customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil)
 }
 
 func setUpDataTestIC() *MockItemCategoryRepository {
@@ -142,6 +144,80 @@ func TestGetItemCategoryByID(t *testing.T) {
 
 			if !reflect.DeepEqual(actual, tt.expected) {
 				t.Fatalf("GetByID() item categories mismatch: got %v, want %v", actual, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetItemCategoryByNameAndGroupID(t *testing.T) {
+	m := setUpDataTestIC()
+	s := NewItemCategoryService(m)
+
+	repoError := customErrors.NewInternalError("failed to fetch item categories", nil)
+
+	firstItem := utils.SortSliceByFieldName(m.itemCategories, "ID", false)[0]
+	secondItem := utils.SortSliceByFieldName(m.itemCategories, "ID", false)[1]
+
+	tests := []struct {
+		name        string
+		icName      string
+		groupID     int64
+		expected    *model.ItemCategory
+		err         error
+		expectedErr error
+	}{
+		{
+			name:     "Existing name and group ID",
+			icName:   firstItem.Name,
+			groupID:  firstItem.GroupID,
+			expected: &firstItem,
+		},
+		{
+			name:        "Non existing name and group ID",
+			icName:      invalidICName,
+			groupID:     invalidICGroupID,
+			expected:    nil,
+			expectedErr: customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil),
+		},
+		{
+			name:        "Existing name, bad group ID",
+			icName:      firstItem.Name,
+			groupID:     secondItem.GroupID,
+			expected:    nil,
+			expectedErr: customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil),
+		},
+		{
+			name:        "Repository error",
+			icName:      m.itemCategories[0].Name,
+			groupID:     m.itemCategories[0].GroupID,
+			expected:    nil,
+			expectedErr: repoError,
+			err:         repoError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m.getByNameAndGroupIDErr = tt.err
+
+			actual, err := s.GetByNameAndGroupID(tt.icName, tt.groupID)
+
+			if tt.expectedErr != nil {
+				if !utils.CompareErrors(err, tt.expectedErr) {
+					t.Fatalf("GetByNameAndGroupID() error = %v, want %v", err, tt.expectedErr)
+				}
+				if actual != nil {
+					t.Fatalf("GetByNameAndGroupID() expected nil item category on error, got %v", actual)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetByNameAndGroupID() unexpected error = %v", err)
+			}
+
+			if !reflect.DeepEqual(actual, tt.expected) {
+				t.Fatalf("GetByNameAndGroupID() item categories mismatch: got %v, want %v", actual, tt.expected)
 			}
 		})
 	}

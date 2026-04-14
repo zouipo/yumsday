@@ -10,7 +10,11 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
-var invalidItemCategoryRepositoryID = int64(-1)
+var (
+	invalidICID      = int64(-1)
+	invalidICName    = "INVALID CATEGORY NAME"
+	invalidICGroupID = int64(-1)
+)
 
 var testItemCategories = []model.ItemCategory{
 	{ID: 1, Name: "GRAINS AND PASTA", GroupID: 1},
@@ -73,7 +77,7 @@ func TestGetItemCategoryByID(t *testing.T) {
 		},
 		{
 			name:       "Get item category by invalid ID",
-			categoryID: invalidItemCategoryRepositoryID,
+			categoryID: invalidICID,
 			expected:   nil,
 			expectErr:  customErrors.NewNotFoundError("ItemCategory", "item_categories.id", sql.ErrNoRows),
 		},
@@ -96,6 +100,64 @@ func TestGetItemCategoryByID(t *testing.T) {
 
 			if err := compareItemCategory(category, tt.expected); err != nil {
 				t.Errorf("GetByID() item category does not match expected: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetItemCategoryByNameAndGroupID(t *testing.T) {
+	db := utils.SetUpTestDB(t)
+	defer db.Close()
+
+	repo := NewItemCategoryRepository(db)
+
+	tests := []struct {
+		name      string
+		icName    string
+		groupID   int64
+		expected  *model.ItemCategory
+		expectErr error
+	}{
+		{
+			name:      "Valid name and group ID",
+			icName:    testItemCategories[0].Name,
+			groupID:   testItemCategories[0].GroupID,
+			expected:  &testItemCategories[0],
+			expectErr: nil,
+		},
+		{
+			name:      "Invalid name and valid group ID",
+			icName:    invalidICName,
+			groupID:   testItemCategories[0].GroupID,
+			expected:  nil,
+			expectErr: customErrors.NewNotFoundError("ItemCategory", "item_categories.name,item_categories.group_id", nil),
+		},
+		{
+			name:      "Valid name and invalid group ID",
+			icName:    testItemCategories[0].Name,
+			groupID:   invalidICGroupID,
+			expected:  nil,
+			expectErr: customErrors.NewNotFoundError("ItemCategory", "item_categories.name,item_categories.group_id", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			category, err := repo.GetByNameAndGroupID(tt.icName, tt.groupID)
+
+			if tt.expectErr != nil {
+				if !utils.CompareErrors(err, tt.expectErr) {
+					t.Errorf("expected error '%v', got '%v'", tt.expectErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetByNameAndGroupID() unexpected error = %v", err)
+			}
+
+			if err := compareItemCategory(category, tt.expected); err != nil {
+				t.Errorf("GetByNameAndGroupID() item category does not match expected: %v", err)
 			}
 		})
 	}
