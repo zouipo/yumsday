@@ -113,6 +113,15 @@ func (s *ItemService) Update(item *model.Item) error {
 		return err
 	}
 
+	// if no item category is provided, assign the default one (uncategorized)
+	if item.ItemCategory.ID == 0 {
+		uncategorized, err := s.itemCategoryService.GetByNameAndGroupID("Uncategorized", item.GroupID)
+		if err != nil {
+			return err
+		}
+		item.ItemCategory = *uncategorized
+	}
+
 	err := s.repo.Update(item)
 	if err != nil {
 		return err
