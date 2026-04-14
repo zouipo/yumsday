@@ -50,20 +50,20 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 				panic("MakeSelectFiltering: values list cannot be empty")
 			}
 			if len(w.Values) > 1 {
-				clause := "(" + strings.Join(
-					slices.Repeat(
-						[]string{"WHERE " + w.Column + " = ?"},
-						len(w.Values),
-					),
-					" OR ",
-				) + ")"
+				// build a string like 'id IN (?, ?, ?)'
+				clause := fmt.Sprintf(
+					"%v IN (%s)",
+					w.Column,
+					// build a string like '?, ?, ?'
+					strings.Join(slices.Repeat([]string{"?"}, len(w.Values)), ", "),
+				)
 				clauses = append(clauses, clause)
 			} else {
-				clause := fmt.Sprintf("WHERE %v = ?", w.Column)
+				clause := fmt.Sprintf("%v = ?", w.Column)
 				clauses = append(clauses, clause)
 			}
 		}
-		filter = strings.Join(clauses, " AND ")
+		filter = "WHERE " + strings.Join(clauses, " AND ")
 	}
 
 	if len(opt.OrderBy) > 0 {
