@@ -164,7 +164,7 @@ func (s *ItemService) validateItem(item *model.Item) error {
 		return err
 	}
 
-	_, err = s.itemCategoryService.GetByID(item.ItemCategory.ID)
+	_, err = s.groupService.GetByID(item.GroupID)
 
 	if err != nil {
 		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
@@ -173,13 +173,19 @@ func (s *ItemService) validateItem(item *model.Item) error {
 		return err
 	}
 
-	_, err = s.groupService.GetByID(item.GroupID)
+	itemCategory, err := s.itemCategoryService.GetByID(item.ItemCategory.ID)
 
+	// Checks if the item category exists
 	if err != nil {
 		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
 			return customErrors.NewConflictError("ItemCategory", "item category must exists", nil)
 		}
 		return err
+	}
+
+	// Checks if the item category belongs to the same group of the item
+	if itemCategory.GroupID != item.GroupID {
+		return customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil)
 	}
 
 	return nil
