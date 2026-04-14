@@ -7,6 +7,7 @@ import (
 
 type ItemCategoryServiceInterface interface {
 	GetByID(id int64) (*model.ItemCategory, error)
+	GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error)
 }
 
 type ItemCategoryService struct {
@@ -21,6 +22,15 @@ func NewItemCategoryService(repo repository.ItemCategoryRepositoryInterface) *It
 
 func (s *ItemCategoryService) GetByID(id int64) (*model.ItemCategory, error) {
 	ic, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return ic, nil
+}
+
+func (s *ItemCategoryService) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
+	ic, err := s.repo.GetByNameAndGroupID(name, groupID)
 	if err != nil {
 		return nil, err
 	}

@@ -83,9 +83,19 @@ func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 }
 
 /*** CREATE OPERATIONS ***/
+// Create adds a new item to the database.
 func (s *ItemService) Create(item *model.Item) (int64, error) {
 	if err := s.validateItem(item); err != nil {
 		return 0, err
+	}
+
+	// if no item category is provided, assign the default one (uncategorized)
+	if item.ItemCategory.ID == 0 {
+		uncategorized, err := s.itemCategoryService.GetByNameAndGroupID("Uncategorized", item.GroupID)
+		if err != nil {
+			return 0, err
+		}
+		item.ItemCategory = *uncategorized
 	}
 
 	id, err := s.repo.Create(item)
@@ -97,6 +107,7 @@ func (s *ItemService) Create(item *model.Item) (int64, error) {
 }
 
 /*** UPDATE OPERATIONS ***/
+// Update modifies the item identified by id with the provided item data.
 func (s *ItemService) Update(item *model.Item) error {
 	if err := s.validateItem(item); err != nil {
 		return err
@@ -196,7 +207,7 @@ func checkSimpleFields(item *model.Item) error {
 		return customErrors.NewValidationError("name", "item must have a name", nil)
 	}
 
-	// Is it really necessary, because enums implement UnmarshalJSON
+	// Caught when the field unit_type is omitted in the JSON body (set to the zero value, an empty string)
 	if item.UnitType.String() == "" {
 		return customErrors.NewValidationError("unit type", "item must have a unit type", nil)
 	}

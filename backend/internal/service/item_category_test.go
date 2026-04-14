@@ -15,8 +15,9 @@ var (
 )
 
 type MockItemCategoryRepository struct {
-	itemCategories []model.ItemCategory
-	getByIDErr     error
+	itemCategories         []model.ItemCategory
+	getByIDErr             error
+	getByNameAndGroupIDErr error
 }
 
 func NewMockItemCategoryRepository() *MockItemCategoryRepository {
@@ -37,6 +38,20 @@ func (m *MockItemCategoryRepository) GetByID(id int64) (*model.ItemCategory, err
 	}
 
 	return nil, customErrors.NewNotFoundError("ItemCategory", "items.id", nil)
+}
+
+func (m *MockItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
+	if m.getByNameAndGroupIDErr != nil {
+		return nil, m.getByNameAndGroupIDErr
+	}
+
+	for i := range m.itemCategories {
+		if m.itemCategories[i].Name == name && m.itemCategories[i].GroupID == groupID {
+			return &m.itemCategories[i], nil
+		}
+	}
+
+	return nil, customErrors.NewNotFoundError("ItemCategory", "items.name and items.group_id", nil)
 }
 
 func setUpDataTestIC() *MockItemCategoryRepository {

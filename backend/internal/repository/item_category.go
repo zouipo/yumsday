@@ -13,6 +13,7 @@ import (
 
 type ItemCategoryRepositoryInterface interface {
 	GetByID(id int64) (*model.ItemCategory, error)
+	GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error)
 }
 
 type ItemCategoryRepository struct {
@@ -30,6 +31,23 @@ func (r *ItemCategoryRepository) GetByID(id int64) (*model.ItemCategory, error) 
 	opt := &utils.SelectFilteringOptions{
 		Where: []utils.WhereClause{
 			{Column: "item_categories.id", Values: []any{id}},
+		},
+	}
+
+	itemCategories, err := r.fetchItemCategories(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &itemCategories[0], nil
+}
+
+// GetByNameAndGroupID retrieves an item category from the database by its name and group ID.
+func (r *ItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
+	opt := &utils.SelectFilteringOptions{
+		Where: []utils.WhereClause{
+			{Column: "item_categories.name", Values: []any{name}},
+			{Column: "item_categories.group_id", Values: []any{groupID}},
 		},
 	}
 
