@@ -72,6 +72,19 @@ func (r *RecipeRepository) GetByGroupID(groupID int64, descending bool) ([]model
 	return recipes, nil
 }
 
+func (r *RecipeRepository) GetRecipeGroupID(id int64) (int64, error) {
+	row := r.db.QueryRow("SELECT group_id from recipes WHERE id = ?", id)
+	var groupID int64
+	if err := row.Scan(&groupID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = customErrors.NewNotFoundError("recipes", "id", err)
+		}
+		return 0, err
+	}
+
+	return groupID, nil
+}
+
 func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
 	tx, _ := r.db.BeginTx(ctx, nil)
 	defer tx.Rollback()
