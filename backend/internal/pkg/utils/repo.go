@@ -52,7 +52,7 @@ func MakeSelectFiltering(opt *SelectFilteringOptions) string {
 
 			pattern := "= ?"
 			if w.Like {
-				pattern = "LIKE concat('%', ?, '%')"
+				pattern = "LIKE %?%"
 			}
 
 			if len(w.Values) > 1 {

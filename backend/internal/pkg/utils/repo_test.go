@@ -168,7 +168,7 @@ func TestMakeSelectFiltering_MultipleOrderBy(t *testing.T) {
 }
 
 func TestMakeSelectFiltering_AllTogether(t *testing.T) {
-	expected := "(WHERE id = ? OR WHERE id = ? OR WHERE id = ?) AND WHERE test = ? AND (WHERE test2 LIKE concat('%', ?, '%') OR WHERE test2 LIKE concat('%', ?, '%')) ORDER BY value DESC, value2"
+	expected := "(WHERE id = ? OR WHERE id = ? OR WHERE id = ?) AND WHERE test = ? AND (WHERE test2 LIKE %?% OR WHERE test2 LIKE %?%) ORDER BY value DESC, value2"
 	opt := &SelectFilteringOptions{
 		Where: []WhereClause{
 			{Column: "id", Values: []any{1, "2", 3.0}},
