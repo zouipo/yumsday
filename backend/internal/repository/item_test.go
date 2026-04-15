@@ -179,7 +179,7 @@ func itemsByGroupID(items []model.Item, groupID int64) []model.Item {
 	return filtered
 }
 
-func compareListItems(s1, s2 []model.Item) bool {
+func CompareSlicesItems(s1, s2 []model.Item) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
@@ -323,7 +323,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 				t.Fatalf("GetByGroupID() unexpected error = %v", err)
 			}
 
-			if !compareListItems(items, tt.expected) {
+			if !CompareSlicesItems(items, tt.expected) {
 				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
@@ -425,7 +425,7 @@ func TestGetItemByName(t *testing.T) {
 				t.Fatalf("GetByName() unexpected error = %v", err)
 			}
 
-			if !compareListItems(items, tt.expected) {
+			if !CompareSlicesItems(items, tt.expected) {
 				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
