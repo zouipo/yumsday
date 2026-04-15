@@ -12,7 +12,7 @@ import (
 
 /*** DATA ***/
 
-var creationTime = time.Now()
+var creationTime = time.Now().UTC()
 
 var avatar1 = enum.Avatar1
 
