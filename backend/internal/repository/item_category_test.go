@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -27,20 +26,6 @@ var testItemCategories = []model.ItemCategory{
 	{ID: 7, Name: "SNACKS", GroupID: 2},
 	{ID: 8, Name: "CANNED GOODS", GroupID: 1},
 	{ID: 9, Name: "BEVERAGE", GroupID: 2},
-}
-
-func compareItemCategories(actual, expected *model.ItemCategory) error {
-	if actual.ID != expected.ID {
-		return fmt.Errorf("expected ID %d, got %d", expected.ID, actual.ID)
-	}
-	if actual.Name != expected.Name {
-		return fmt.Errorf("expected Name %s, got %s", expected.Name, actual.Name)
-	}
-	if actual.GroupID != expected.GroupID {
-		return fmt.Errorf("expected GroupID %d, got %d", expected.GroupID, actual.GroupID)
-	}
-
-	return nil
 }
 
 func compareListItemCategories(s1, s2 []model.ItemCategory) bool {
@@ -113,8 +98,8 @@ func TestGetItemCategoryByID(t *testing.T) {
 				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if err := compareItemCategories(category, tt.expected); err != nil {
-				t.Errorf("GetByID() item category does not match expected: %v", err)
+			if !reflect.DeepEqual(category, tt.expected) {
+				t.Errorf("item categories should be equal: %v", err)
 			}
 		})
 	}
