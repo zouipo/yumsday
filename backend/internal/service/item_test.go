@@ -2,7 +2,7 @@ package service
 
 import (
 	"reflect"
-	"sort"
+	"strings"
 	"testing"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -12,55 +12,76 @@ import (
 )
 
 var (
-	itemID             = int64(1)
 	invalidItemID      = int64(-1)
 	invalidItemGroupID = int64(-1)
 	invalidICID        = int64(-1)
 
-	group1 = model.Group{
-		ID:   1,
-		Name: "Family",
-	}
-	group2 = model.Group{
-		ID:   2,
-		Name: "Friends",
-	}
+	group1 = model.Group{ID: 1, Name: "Family"}
+	group2 = model.Group{ID: 2, Name: "Friends"}
 
-	itemCategory1 = model.ItemCategory{
-		ID:      1,
-		Name:    "PANTRY",
-		GroupID: group1.ID,
-	}
+	itemCategory1             = model.ItemCategory{ID: 1, Name: "PANTRY", GroupID: group1.ID}
+	itemCategory2             = model.ItemCategory{ID: 2, Name: "BEVERAGE", GroupID: group2.ID}
+	itemCategory3             = model.ItemCategory{ID: 3, Name: "DESSERT", GroupID: group1.ID}
+	itemCategoryUncategorized = model.ItemCategory{ID: 4, Name: "UNCATEGORIZED", GroupID: group1.ID}
 
-	itemCategory2 = model.ItemCategory{
-		ID:      2,
-		Name:    "BEVERAGE",
-		GroupID: group2.ID,
-	}
+	recipe1 = model.Recipe{ID: 1, Name: "Grilled Chicken"}
+	recipe2 = model.Recipe{ID: 2, Name: "Tomato Soup"}
 
-	itemCategoryUncategorized1 = model.ItemCategory{
-		ID:      3,
-		Name:    "Uncategorized",
-		GroupID: group1.ID,
-	}
-
-	itemCategoryUncategorized2 = model.ItemCategory{
-		ID:      4,
-		Name:    "Uncategorized",
-		GroupID: group2.ID,
-	}
-
-	// ID 0 allows validateItem(GetByID(0)) to pass before Create/Update fallback logic runs.
-	itemCategoryZeroGroup1 = model.ItemCategory{
-		ID:      0,
-		Name:    "TEMP ZERO",
-		GroupID: group1.ID,
-	}
-
-	itemCategoryZeroGroup2 = model.ItemCategory{
-		ID:      0,
-		Name:    "TEMP ZERO",
-		GroupID: group2.ID,
+	items = []model.Item{
+		{
+			ID:                 1,
+			Name:               "Flour",
+			Description:        new("All-purpose flour"),
+			AverageMarketPrice: new(2.50),
+			UnitType:           enum.Weight,
+			GroupID:            group1.ID,
+			ItemCategory:       itemCategory1,
+		},
+		{
+			ID:                 2,
+			Name:               "Rice",
+			Description:        new("White rice"),
+			AverageMarketPrice: new(1.80),
+			UnitType:           enum.Weight,
+			GroupID:            group1.ID,
+			ItemCategory:       itemCategory1,
+		},
+		{
+			ID:                 3,
+			Name:               "Water",
+			Description:        nil,
+			AverageMarketPrice: nil,
+			UnitType:           enum.Volume,
+			GroupID:            group2.ID,
+			ItemCategory:       itemCategory2,
+		},
+		{
+			ID:                 4,
+			Name:               "Pepper",
+			Description:        nil,
+			AverageMarketPrice: new(1.20),
+			UnitType:           enum.Weight,
+			GroupID:            group1.ID,
+			ItemCategory:       itemCategory1,
+		},
+		{
+			ID:                 5,
+			Name:               "Olive Oil",
+			Description:        new("Extra virgin olive oil"),
+			AverageMarketPrice: nil,
+			UnitType:           enum.Volume,
+			GroupID:            group1.ID,
+			ItemCategory:       itemCategory1,
+		},
+		{
+			ID:                 6,
+			Name:               "Soft drinks",
+			Description:        new("Beverage with no alcohol, usually carbonated"),
+			AverageMarketPrice: new(4.00),
+			UnitType:           enum.Volume,
+			GroupID:            group2.ID,
+			ItemCategory:       itemCategory2,
+		},
 	}
 )
 
@@ -86,13 +107,13 @@ func NewMockItemRepository() *MockItemRepository {
 
 /*** MOCK ITEM REPOSITORY (itemRepositoryInterface implementation) ***/
 
-func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, descending bool) ([]model.Item, error) {
+func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, desc bool) ([]model.Item, error) {
 	if m.getBygroupIDErr != nil {
 		return nil, m.getBygroupIDErr
 	}
 
 	m.lastSortKey = sortKey
-	m.lastDescending = descending
+	m.lastDescending = desc
 
 	result := make([]model.Item, 0)
 	for _, item := range m.items {
@@ -101,44 +122,7 @@ func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, descend
 		}
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		left := result[i]
-		right := result[j]
-
-		switch sortKey {
-		case "i.average_market_price":
-			// Treat nil prices as -1 so items without a price can still be ordered deterministically.
-			leftPrice := -1.0
-			rightPrice := -1.0
-			if left.AverageMarketPrice != nil {
-				leftPrice = *left.AverageMarketPrice
-			}
-			if right.AverageMarketPrice != nil {
-				rightPrice = *right.AverageMarketPrice
-			}
-			if descending {
-				return leftPrice > rightPrice
-			}
-			return leftPrice < rightPrice
-		case "i.unit_type":
-			if descending {
-				return left.UnitType.String() > right.UnitType.String()
-			}
-			return left.UnitType.String() < right.UnitType.String()
-		case "ic.name":
-			if descending {
-				return left.ItemCategory.Name > right.ItemCategory.Name
-			}
-			return left.ItemCategory.Name < right.ItemCategory.Name
-		default:
-			if descending {
-				return left.Name > right.Name
-			}
-			return left.Name < right.Name
-		}
-	})
-
-	return result, nil
+	return sortSliceItem(result, sortKey, desc), nil
 }
 
 func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
@@ -152,7 +136,7 @@ func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("Item", "items.id", nil)
+	return nil, customErrors.NewNotFoundError("Item", "id", nil)
 }
 
 func (m *MockItemRepository) GetByName(name string) ([]model.Item, error) {
@@ -190,12 +174,15 @@ func (m *MockItemRepository) Update(item *model.Item) error {
 
 	for i := range m.items {
 		if m.items[i].ID == item.ID {
+			// GroupID is not updated
+			groupID := m.items[i].GroupID
 			m.items[i] = *item
+			m.items[i].GroupID = groupID
 			return nil
 		}
 	}
 
-	return customErrors.NewNotFoundError("Item", "items.id", nil)
+	return customErrors.NewNotFoundError("Item", "id", nil)
 }
 
 func (m *MockItemRepository) Delete(id int64) error {
@@ -210,7 +197,7 @@ func (m *MockItemRepository) Delete(id int64) error {
 		}
 	}
 
-	return customErrors.NewNotFoundError("Item", "items.id", nil)
+	return customErrors.NewNotFoundError("Item", "id", nil)
 }
 
 /*** MOCK SERVICES ***/
@@ -260,7 +247,7 @@ func (m *MockGroupServiceForItem) GetByID(id int64) (*model.Group, error) {
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("Group", "groups.id", nil)
+	return nil, customErrors.NewNotFoundError("Group", "id", nil)
 }
 
 type MockItemCategoryServiceForItem struct {
@@ -280,7 +267,7 @@ func (m *MockItemCategoryServiceForItem) GetByID(id int64) (*model.ItemCategory,
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "item_categories.id", nil)
+	return nil, customErrors.NewNotFoundError("ItemCategory", "id", nil)
 }
 
 func (m *MockItemCategoryServiceForItem) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
@@ -288,89 +275,34 @@ func (m *MockItemCategoryServiceForItem) GetByNameAndGroupID(name string, groupI
 		return nil, m.getByIDErr
 	}
 
+	name = strings.ToLower(name)
+
 	for i := range m.itemCategories {
-		if m.itemCategories[i].Name == name && m.itemCategories[i].GroupID == groupID {
+		if strings.ToLower(m.itemCategories[i].Name) == name && m.itemCategories[i].GroupID == groupID {
 			return &m.itemCategories[i], nil
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "item_categories.name AND item_categories.group_id", nil)
+	return nil, customErrors.NewNotFoundError("ItemCategory", "name, group_id", nil)
 }
 
 /*** HELPER ***/
-
+// Set up test data
 func setUpDataTestItem() *MockItemRepository {
 	mockRepo := NewMockItemRepository()
-
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 1,
-		Name:               "Flour",
-		Description:        new("All-purpose flour"),
-		AverageMarketPrice: new(2.50),
-		UnitType:           enum.Weight,
-		GroupID:            group1.ID,
-		ItemCategory:       itemCategory1,
-	})
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 2,
-		Name:               "Rice",
-		Description:        new("White rice"),
-		AverageMarketPrice: new(1.80),
-		UnitType:           enum.Weight,
-		GroupID:            group1.ID,
-		ItemCategory:       itemCategory1,
-	})
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 3,
-		Name:               "Water",
-		Description:        nil,
-		AverageMarketPrice: nil,
-		UnitType:           enum.Volume,
-		GroupID:            group2.ID,
-		ItemCategory:       itemCategory2,
-	})
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 4,
-		Name:               "Pepper",
-		Description:        nil,
-		AverageMarketPrice: new(1.20),
-		UnitType:           enum.Weight,
-		GroupID:            group1.ID,
-		ItemCategory:       itemCategory1,
-	})
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 5,
-		Name:               "Olive Oil",
-		Description:        new("Extra virgin olive oil"),
-		AverageMarketPrice: nil,
-		UnitType:           enum.Volume,
-		GroupID:            group1.ID,
-		ItemCategory:       itemCategory1,
-	})
-	mockRepo.items = append(mockRepo.items, model.Item{
-		ID:                 6,
-		Name:               "Soft drinks",
-		Description:        new("Beverage with no alcohol, usually carbonated"),
-		AverageMarketPrice: new(4.00),
-		UnitType:           enum.Volume,
-		GroupID:            group2.ID,
-		ItemCategory:       itemCategory2,
-	})
-
+	mockRepo.items = append(mockRepo.items, items...)
 	mockRepo.nextID = int64(len(mockRepo.items) + 1)
-
 	return mockRepo
 }
 
+// Initialize services
 func setUpItemCategoryServiceData() *MockItemCategoryServiceForItem {
 	return &MockItemCategoryServiceForItem{
 		itemCategories: []model.ItemCategory{
-			itemCategoryUncategorized1,
-			itemCategoryUncategorized2,
+			itemCategoryUncategorized,
 			itemCategory1,
 			itemCategory2,
-			itemCategoryZeroGroup1,
-			itemCategoryZeroGroup2,
+			itemCategory3,
 		},
 	}
 }
@@ -393,6 +325,51 @@ func newItemServiceForTest(
 ) *ItemService {
 	return NewItemService(repo, recipeService, groceryService, groupService, itemCategoryService)
 }
+
+// getByGroupID returns a slice of items by groupID, sorted by ID
+func getByGroupID(id int64, sortKey string, desc bool) []model.Item {
+	result := make([]model.Item, 0)
+	for _, item := range items {
+		if item.GroupID == id {
+			result = append(result, item)
+		}
+	}
+
+	return sortSliceItem(result, sortKey, desc)
+}
+
+// sortSliceItem translates sortKey in attribute Item name before calling SortSliceByFieldName
+func sortSliceItem(slice []model.Item, sortKey string, desc bool) []model.Item {
+	sort := ""
+	switch sortKey {
+	case "", "i.name":
+		sort = "Name"
+	case "i.average_market_price":
+		sort = "AverageMarketPrice"
+	case "i.unit_type":
+		sort = "UnitType"
+	default:
+		sort = "ItemCategory.Name"
+	}
+
+	return utils.SortSliceByFieldName(slice, sort, desc)
+}
+
+func compareSlicesItems(s1, s2 []model.Item) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i := range s1 {
+		if !reflect.DeepEqual(s1[i], s2[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+/*** CONSTRUCTOR TEST ***/
 
 func TestNewItemService(t *testing.T) {
 	mockRepo := NewMockItemRepository()
@@ -430,6 +407,8 @@ func TestNewItemService(t *testing.T) {
 	}
 }
 
+/*** READ OPERATIONS TESTS ***/
+
 func TestGetByGroupID(t *testing.T) {
 	m := setUpDataTestItem()
 	s := newItemServiceForTest(
@@ -445,47 +424,50 @@ func TestGetByGroupID(t *testing.T) {
 		groupID         int64
 		sort            string
 		descending      bool
+		expected        []model.Item
 		expectedSortKey string
-		expectedLen     int
 		repoErr         error
 		expectedErr     error
-		expectedFirstID int64
 	}{
 		{
 			name:            "Sort by name asc",
 			groupID:         group1.ID,
 			sort:            "name",
 			descending:      false,
+			expected:        getByGroupID(group1.ID, "i.name", false),
 			expectedSortKey: "i.name",
-			expectedLen:     4,
-			expectedFirstID: 1,
+		},
+		{
+			name:            "Sort by name UPPERCASE asc",
+			groupID:         group1.ID,
+			sort:            "NAME",
+			descending:      false,
+			expected:        getByGroupID(group1.ID, "i.name", false),
+			expectedSortKey: "i.name",
 		},
 		{
 			name:            "Sort by category desc",
 			groupID:         group2.ID,
 			sort:            "category",
 			descending:      true,
+			expected:        getByGroupID(group2.ID, "ic.name", true),
 			expectedSortKey: "ic.name",
-			expectedLen:     2,
-			expectedFirstID: 0,
 		},
 		{
-			name:            "Sort by average market price",
+			name:            "Sort by average market price asc",
 			groupID:         group1.ID,
 			sort:            "average_market_price",
 			descending:      false,
+			expected:        getByGroupID(group1.ID, "i.average_market_price", false),
 			expectedSortKey: "i.average_market_price",
-			expectedLen:     4,
-			expectedFirstID: 5,
 		},
 		{
-			name:            "Sort by unit type",
+			name:            "Sort by unit type asc",
 			groupID:         group2.ID,
 			sort:            "unit_type",
 			descending:      false,
+			expected:        getByGroupID(group2.ID, "i.unit_type", false),
 			expectedSortKey: "i.unit_type",
-			expectedLen:     2,
-			expectedFirstID: 3,
 		},
 		{
 			name:        "Invalid sort parameter",
@@ -510,10 +492,10 @@ func TestGetByGroupID(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("GetByGroupID() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("GetByGroupID() error = %v, want %v", err, tt.expectedErr)
 				}
 				if actual != nil {
-					t.Fatalf("GetByGroupID() expected nil items on error, got %v", actual)
+					t.Errorf("GetByGroupID() expected nil items on error, got %v", actual)
 				}
 				return
 			}
@@ -523,19 +505,19 @@ func TestGetByGroupID(t *testing.T) {
 			}
 
 			if m.lastSortKey != tt.expectedSortKey {
-				t.Fatalf("GetByGroupID() sort key = %s, want %s", m.lastSortKey, tt.expectedSortKey)
+				t.Errorf("GetByGroupID() sort key = %s, want %s", m.lastSortKey, tt.expectedSortKey)
 			}
 
 			if m.lastDescending != tt.descending {
-				t.Fatalf("GetByGroupID() descending = %v, want %v", m.lastDescending, tt.descending)
+				t.Errorf("GetByGroupID() descending = %v, want %v", m.lastDescending, tt.descending)
 			}
 
-			if len(actual) != tt.expectedLen {
-				t.Fatalf("GetByGroupID() returned %d items, expected %d", len(actual), tt.expectedLen)
+			if len(actual) != len(tt.expected) {
+				t.Errorf("GetByGroupID() returned %d items, expected %d", len(actual), len(tt.expected))
 			}
 
-			if tt.expectedFirstID > 0 && len(actual) > 0 && actual[0].ID != tt.expectedFirstID {
-				t.Fatalf("GetByGroupID() first item ID = %d, want %d", actual[0].ID, tt.expectedFirstID)
+			if !compareSlicesItems(actual, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, actual)
 			}
 		})
 	}
@@ -559,30 +541,18 @@ func TestGetItemByID(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:   "Existing ID",
-			itemID: itemID,
-			expected: &model.Item{
-				ID:                 1,
-				Name:               "Flour",
-				Description:        new("All-purpose flour"),
-				AverageMarketPrice: new(2.50),
-				UnitType:           enum.Weight,
-				GroupID:            group1.ID,
-				ItemCategory: model.ItemCategory{
-					ID:      itemCategory1.ID,
-					Name:    "PANTRY",
-					GroupID: group1.ID,
-				},
-			},
+			name:     "Existing ID",
+			itemID:   items[0].ID,
+			expected: &items[0],
 		},
 		{
 			name:        "Non existing ID",
 			itemID:      invalidItemID,
-			expectedErr: customErrors.NewNotFoundError("Item", "items.id", nil),
+			expectedErr: customErrors.NewNotFoundError("Item", "id", nil),
 		},
 		{
 			name:        "Repository error",
-			itemID:      itemID,
+			itemID:      items[0].ID,
 			repoErr:     customErrors.NewInternalError("failed to fetch items", nil),
 			expectedErr: customErrors.NewInternalError("failed to fetch items", nil),
 		},
@@ -596,10 +566,10 @@ func TestGetItemByID(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("GetByID() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("GetByID() error = %v, want %v", err, tt.expectedErr)
 				}
 				if actual != nil {
-					t.Fatalf("GetByID() expected nil item on error, got %v", actual)
+					t.Errorf("GetByID() expected nil item on error, got %v", actual)
 				}
 				return
 			}
@@ -609,7 +579,7 @@ func TestGetItemByID(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(actual, tt.expected) {
-				t.Fatalf("GetByID() item mismatch: got %v, want %v", actual, tt.expected)
+				t.Errorf("GetByID() item mismatch: got %v, want %v", actual, tt.expected)
 			}
 		})
 	}
@@ -629,27 +599,27 @@ func TestGetByName(t *testing.T) {
 		name        string
 		itemName    string
 		repoErr     error
-		expectedLen int
+		expected    []model.Item
 		expectedErr error
 	}{
 		{
-			name:        "Existing name",
-			itemName:    "Flour",
-			expectedLen: 1,
+			name:     "Existing name",
+			itemName: items[0].Name,
+			expected: []model.Item{items[0]},
 		},
 		{
-			name:        "Unknown name returns empty slice",
-			itemName:    "Non existing",
-			expectedLen: 0,
+			name:     "Unknown name returns empty slice",
+			itemName: "Non existing",
+			expected: []model.Item{},
 		},
 		{
 			name:        "Empty name validation",
 			itemName:    "",
-			expectedErr: customErrors.NewNotFoundError("Item", "", nil),
+			expectedErr: customErrors.NewNotFoundError("Item", "name", nil),
 		},
 		{
 			name:        "Repository error",
-			itemName:    "Flour",
+			itemName:    items[0].Name,
 			repoErr:     customErrors.NewInternalError("failed to fetch items", nil),
 			expectedErr: customErrors.NewInternalError("failed to fetch items", nil),
 		},
@@ -663,10 +633,10 @@ func TestGetByName(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("GetByName() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("GetByName() error = %v, want %v", err, tt.expectedErr)
 				}
 				if actual != nil {
-					t.Fatalf("GetByName() expected nil items on error, got %v", actual)
+					t.Errorf("GetByName() expected nil items on error, got %v", actual)
 				}
 				return
 			}
@@ -675,8 +645,67 @@ func TestGetByName(t *testing.T) {
 				t.Fatalf("GetByName() unexpected error = %v", err)
 			}
 
-			if len(actual) != tt.expectedLen {
-				t.Fatalf("GetByName() returned %d items, expected %d", len(actual), tt.expectedLen)
+			if !compareSlicesItems(actual, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestGetRecipes(t *testing.T) {
+	tests := []struct {
+		name            string
+		itemID          int64
+		expectedRecipes []model.Recipe
+		recipeErr       error
+		expectedErr     error
+	}{
+		{
+			name:            "Existing recipes",
+			itemID:          items[0].ID,
+			expectedRecipes: []model.Recipe{recipe1, recipe2},
+		},
+		{
+			name:        "Repository error",
+			itemID:      items[0].ID,
+			recipeErr:   customErrors.NewInternalError("failed to fetch recipes", nil),
+			expectedErr: customErrors.NewInternalError("failed to fetch recipes", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recipeService := &MockRecipeServiceForItem{
+				recipes:      tt.expectedRecipes,
+				getByItemErr: tt.recipeErr,
+			}
+
+			s := newItemServiceForTest(
+				setUpDataTestItem(),
+				recipeService,
+				&MockGroceryServiceForItem{},
+				&MockGroupServiceForItem{},
+				&MockItemCategoryServiceForItem{},
+			)
+
+			actual, err := s.GetRecipes(tt.itemID)
+
+			if tt.expectedErr != nil {
+				if !utils.CompareErrors(err, tt.expectedErr) {
+					t.Errorf("GetRecipes() error = %v, want %v", err, tt.expectedErr)
+				}
+				if actual != nil {
+					t.Errorf("GetRecipes() expected nil recipes on error, got %v", actual)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetRecipes() unexpected error = %v", err)
+			}
+
+			if !reflect.DeepEqual(actual, tt.expectedRecipes) {
+				t.Errorf("GetRecipes() recipes mismatch: got %v, want %v", actual, tt.expectedRecipes)
 			}
 		})
 	}
@@ -684,17 +713,16 @@ func TestGetByName(t *testing.T) {
 
 func TestCreateItem(t *testing.T) {
 	tests := []struct {
-		name                 string
-		item                 *model.Item
-		icErr                error
-		groupErr             error
-		repoErr              error
-		expectedErr          error
-		expectedCreatedItems int
-		expectedCategoryID   int64
+		name         string
+		item         *model.Item
+		icErr        error
+		groupErr     error
+		repoErr      error
+		expectedErr  error
+		expectedItem *model.Item
 	}{
 		{
-			name: "Success",
+			name: "valid item",
 			item: &model.Item{
 				Name:               "Pasta",
 				Description:        new("Dry spaghetti"),
@@ -703,21 +731,34 @@ func TestCreateItem(t *testing.T) {
 				GroupID:            itemCategory1.GroupID,
 				ItemCategory:       itemCategory1,
 			},
-			expectedCreatedItems: 7,
-			expectedCategoryID:   itemCategory1.ID,
+			expectedItem: &model.Item{
+				ID:                 int64(len(items) + 1),
+				Name:               "Pasta",
+				Description:        new("Dry spaghetti"),
+				AverageMarketPrice: new(2.10),
+				UnitType:           enum.Weight,
+				GroupID:            itemCategory1.GroupID,
+				ItemCategory:       itemCategory1,
+			},
 		},
 		{
-			name: "No category provided uses Uncategorized",
+			name: "valid item, no category provided",
 			item: &model.Item{
 				Name:               "Sparkling Water",
 				Description:        new("Carbonated water"),
 				AverageMarketPrice: new(1.30),
 				UnitType:           enum.Volume,
 				GroupID:            group1.ID,
-				ItemCategory:       model.ItemCategory{},
 			},
-			expectedCreatedItems: 7,
-			expectedCategoryID:   itemCategoryUncategorized1.ID,
+			expectedItem: &model.Item{
+				ID:                 int64(len(items) + 1),
+				Name:               "Sparkling Water",
+				Description:        new("Carbonated water"),
+				AverageMarketPrice: new(1.30),
+				UnitType:           enum.Volume,
+				GroupID:            group1.ID,
+				ItemCategory:       itemCategoryUncategorized,
+			},
 		},
 		{
 			name: "Validation error empty name",
@@ -779,7 +820,7 @@ func TestCreateItem(t *testing.T) {
 				GroupID:      int64(invalidItemGroupID),
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must exists", nil),
+			expectedErr: customErrors.NewConflictError("Group", "group must exists", nil),
 		},
 		{
 			name: "Group service error",
@@ -828,10 +869,10 @@ func TestCreateItem(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("Create() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("Create() error = %v, want %v", err, tt.expectedErr)
 				}
 				if id != 0 {
-					t.Fatalf("Create() expected ID 0 on error, got %d", id)
+					t.Errorf("Create() expected ID 0 on error, got %d", id)
 				}
 				return
 			}
@@ -841,21 +882,20 @@ func TestCreateItem(t *testing.T) {
 			}
 
 			if id == 0 {
-				t.Fatal("Create() returned ID 0, expected non-zero")
+				t.Errorf("Create() returned ID 0, expected non-zero")
 			}
 
-			if len(repo.items) != tt.expectedCreatedItems {
-				t.Fatalf("Create() items count = %d, want %d", len(repo.items), tt.expectedCreatedItems)
+			if len(repo.items) != int(tt.expectedItem.ID) {
+				t.Errorf("Create() items count = %d, want %d", len(repo.items), int(tt.expectedItem.ID))
 			}
 
-			if tt.expectedCategoryID > 0 {
-				created, getErr := repo.GetByID(id)
-				if getErr != nil {
-					t.Fatalf("GetByID() after Create() error = %v", getErr)
-				}
-				if created.ItemCategory.ID != tt.expectedCategoryID {
-					t.Fatalf("Create() item category ID = %d, want %d", created.ItemCategory.ID, tt.expectedCategoryID)
-				}
+			newItem, err := repo.GetByID(id)
+			if err != nil {
+				t.Fatalf("GetByID() after Update() error = %v", err)
+			}
+
+			if !reflect.DeepEqual(newItem, tt.expectedItem) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expectedItem, newItem)
 			}
 		})
 	}
@@ -863,44 +903,99 @@ func TestCreateItem(t *testing.T) {
 
 func TestUpdateItem(t *testing.T) {
 	tests := []struct {
-		name               string
-		item               *model.Item
-		icErr              error
-		groupErr           error
-		repoErr            error
-		expectedErr        error
-		expectedCategoryID int64
+		name         string
+		item         *model.Item
+		icErr        error
+		groupErr     error
+		repoErr      error
+		expectedErr  error
+		expectedItem *model.Item
 	}{
 		{
-			name: "Success",
+			name: "valid update with valid new category",
 			item: &model.Item{
-				ID:                 1,
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",                  // modified
+				Description:        new("Premium all-purpose flour"), // modified
+				AverageMarketPrice: new(3.20),                        // modified
+				UnitType:           enum.Volume,                      // modified
+				GroupID:            items[0].GroupID,
+				ItemCategory:       itemCategory3, // modified, but still coherent with the group
+			},
+			expectedItem: &model.Item{
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",
+				Description:        new("Premium all-purpose flour"),
+				AverageMarketPrice: new(3.20),
+				UnitType:           enum.Volume,
+				GroupID:            items[0].GroupID,
+				ItemCategory:       itemCategory3,
+			},
+		},
+		{
+			name: "Same update, ignore group absence",
+			item: &model.Item{
+				ID:                 items[0].ID,
 				Name:               "Flour Premium",
 				Description:        new("Premium all-purpose flour"),
 				AverageMarketPrice: new(3.20),
 				UnitType:           enum.Weight,
-				GroupID:            itemCategory1.GroupID,
-				ItemCategory:       itemCategory1,
+				ItemCategory:       itemCategory3,
 			},
-			expectedCategoryID: itemCategory1.ID,
-		},
-		{
-			name: "No category provided uses Uncategorized",
-			item: &model.Item{
-				ID:                 1,
+			expectedItem: &model.Item{
+				ID:                 items[0].ID,
 				Name:               "Flour Premium",
 				Description:        new("Premium all-purpose flour"),
 				AverageMarketPrice: new(3.20),
 				UnitType:           enum.Weight,
-				GroupID:            group1.ID,
-				ItemCategory:       model.ItemCategory{},
+				GroupID:            items[0].GroupID,
+				ItemCategory:       itemCategory3,
 			},
-			expectedCategoryID: itemCategoryUncategorized1.ID,
 		},
 		{
-			name: "Validation error",
+			name: "Same update, ignore invalid group",
 			item: &model.Item{
-				ID:           1,
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",
+				Description:        new("Premium all-purpose flour"),
+				AverageMarketPrice: new(3.20),
+				UnitType:           enum.Weight,
+				GroupID:            invalidICGroupID,
+				ItemCategory:       itemCategory3,
+			},
+			expectedItem: &model.Item{
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",
+				Description:        new("Premium all-purpose flour"),
+				AverageMarketPrice: new(3.20),
+				UnitType:           enum.Weight,
+				GroupID:            items[0].GroupID,
+				ItemCategory:       itemCategory3,
+			},
+		},
+		{
+			name: "No category provided, uses Uncategorized",
+			item: &model.Item{
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",
+				Description:        new("Premium all-purpose flour"),
+				AverageMarketPrice: new(3.20),
+				UnitType:           enum.Weight,
+			},
+			expectedItem: &model.Item{
+				ID:                 items[0].ID,
+				Name:               "Flour Premium",
+				Description:        new("Premium all-purpose flour"),
+				AverageMarketPrice: new(3.20),
+				UnitType:           enum.Weight,
+				GroupID:            items[0].GroupID,
+				ItemCategory:       itemCategoryUncategorized,
+			},
+		},
+		{
+			name: "Validation name error",
+			item: &model.Item{
+				ID:           items[0].ID,
 				Name:         "",
 				UnitType:     enum.Weight,
 				GroupID:      itemCategory1.GroupID,
@@ -909,12 +1004,22 @@ func TestUpdateItem(t *testing.T) {
 			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
 		},
 		{
+			name: "Validation unit type error",
+			item: &model.Item{
+				ID:           items[0].ID,
+				Name:         "Flour Premium",
+				GroupID:      itemCategory1.GroupID,
+				ItemCategory: itemCategory1,
+			},
+			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
+		},
+		{
 			name: "Category not found",
 			item: &model.Item{
-				ID:       1,
+				ID:       items[0].ID,
 				Name:     "Flour Premium",
 				UnitType: enum.Weight,
-				GroupID:  1,
+				GroupID:  group1.ID,
 				ItemCategory: model.ItemCategory{
 					ID: invalidICID,
 				},
@@ -924,37 +1029,21 @@ func TestUpdateItem(t *testing.T) {
 		{
 			name: "Category belongs to another group",
 			item: &model.Item{
-				ID:           1,
+				ID:           items[0].ID,
 				Name:         "Flour Premium",
 				UnitType:     enum.Weight,
-				GroupID:      group1.ID,
 				ItemCategory: itemCategory2,
 			},
 			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil),
 		},
 		{
-			name: "Group not found",
-			item: &model.Item{
-				ID:       1,
-				Name:     "Flour Premium",
-				UnitType: enum.Weight,
-				GroupID:  int64(invalidItemGroupID),
-				ItemCategory: model.ItemCategory{
-					ID: itemCategory1.ID,
-				},
-			},
-			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must exists", nil),
-		},
-		{
 			name: "Repository error",
 			item: &model.Item{
-				ID:       1,
-				Name:     "Flour Premium",
-				UnitType: enum.Weight,
-				GroupID:  1,
-				ItemCategory: model.ItemCategory{
-					ID: 1,
-				},
+				ID:           items[0].ID,
+				Name:         "Flour Premium",
+				UnitType:     enum.Weight,
+				GroupID:      group1.ID,
+				ItemCategory: itemCategory1,
 			},
 			repoErr:     customErrors.NewInternalError("failed to update item", nil),
 			expectedErr: customErrors.NewInternalError("failed to update item", nil),
@@ -984,7 +1073,7 @@ func TestUpdateItem(t *testing.T) {
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("Update() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("Update() error = %v, want %v", err, tt.expectedErr)
 				}
 				return
 			}
@@ -993,17 +1082,13 @@ func TestUpdateItem(t *testing.T) {
 				t.Fatalf("Update() unexpected error = %v", err)
 			}
 
-			updated, getErr := repo.GetByID(tt.item.ID)
-			if getErr != nil {
-				t.Fatalf("GetByID() after Update() error = %v", getErr)
+			updated, err := repo.GetByID(tt.item.ID)
+			if err != nil {
+				t.Fatalf("GetByID() after Update() error = %v", err)
 			}
 
-			if updated.Name != tt.item.Name {
-				t.Fatalf("Update() updated name = %s, want %s", updated.Name, tt.item.Name)
-			}
-
-			if tt.expectedCategoryID > 0 && updated.ItemCategory.ID != tt.expectedCategoryID {
-				t.Fatalf("Update() item category ID = %d, want %d", updated.ItemCategory.ID, tt.expectedCategoryID)
+			if !reflect.DeepEqual(updated, tt.expectedItem) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expectedItem, updated)
 			}
 		})
 	}
@@ -1022,44 +1107,42 @@ func TestDeleteItem(t *testing.T) {
 	}{
 		{
 			name:   "Success",
-			itemID: 3,
+			itemID: items[0].ID,
 		},
 		{
-			name:   "Used in recipe",
-			itemID: 6,
-			recipes: []model.Recipe{
-				{ID: 1, Name: "Grilled Chicken"},
-			},
+			name:        "Used in recipe",
+			itemID:      items[0].ID,
+			recipes:     []model.Recipe{recipe1},
 			expectedErr: customErrors.NewConflictError("Item", "can't delete item used by recipes", nil),
 		},
 		{
 			name:        "Recipe service error",
-			itemID:      6,
+			itemID:      items[0].ID,
 			recipeErr:   customErrors.NewInternalError("failed to fetch recipes", nil),
 			expectedErr: customErrors.NewInternalError("failed to fetch recipes", nil),
 		},
 		{
 			name:        "Used in grocery",
-			itemID:      3,
+			itemID:      items[0].ID,
 			hasItem:     true,
 			expectedErr: customErrors.NewConflictError("Item", "can't delete item used in groceries", nil),
 		},
 		{
 			name:        "Grocery service error",
-			itemID:      3,
+			itemID:      items[0].ID,
 			groceryErr:  customErrors.NewInternalError("failed to check grocery item", nil),
 			expectedErr: customErrors.NewInternalError("failed to check grocery item", nil),
 		},
 		{
 			name:        "Repository error",
-			itemID:      3,
+			itemID:      items[0].ID,
 			repoErr:     customErrors.NewInternalError("failed to delete item", nil),
 			expectedErr: customErrors.NewInternalError("failed to delete item", nil),
 		},
 		{
 			name:        "Not found",
 			itemID:      invalidItemID,
-			expectedErr: customErrors.NewNotFoundError("Item", "items.id", nil),
+			expectedErr: customErrors.NewNotFoundError("Item", "id", nil),
 		},
 	}
 
@@ -1099,8 +1182,8 @@ func TestDeleteItem(t *testing.T) {
 				t.Fatalf("Delete() unexpected error = %v", err)
 			}
 
-			deleted, getErr := repo.GetByID(tt.itemID)
-			if getErr == nil || deleted != nil {
+			deleted, err := repo.GetByID(tt.itemID)
+			if err == nil || deleted != nil {
 				t.Fatalf("Delete() item with ID %d should be deleted", tt.itemID)
 			}
 		})
@@ -1125,7 +1208,9 @@ func TestMapSortKey(t *testing.T) {
 	}{
 		{name: "default empty", param: "", expectedKey: "i.name"},
 		{name: "name", param: "name", expectedKey: "i.name"},
+		{name: "name Capital Letters", param: "Name", expectedKey: "i.name"},
 		{name: "average market price", param: "average_market_price", expectedKey: "i.average_market_price"},
+		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "i.average_market_price"},
 		{name: "unit type", param: "unit_type", expectedKey: "i.unit_type"},
 		{name: "category", param: "category", expectedKey: "ic.name"},
 		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError("wrong", nil)},
@@ -1164,24 +1249,16 @@ func TestCheckSimpleFields(t *testing.T) {
 	}{
 		{
 			name: "valid",
-			item: &model.Item{
-				Name:     "Flour",
-				UnitType: enum.Weight,
-			},
+			item: &model.Item{Name: "Flour", UnitType: enum.Weight},
 		},
 		{
-			name: "empty name",
-			item: &model.Item{
-				Name:     "",
-				UnitType: enum.Weight,
-			},
+			name:        "empty name",
+			item:        &model.Item{Name: "", UnitType: enum.Weight},
 			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
 		},
 		{
-			name: "empty unit type",
-			item: &model.Item{
-				Name: "Flour",
-			},
+			name:        "empty unit type",
+			item:        &model.Item{Name: "Flour"},
 			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
 		},
 	}
@@ -1213,12 +1290,22 @@ func TestValidateItem(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name: "valid",
+			name: "valid new item",
 			item: &model.Item{
 				Name:         "Pasta",
 				UnitType:     enum.Weight,
-				GroupID:      group1.ID,
+				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
+			},
+		},
+		{
+			name: "valid existing item",
+			item: &model.Item{
+				ID:           items[0].ID,
+				Name:         "Pasta",
+				UnitType:     enum.Weight,
+				GroupID:      items[0].GroupID,
+				ItemCategory: items[0].ItemCategory,
 			},
 		},
 		{
@@ -1226,7 +1313,7 @@ func TestValidateItem(t *testing.T) {
 			item: &model.Item{
 				Name:         "",
 				UnitType:     enum.Weight,
-				GroupID:      group1.ID,
+				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
 			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
@@ -1235,7 +1322,7 @@ func TestValidateItem(t *testing.T) {
 			name: "invalid unit type",
 			item: &model.Item{
 				Name:         "Pasta",
-				GroupID:      group1.ID,
+				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
 			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
@@ -1243,30 +1330,26 @@ func TestValidateItem(t *testing.T) {
 		{
 			name: "item category not found",
 			item: &model.Item{
-				Name:     "Pasta",
-				UnitType: enum.Weight,
-				GroupID:  group1.ID,
-				ItemCategory: model.ItemCategory{
-					ID: invalidICID,
-				},
+				Name:         "Pasta",
+				UnitType:     enum.Weight,
+				GroupID:      group1.ID,
+				ItemCategory: model.ItemCategory{ID: invalidICID},
 			},
 			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must exists", nil),
 		},
 		{
 			name: "item category internal error",
 			item: &model.Item{
-				Name:     "Pasta",
-				UnitType: enum.Weight,
-				GroupID:  1,
-				ItemCategory: model.ItemCategory{
-					ID: 1,
-				},
+				Name:         "Pasta",
+				UnitType:     enum.Weight,
+				GroupID:      itemCategory1.GroupID,
+				ItemCategory: itemCategory1,
 			},
 			icErr:       customErrors.NewInternalError("failed to fetch item categories", nil),
 			expectedErr: customErrors.NewInternalError("failed to fetch item categories", nil),
 		},
 		{
-			name: "item category belongs to another group",
+			name: "item category belongs to another group, new item",
 			item: &model.Item{
 				Name:         "Pasta",
 				UnitType:     enum.Weight,
@@ -1276,21 +1359,43 @@ func TestValidateItem(t *testing.T) {
 			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil),
 		},
 		{
-			name: "group not found",
+			name: "item category belongs to another group, existing item",
+			item: &model.Item{
+				ID:           items[0].ID,
+				Name:         "Pasta",
+				UnitType:     enum.Weight,
+				GroupID:      items[0].GroupID,
+				ItemCategory: itemCategory2,
+			},
+			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil),
+		},
+		{
+			name: "group not found, new item",
 			item: &model.Item{
 				Name:         "Pasta",
 				UnitType:     enum.Weight,
 				GroupID:      int64(invalidItemGroupID),
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must exists", nil),
+			expectedErr: customErrors.NewConflictError("Group", "group must exists", nil),
 		},
 		{
-			name: "group internal error",
+			name: "group not found, existing item",
+			item: &model.Item{
+				ID:           items[0].ID,
+				Name:         "Pasta",
+				UnitType:     enum.Weight,
+				GroupID:      int64(invalidItemGroupID),
+				ItemCategory: items[0].ItemCategory,
+			},
+			expectedErr: customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil),
+		},
+		{
+			name: "group internal error, new item",
 			item: &model.Item{
 				Name:         "Pasta",
 				UnitType:     enum.Weight,
-				GroupID:      group1.ID,
+				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
 			groupErr:    customErrors.NewInternalError("failed to fetch groups", nil),

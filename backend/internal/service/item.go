@@ -14,7 +14,7 @@ type ItemServiceInterface interface {
 	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
 	GetByName(name string) (*model.Item, error)
-	GetRecipe(id int64) ([]model.Recipe, error)
+	GetRecipes(id int64) ([]model.Recipe, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -46,7 +46,7 @@ func NewItemService(itemRepo repository.ItemRepositoryInterface,
 /*** READ OPERATIONS ***/
 // GetAllByGroupID returns all items for a given group ID, sorted by the specified key and order.
 func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	sortKey, err := s.mapSortKey(strings.ToLower(sort))
+	sortKey, err := s.mapSortKey(sort)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 // GetByName returns the item that matches the provided name or an error.
 func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 	if name == "" {
-		return nil, customErrors.NewNotFoundError("Item", name, nil)
+		return nil, customErrors.NewNotFoundError("Item", "name", nil)
 	}
 
 	items, err := s.repo.GetByName(name)
@@ -83,8 +83,8 @@ func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 	return items, nil
 }
 
-// GetRecipe returns the recipes in which the item is used.
-func (s *ItemService) GetRecipe(id int64) ([]model.Recipe, error) {
+// GetRecipes returns the recipes in which the item is used.
+func (s *ItemService) GetRecipes(id int64) ([]model.Recipe, error) {
 	recipes, err := s.recipeService.GetByItemID(id)
 	if err != nil {
 		return nil, err
@@ -96,10 +96,6 @@ func (s *ItemService) GetRecipe(id int64) ([]model.Recipe, error) {
 /*** CREATE OPERATIONS ***/
 // Create adds a new item to the database.
 func (s *ItemService) Create(item *model.Item) (int64, error) {
-	if err := s.validateItem(item); err != nil {
-		return 0, err
-	}
-
 	// if no item category is provided, assign the default one (uncategorized)
 	if item.ItemCategory.ID == 0 {
 		uncategorized, err := s.itemCategoryService.GetByNameAndGroupID("Uncategorized", item.GroupID)
@@ -107,6 +103,10 @@ func (s *ItemService) Create(item *model.Item) (int64, error) {
 			return 0, err
 		}
 		item.ItemCategory = *uncategorized
+	}
+
+	if err := s.validateItem(item); err != nil {
+		return 0, err
 	}
 
 	id, err := s.repo.Create(item)
@@ -120,20 +120,33 @@ func (s *ItemService) Create(item *model.Item) (int64, error) {
 /*** UPDATE OPERATIONS ***/
 // Update modifies the item identified by id with the provided item data.
 func (s *ItemService) Update(item *model.Item) error {
-	if err := s.validateItem(item); err != nil {
+	currentItem, err := s.repo.GetByID(item.ID)
+	if err != nil {
 		return err
 	}
 
-	// if no item category is provided, assign the default one (uncategorized)
+	// GroupID can't be updated
+	item.GroupID = currentItem.GroupID
+
+	// If no item category is provided, assign the default one (uncategorized)
 	if item.ItemCategory.ID == 0 {
 		uncategorized, err := s.itemCategoryService.GetByNameAndGroupID("Uncategorized", item.GroupID)
 		if err != nil {
 			return err
 		}
 		item.ItemCategory = *uncategorized
+
+		if err := checkSimpleFields(item); err != nil {
+			return err
+		}
+
+	} else {
+		if err := s.validateItem(item); err != nil {
+			return err
+		}
 	}
 
-	err := s.repo.Update(item)
+	err = s.repo.Update(item)
 	if err != nil {
 		return err
 	}
@@ -174,6 +187,8 @@ func (s *ItemService) Delete(id int64) error {
 /*** HELPER FUNCTIONS ***/
 // mapSortKey maps the sort parameter to the corresponding database column.
 func (s *ItemService) mapSortKey(param string) (string, error) {
+	param = strings.ToLower(param)
+
 	switch param {
 	case "name", "":
 		return "i.name", nil
@@ -188,6 +203,7 @@ func (s *ItemService) mapSortKey(param string) (string, error) {
 	}
 }
 
+// validateItem checks the validity of the item fields and ensures that related entities exist and are consistent.
 func (s *ItemService) validateItem(item *model.Item) error {
 	err := checkSimpleFields(item)
 
@@ -195,13 +211,14 @@ func (s *ItemService) validateItem(item *model.Item) error {
 		return err
 	}
 
-	_, err = s.groupService.GetByID(item.GroupID)
-
-	if err != nil {
-		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-			return customErrors.NewConflictError("ItemCategory", "item category must exists", nil)
+	// If the item is new (create route)
+	if item.ID == 0 {
+		if _, err = s.groupService.GetByID(item.GroupID); err != nil {
+			if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+				return customErrors.NewConflictError("Group", "group must exists", nil)
+			}
+			return err
 		}
-		return err
 	}
 
 	itemCategory, err := s.itemCategoryService.GetByID(item.ItemCategory.ID)
@@ -214,7 +231,6 @@ func (s *ItemService) validateItem(item *model.Item) error {
 		return err
 	}
 
-	// Checks if the item category belongs to the same group of the item
 	if itemCategory.GroupID != item.GroupID {
 		return customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil)
 	}
@@ -222,6 +238,7 @@ func (s *ItemService) validateItem(item *model.Item) error {
 	return nil
 }
 
+// checkSimpleFields validates the basic fields of the item that don't require database access.
 func checkSimpleFields(item *model.Item) error {
 	if item.Name == "" {
 		return customErrors.NewValidationError("name", "item must have a name", nil)
