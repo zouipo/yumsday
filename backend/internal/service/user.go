@@ -72,7 +72,7 @@ func (s *UserService) GetByUsername(username string) (*model.User, error) {
 
 // Create validates and creates a new user, returning the new user ID or an error.
 func (s *UserService) Create(user *model.User) (int64, error) {
-	user.CreatedAt = time.Now()
+	user.CreatedAt = time.Now().UTC()
 
 	if !utils.IsUsernameValid(user.Username) {
 		slog.Debug(customErrors.USERNAME_FIELD_ERROR, "username", user.Username)

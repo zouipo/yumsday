@@ -174,7 +174,7 @@ func createTestUser(id int64, username, password string) *model.User {
 		Username:  username,
 		Password:  password,
 		AppAdmin:  false,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 		Avatar:    &avatar,
 		Language:  enum.English,
 		AppTheme:  enum.Light,
@@ -207,7 +207,7 @@ func compareUserToUserDto(userDto *dto.UserDto, user *model.User) error {
 		return fmt.Errorf("appAdmin ='%v'instead of %v", userDto.AppAdmin, user.AppAdmin)
 	}
 	// Verify both dates are within the last 2 minutes from now
-	now := time.Now()
+	now := time.Now().UTC()
 	threshold := now.Add(-2 * time.Minute)
 	if userDto.CreatedAt.Before(threshold) || userDto.CreatedAt.After(now) {
 		return fmt.Errorf("createdAt ='%v'is not within the last 2 minutes (threshold: %v, now: %v)", userDto.CreatedAt, threshold, now)

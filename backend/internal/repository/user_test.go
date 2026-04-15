@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	yesterday = time.Now().AddDate(0, 0, -1)
+	yesterday = time.Now().AddDate(0, 0, -1).UTC()
 
 	invalidId       = int64(-1)
 	invalidUsername = "invalidUsername"
@@ -350,7 +350,7 @@ func TestCreateUser(t *testing.T) {
 				Avatar:    &avatar1,
 				Language:  enum.English,
 				AppTheme:  enum.Light,
-				CreatedAt: time.Now(),
+				CreatedAt: time.Now().UTC(),
 			},
 			wantErr: nil,
 		},
@@ -363,7 +363,7 @@ func TestCreateUser(t *testing.T) {
 				Avatar:    &avatar2,
 				Language:  enum.French,
 				AppTheme:  enum.Dark,
-				CreatedAt: time.Now(),
+				CreatedAt: time.Now().UTC(),
 			},
 			wantErr: nil,
 		},
