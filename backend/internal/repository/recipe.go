@@ -16,6 +16,7 @@ import (
 type RecipeRepositoryInterface interface {
 	GetByID(id int64) (model.Recipe, error)
 	GetByGroupID(groupID int64) ([]model.Recipe, error)
+	GetByItemID(itemID int64) ([]model.Recipe, error)
 	Create(recipe *model.Recipe) (int64, error)
 	Update(recipe *model.Recipe) error
 	Delete(id int64) error
@@ -67,6 +68,44 @@ func (r *RecipeRepository) GetByGroupID(groupID int64, descending bool) ([]model
 	recipes, err := r.fetchRecipes(clauses, groupID)
 	if err != nil {
 		return nil, err
+	}
+
+	return recipes, nil
+}
+
+func (r *RecipeRepository) GetByItemID(itemID int64) ([]model.Recipe, error) {
+	query := `
+	SELECT recipes.id, recipes.name, recipes.image_url
+	FROM recipes
+	LEFT JOIN ingredients ON ingredients.recipe_id = recipes.id
+	WHERE ingredients.item_id = ?;`
+
+	slog.Debug("fetching recipes", "query", query)
+
+	rows, err := r.db.Query(query, itemID)
+	if err != nil {
+		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+	}
+
+	recipes := []model.Recipe{}
+
+	for rows.Next() {
+		var recipe model.Recipe
+		err := rows.Scan(
+			&recipe.ID,
+			&recipe.Name,
+			&recipe.ImageURL,
+		)
+
+		if err != nil {
+			return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+		}
+
+		recipes = append(recipes, recipe)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("failed to iterate rows", err)
 	}
 
 	return recipes, nil

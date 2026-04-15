@@ -360,7 +360,6 @@ func TestGetByUsername_NotFound(t *testing.T) {
 	mockRepo := setupTestData()
 	service := &UserService{repo: mockRepo}
 
-	// A améliorer en renvoyant une erreur NotFound custom et en vérifiant que c'est bien cette erreur qui est renvoyée
 	user, err := service.GetByUsername(invalidUsername)
 	if user != nil {
 		t.Error("GetByUsername() expected error , got non-nil user")

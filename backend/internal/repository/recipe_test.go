@@ -2,17 +2,14 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
-	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
@@ -117,28 +114,6 @@ var (
 	}
 )
 
-func setupRecipeTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("failed to open test database: %v", err)
-	}
-
-	// Apply migrations using the migration package
-	migrationsFS := os.DirFS("../../data/migrations")
-	err = migration.Migrate(db, migrationsFS)
-	if err != nil {
-		t.Fatalf("failed to apply migrations: %v", err)
-	}
-
-	testScript, _ := os.ReadFile("../../data/test.sql")
-	_, err = db.Exec(string(testScript))
-	if err != nil {
-		t.Fatalf("failed to run test.sql: %v", err)
-	}
-
-	return db
-}
-
 func areRecipesEqual(r1 *model.Recipe, r2 *model.Recipe) bool {
 	r1.Categories = utils.SortSliceByFieldName(r1.Categories, "ID", false)
 	r2.Categories = utils.SortSliceByFieldName(r2.Categories, "ID", false)
@@ -162,7 +137,7 @@ func areRecipeSlicesEqual(s1 []model.Recipe, s2 []model.Recipe) bool {
 }
 
 func TestGetByID(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -221,7 +196,7 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetByName(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -271,7 +246,7 @@ func TestGetByName(t *testing.T) {
 }
 
 func TestGetByGroupID(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -342,8 +317,62 @@ func TestGetByGroupID(t *testing.T) {
 	}
 }
 
+func TestGetByItemID(t *testing.T) {
+	db := utils.SetUpTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	tests := []struct {
+		name     string
+		itemID   int64
+		expected []model.Recipe
+	}{
+		{
+			name:   "item in multiple recipes",
+			itemID: 10,
+			expected: []model.Recipe{
+				{ID: testRecipes[0].ID, Name: testRecipes[0].Name, ImageURL: testRecipes[0].ImageURL},
+				{ID: testRecipes[2].ID, Name: testRecipes[2].Name, ImageURL: testRecipes[2].ImageURL},
+			},
+		},
+		{
+			name:   "item in one recipe",
+			itemID: 13,
+			expected: []model.Recipe{
+				{ID: testRecipes[3].ID, Name: testRecipes[3].Name, ImageURL: testRecipes[3].ImageURL},
+			},
+		},
+		{
+			name:     "existing item in no recipe",
+			itemID:   11,
+			expected: []model.Recipe{},
+		},
+		{
+			name:     "unknown item",
+			itemID:   -1,
+			expected: []model.Recipe{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetByItemID(tt.itemID)
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			actual = utils.SortSliceByFieldName(actual, "ID", false)
+			tt.expected = utils.SortSliceByFieldName(tt.expected, "ID", false)
+
+			if !reflect.DeepEqual(actual, tt.expected) {
+				t.Fatalf("expected %v, got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
 func TestGetRecipeGroupID(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -387,8 +416,9 @@ func TestGetRecipeGroupID(t *testing.T) {
 		})
 	}
 }
+
 func TestRecipeRepositoryCreate(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -463,7 +493,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 }
 
 func TestRecipeRepositoryUpdate(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
@@ -523,7 +553,7 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 }
 
 func TestRecipeRepositoryDelete(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 	ctx := context.Background()
