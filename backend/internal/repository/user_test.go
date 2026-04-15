@@ -68,7 +68,7 @@ var (
 	}
 )
 
-func CompareSlicesUsers(actual, expected []model.User) error {
+func compareSlicesUsers(actual, expected []model.User) error {
 	if len(actual) != (len(expected) + 1) {
 		return fmt.Errorf("expected %d users, got %d", len(expected)+1, len(actual))
 	}
@@ -215,7 +215,7 @@ func TestGetAllUsers(t *testing.T) {
 		t.Fatalf("GetAll() error = %v", err)
 	}
 
-	if err := CompareSlicesUsers(users, expectedUsers); err != nil {
+	if err := compareSlicesUsers(users, expectedUsers); err != nil {
 		t.Error("GetAll() returned users with mismatched fields: " + err.Error())
 	}
 }

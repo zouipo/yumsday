@@ -28,7 +28,7 @@ var testItemCategories = []model.ItemCategory{
 	{ID: 9, Name: "BEVERAGE", GroupID: 2},
 }
 
-func CompareSlicesItemCategories(s1, s2 []model.ItemCategory) bool {
+func compareSlicesItemCategories(s1, s2 []model.ItemCategory) bool {
 	if len(s1) != len(s2) {
 		return false
 	}
@@ -169,7 +169,7 @@ func TestGetItemCategoryByNameAndGroupID(t *testing.T) {
 				t.Fatalf("GetByNameAndGroupID() unexpected error = %v", err)
 			}
 
-			if !CompareSlicesItemCategories(actual, tt.expected) {
+			if !compareSlicesItemCategories(actual, tt.expected) {
 				t.Errorf("item categories should be equal: expected %v, got %v", tt.expected, actual)
 			}
 		})
