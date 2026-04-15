@@ -2,13 +2,10 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
 type GroupRepositoryInterface interface {
@@ -28,28 +25,28 @@ func NewGroupRepository(db *sql.DB) *GroupRepository {
 
 // GetByID retrieves a group from the database by its ID, including its members.
 func (r *GroupRepository) GetByID(id int64) (*model.Group, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "groups.id", Values: []any{id}},
-		},
-	}
-	groups, err := r.fetchGroups(opt)
+	groups, err := r.fetchGroups("WHERE groups.id = ?", id)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(groups) == 0 {
+		return nil, customErrors.NewNotFoundError("groups", "id", nil)
+	}
+
 	return &groups[0], nil
 }
 
-func (r *GroupRepository) fetchGroups(opt *utils.SelectFilteringOptions) ([]model.Group, error) {
-	query := fmt.Sprintf(`
-	SELECT groups.id, groups.name, groups.image_url, groups.created_at, group_members.user_id, group_members.admin, group_members.joined_at
+func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Group, error) {
+	query := `SELECT 
+	groups.id, groups.name, groups.image_url, groups.created_at, 
+	group_members.user_id, group_members.admin, group_members.joined_at
 	FROM groups
-	LEFT JOIN group_members ON groups.id = group_members.group_id
-	%s;`, utils.MakeSelectFiltering(opt))
+	LEFT JOIN group_members ON groups.id = group_members.group_id ` + clauses
 
 	slog.Debug("fetching groups", "query", query)
 
-	rows, err := r.db.Query(query, opt.WhereValues()...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch groups", err)
 	}
@@ -88,10 +85,6 @@ func (r *GroupRepository) fetchGroups(opt *utils.SelectFilteringOptions) ([]mode
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch groups", err)
-	}
-
-	if len(m) == 0 {
-		return []model.Group{}, customErrors.NewNotFoundError("Group", strings.Join(opt.WhereColumns(), ","), err)
 	}
 
 	ret := make([]model.Group, 0, len(m))

@@ -27,7 +27,7 @@ func newTestGroups() []model.Group {
 		{
 			ID:        1,
 			Name:      "Family",
-			ImageURL:  utils.Ptr("/static/images/family.jpg"),
+			ImageURL:  new("/static/images/family.jpg"),
 			CreatedAt: epoch,
 			Members: []model.GroupMember{
 				{UserID: 2, GroupId: 1, Admin: true, JoinedAt: epoch},
@@ -38,7 +38,7 @@ func newTestGroups() []model.Group {
 		{
 			ID:        2,
 			Name:      "Friends",
-			ImageURL:  utils.Ptr("/static/images/friends.jpg"),
+			ImageURL:  new("/static/images/friends.jpg"),
 			CreatedAt: epoch,
 			Members: []model.GroupMember{
 				{UserID: 2, GroupId: 2, Admin: false, JoinedAt: epoch},
@@ -140,7 +140,7 @@ func TestGetGroupByID(t *testing.T) {
 			name:      "Get group by invalid ID",
 			groupID:   invalidGroupRepositoryID,
 			expected:  nil,
-			expectErr: customErrors.NewNotFoundError("Group", "groups.id", sql.ErrNoRows),
+			expectErr: customErrors.NewNotFoundError("groups", "id", sql.ErrNoRows),
 		},
 	}
 
