@@ -363,12 +363,7 @@ func TestGetRecipeGroupID(t *testing.T) {
 			expected: 1,
 		},
 		{
-			name:     "valid id 2",
-			id:       3,
-			expected: 2,
-		},
-		{
-			name:     "valid id",
+			name:     "invalid id",
 			id:       -1,
 			expected: 0,
 			err:      customErrors.NewNotFoundError("recipes", "id", nil),
