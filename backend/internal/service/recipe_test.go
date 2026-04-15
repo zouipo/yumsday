@@ -73,8 +73,8 @@ func TestGetByItemID(t *testing.T) {
 			name:   "Multiple recipes",
 			itemID: 10,
 			expected: []model.Recipe{
-				{ID: 1, Name: "Grilled Chicken", ImageURL: utils.Ptr("/static/recipes/chicken.jpg")},
-				{ID: 3, Name: "Tomato Soup", ImageURL: utils.Ptr("/static/recipes/soup.jpg")},
+				{ID: 1, Name: "Grilled Chicken", ImageURL: new("/static/recipes/chicken.jpg")},
+				{ID: 3, Name: "Tomato Soup", ImageURL: new("/static/recipes/soup.jpg")},
 			},
 		},
 		{

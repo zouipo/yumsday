@@ -33,7 +33,7 @@ var (
 			Avatar:             &enum.Avatar1,
 			Language:           enum.English,
 			AppTheme:           enum.Light,
-			LastVisitedGroupID: utils.Ptr(int64(1)),
+			LastVisitedGroupID: new(int64(1)),
 		},
 		{
 			Username:           "testuser2",
@@ -43,7 +43,7 @@ var (
 			Avatar:             &enum.Avatar2,
 			Language:           enum.French,
 			AppTheme:           enum.Dark,
-			LastVisitedGroupID: utils.Ptr(int64(2)),
+			LastVisitedGroupID: new(int64(2)),
 		},
 		{
 			Username:           "testuser3",
@@ -53,7 +53,7 @@ var (
 			Avatar:             &enum.Avatar3,
 			Language:           enum.English,
 			AppTheme:           enum.System,
-			LastVisitedGroupID: utils.Ptr(int64(3)),
+			LastVisitedGroupID: new(int64(3)),
 		},
 		{
 			Username:           "testuser4",
