@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"testing"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -24,11 +25,11 @@ var testItemCategories = []model.ItemCategory{
 	{ID: 5, Name: "MEAT", GroupID: 2},
 	{ID: 6, Name: "VEGETABLES", GroupID: 2},
 	{ID: 7, Name: "SNACKS", GroupID: 2},
-	{ID: 8, Name: "CANNED GOODS", GroupID: 2},
+	{ID: 8, Name: "CANNED GOODS", GroupID: 1},
 	{ID: 9, Name: "BEVERAGE", GroupID: 2},
 }
 
-func compareItemCategory(actual, expected *model.ItemCategory) error {
+func compareItemCategories(actual, expected *model.ItemCategory) error {
 	if actual.ID != expected.ID {
 		return fmt.Errorf("expected ID %d, got %d", expected.ID, actual.ID)
 	}
@@ -40,6 +41,20 @@ func compareItemCategory(actual, expected *model.ItemCategory) error {
 	}
 
 	return nil
+}
+
+func compareListItemCategories(s1, s2 []model.ItemCategory) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+
+	for i := range s1 {
+		if !reflect.DeepEqual(s1[i], s2[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func TestNewItemCategoryRepository(t *testing.T) {
@@ -79,7 +94,7 @@ func TestGetItemCategoryByID(t *testing.T) {
 			name:       "Get item category by invalid ID",
 			categoryID: invalidICID,
 			expected:   nil,
-			expectErr:  customErrors.NewNotFoundError("ItemCategory", "item_categories.id", sql.ErrNoRows),
+			expectErr:  customErrors.NewNotFoundError("item_categories", "id", sql.ErrNoRows),
 		},
 	}
 
@@ -98,7 +113,7 @@ func TestGetItemCategoryByID(t *testing.T) {
 				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if err := compareItemCategory(category, tt.expected); err != nil {
+			if err := compareItemCategories(category, tt.expected); err != nil {
 				t.Errorf("GetByID() item category does not match expected: %v", err)
 			}
 		})
@@ -112,52 +127,65 @@ func TestGetItemCategoryByNameAndGroupID(t *testing.T) {
 	repo := NewItemCategoryRepository(db)
 
 	tests := []struct {
-		name      string
-		icName    string
-		groupID   int64
-		expected  *model.ItemCategory
-		expectErr error
+		name       string
+		icName     string
+		groupID    int64
+		descending bool
+		expected   []model.ItemCategory
 	}{
 		{
-			name:      "Valid name and group ID",
-			icName:    testItemCategories[0].Name,
-			groupID:   testItemCategories[0].GroupID,
-			expected:  &testItemCategories[0],
-			expectErr: nil,
+			name:       "Valid name and group ID",
+			icName:     testItemCategories[0].Name,
+			groupID:    testItemCategories[0].GroupID,
+			descending: false,
+			expected: []model.ItemCategory{
+				testItemCategories[0],
+			},
 		},
 		{
-			name:      "Invalid name and valid group ID",
-			icName:    invalidICName,
-			groupID:   testItemCategories[0].GroupID,
-			expected:  nil,
-			expectErr: customErrors.NewNotFoundError("ItemCategory", "item_categories.name,item_categories.group_id", nil),
+			name:       "Valid partial name upper-case and group ID, ascending",
+			icName:     "GOOD",
+			groupID:    testItemCategories[0].GroupID,
+			descending: false,
+			expected: []model.ItemCategory{
+				testItemCategories[1],
+				testItemCategories[7],
+			},
 		},
 		{
-			name:      "Valid name and invalid group ID",
-			icName:    testItemCategories[0].Name,
-			groupID:   invalidICGroupID,
-			expected:  nil,
-			expectErr: customErrors.NewNotFoundError("ItemCategory", "item_categories.name,item_categories.group_id", nil),
+			name:       "Valid partial name lower-case and group ID, descending",
+			icName:     "good",
+			groupID:    testItemCategories[0].GroupID,
+			descending: true,
+			expected: []model.ItemCategory{
+				testItemCategories[7],
+				testItemCategories[1],
+			},
+		},
+		{
+			name:     "Invalid name and valid group ID",
+			icName:   invalidICName,
+			groupID:  testItemCategories[0].GroupID,
+			expected: []model.ItemCategory{},
+		},
+		{
+			name:     "Valid name and invalid group ID",
+			icName:   testItemCategories[0].Name,
+			groupID:  invalidICGroupID,
+			expected: []model.ItemCategory{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			category, err := repo.GetByNameAndGroupID(tt.icName, tt.groupID)
-
-			if tt.expectErr != nil {
-				if !utils.CompareErrors(err, tt.expectErr) {
-					t.Errorf("expected error '%v', got '%v'", tt.expectErr, err)
-				}
-				return
-			}
+			actual, err := repo.GetByNameAndGroupID(tt.icName, tt.groupID, tt.descending)
 
 			if err != nil {
 				t.Fatalf("GetByNameAndGroupID() unexpected error = %v", err)
 			}
 
-			if err := compareItemCategory(category, tt.expected); err != nil {
-				t.Errorf("GetByNameAndGroupID() item category does not match expected: %v", err)
+			if !compareListItemCategories(actual, tt.expected) {
+				t.Errorf("item categories should be equal: expected %v, got %v", tt.expected, actual)
 			}
 		})
 	}

@@ -2,13 +2,10 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
 type ItemCategoryRepositoryInterface interface {
@@ -28,47 +25,43 @@ func NewItemCategoryRepository(db *sql.DB) *ItemCategoryRepository {
 
 // GetByID retrieves an item category from the database by its ID.
 func (r *ItemCategoryRepository) GetByID(id int64) (*model.ItemCategory, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "item_categories.id", Values: []any{id}},
-		},
-	}
-
-	itemCategories, err := r.fetchItemCategories(opt)
+	itemCategories, err := r.fetchItemCategories("WHERE id = ?", id)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(itemCategories) == 0 {
+		return nil, customErrors.NewNotFoundError("item_categories", "id", nil)
 	}
 
 	return &itemCategories[0], nil
 }
 
 // GetByNameAndGroupID retrieves an item category from the database by its name and group ID.
-func (r *ItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "item_categories.name", Values: []any{name}},
-			{Column: "item_categories.group_id", Values: []any{groupID}},
-		},
+func (r *ItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64, descending bool) ([]model.ItemCategory, error) {
+	clauses := "WHERE name LIKE concat('%', ?, '%') AND group_id = ? ORDER BY name"
+
+	if descending {
+		clauses += " DESC"
 	}
 
-	itemCategories, err := r.fetchItemCategories(opt)
+	itemCategories, err := r.fetchItemCategories(clauses, name, groupID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &itemCategories[0], nil
+	return itemCategories, nil
 }
 
 // fetchItemCategories is a helper method to retrieve multiple item categories based on filtering options.
-func (r *ItemCategoryRepository) fetchItemCategories(opt *utils.SelectFilteringOptions) ([]model.ItemCategory, error) {
-	query := fmt.Sprintf(`
-	SELECT item_categories.*
-	FROM item_categories
-	%s;`, utils.MakeSelectFiltering(opt))
+func (r *ItemCategoryRepository) fetchItemCategories(clauses string, values ...any) ([]model.ItemCategory, error) {
+	query := `SELECT 
+	item_categories.*
+	FROM item_categories ` + clauses
 
 	slog.Debug("fetching item categories", "query", query)
 
-	rows, err := r.db.Query(query, opt.WhereValues()...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch item categories", err)
 	}
@@ -92,10 +85,6 @@ func (r *ItemCategoryRepository) fetchItemCategories(opt *utils.SelectFilteringO
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to iterate rows", err)
-	}
-
-	if len(itemCategories) == 0 {
-		return nil, customErrors.NewNotFoundError("ItemCategory", strings.Join(opt.WhereColumns(), ","), err)
 	}
 
 	return itemCategories, nil
