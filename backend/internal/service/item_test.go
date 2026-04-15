@@ -342,11 +342,11 @@ func getByGroupID(id int64, sortKey string, desc bool) []model.Item {
 func sortSliceItem(slice []model.Item, sortKey string, desc bool) []model.Item {
 	sort := ""
 	switch sortKey {
-	case "", "i.name":
+	case "", "items.name":
 		sort = "Name"
-	case "i.average_market_price":
+	case "items.average_market_price":
 		sort = "AverageMarketPrice"
-	case "i.unit_type":
+	case "items.unit_type":
 		sort = "UnitType"
 	default:
 		sort = "ItemCategory.Name"
@@ -434,40 +434,40 @@ func TestGetByGroupID(t *testing.T) {
 			groupID:         group1.ID,
 			sort:            "name",
 			descending:      false,
-			expected:        getByGroupID(group1.ID, "i.name", false),
-			expectedSortKey: "i.name",
+			expected:        getByGroupID(group1.ID, "items.name", false),
+			expectedSortKey: "items.name",
 		},
 		{
 			name:            "Sort by name UPPERCASE asc",
 			groupID:         group1.ID,
 			sort:            "NAME",
 			descending:      false,
-			expected:        getByGroupID(group1.ID, "i.name", false),
-			expectedSortKey: "i.name",
+			expected:        getByGroupID(group1.ID, "items.name", false),
+			expectedSortKey: "items.name",
 		},
 		{
 			name:            "Sort by category desc",
 			groupID:         group2.ID,
 			sort:            "category",
 			descending:      true,
-			expected:        getByGroupID(group2.ID, "ic.name", true),
-			expectedSortKey: "ic.name",
+			expected:        getByGroupID(group2.ID, "item_categories.name", true),
+			expectedSortKey: "item_categories.name",
 		},
 		{
 			name:            "Sort by average market price asc",
 			groupID:         group1.ID,
 			sort:            "average_market_price",
 			descending:      false,
-			expected:        getByGroupID(group1.ID, "i.average_market_price", false),
-			expectedSortKey: "i.average_market_price",
+			expected:        getByGroupID(group1.ID, "items.average_market_price", false),
+			expectedSortKey: "items.average_market_price",
 		},
 		{
 			name:            "Sort by unit type asc",
 			groupID:         group2.ID,
 			sort:            "unit_type",
 			descending:      false,
-			expected:        getByGroupID(group2.ID, "i.unit_type", false),
-			expectedSortKey: "i.unit_type",
+			expected:        getByGroupID(group2.ID, "items.unit_type", false),
+			expectedSortKey: "items.unit_type",
 		},
 		{
 			name:        "Invalid sort parameter",
@@ -1206,13 +1206,13 @@ func TestMapSortKey(t *testing.T) {
 		expectedKey string
 		expectedErr error
 	}{
-		{name: "default empty", param: "", expectedKey: "i.name"},
-		{name: "name", param: "name", expectedKey: "i.name"},
-		{name: "name Capital Letters", param: "Name", expectedKey: "i.name"},
-		{name: "average market price", param: "average_market_price", expectedKey: "i.average_market_price"},
-		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "i.average_market_price"},
-		{name: "unit type", param: "unit_type", expectedKey: "i.unit_type"},
-		{name: "category", param: "category", expectedKey: "ic.name"},
+		{name: "default empty", param: "", expectedKey: "items.name"},
+		{name: "name", param: "name", expectedKey: "items.name"},
+		{name: "name Capital Letters", param: "Name", expectedKey: "items.name"},
+		{name: "average market price", param: "average_market_price", expectedKey: "items.average_market_price"},
+		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "items.average_market_price"},
+		{name: "unit type", param: "unit_type", expectedKey: "items.unit_type"},
+		{name: "category", param: "category", expectedKey: "item_categories.name"},
 		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError("wrong", nil)},
 	}
 

@@ -191,13 +191,13 @@ func (s *ItemService) mapSortKey(param string) (string, error) {
 
 	switch param {
 	case "name", "":
-		return "i.name", nil
+		return "items.name", nil
 	case "average_market_price":
-		return "i.average_market_price", nil
+		return "items.average_market_price", nil
 	case "unit_type":
-		return "i.unit_type", nil
+		return "items.unit_type", nil
 	case "category":
-		return "ic.name", nil
+		return "item_categories.name", nil
 	default:
 		return "", customErrors.NewInvalidParamsError(param, nil)
 	}
