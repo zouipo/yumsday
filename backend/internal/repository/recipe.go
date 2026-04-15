@@ -11,7 +11,6 @@ import (
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
 
 type RecipeRepositoryInterface interface {
@@ -33,35 +32,57 @@ func NewRecipeRepository(db *sql.DB) *RecipeRepository {
 }
 
 func (r *RecipeRepository) GetByID(id int64) (*model.Recipe, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "recipes.id", Values: []any{id}},
-		},
-	}
-	recipes, err := r.fetchRecipes(opt)
+	recipes, err := r.fetchRecipes("WHERE recipes.id = ?", id)
 	if err != nil {
 		return nil, err
 	}
+
+	if len(recipes) == 0 {
+		return nil, customErrors.NewNotFoundError("recipes", "id", nil)
+	}
+
 	return &recipes[0], nil
 }
 
-func (r *RecipeRepository) GetByGroupID(groupID int64) ([]model.Recipe, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "recipes.group_id", Values: []any{groupID}},
-		},
-		OrderBy: []utils.OrderByClause{
-			{Column: "recipes.name"},
-		},
+func (r *RecipeRepository) GetByName(name string, descending bool) ([]model.Recipe, error) {
+	clauses := "WHERE recipes.name LIKE concat('%', ?, '%') ORDER BY recipes.name"
+	if descending {
+		clauses += " DESC"
 	}
-	recipes, err := r.fetchRecipes(opt)
+
+	recipes, err := r.fetchRecipes(clauses, name)
 	if err != nil {
-		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-			return []model.Recipe{}, nil
-		}
 		return nil, err
 	}
+
 	return recipes, nil
+}
+
+func (r *RecipeRepository) GetByGroupID(groupID int64, descending bool) ([]model.Recipe, error) {
+	clauses := "WHERE recipes.group_id = ? ORDER BY recipes.name"
+	if descending {
+		clauses += " DESC"
+	}
+
+	recipes, err := r.fetchRecipes(clauses, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	return recipes, nil
+}
+
+func (r *RecipeRepository) GetRecipeGroupID(id int64) (int64, error) {
+	row := r.db.QueryRow("SELECT group_id from recipes WHERE id = ?", id)
+	var groupID int64
+	if err := row.Scan(&groupID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = customErrors.NewNotFoundError("recipes", "id", err)
+		}
+		return 0, err
+	}
+
+	return groupID, nil
 }
 
 func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
@@ -217,8 +238,8 @@ func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]model.Recipe, error) {
-	query := fmt.Sprintf(`SELECT
+func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.Recipe, error) {
+	query := `SELECT
 	recipes.*,
 	recipe_categories.id, recipe_categories.name,
 	ingredients.id, ingredients.quantity,
@@ -229,12 +250,11 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 	LEFT JOIN recipe_categories ON recipe_categories.id = recipes_categories_junction.category_id
 	LEFT JOIN ingredients ON ingredients.recipe_id = recipes.id
 	LEFT JOIN items ON items.id = ingredients.item_id
-	LEFT JOIN units ON units.id = ingredients.unit_id
-	%s;`, utils.MakeSelectFiltering(opt))
+	LEFT JOIN units ON units.id = ingredients.unit_id ` + clauses
 
 	slog.Debug("fetching recipes", "query", query)
 
-	rows, err := r.db.Query(query, opt.WhereValues()...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
 	}
@@ -311,10 +331,6 @@ func (r *RecipeRepository) fetchRecipes(opt *utils.SelectFilteringOptions) ([]mo
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
-	}
-
-	if len(ret) == 0 {
-		return nil, customErrors.NewNotFoundError("recipe", strings.Join(opt.WhereColumns(), ","), nil)
 	}
 
 	return ret, nil

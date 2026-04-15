@@ -194,7 +194,7 @@ func TestGetByID(t *testing.T) {
 		{
 			"non existing id",
 			-1,
-			customErrors.NewNotFoundError("recipe", "recipes.id", nil),
+			customErrors.NewNotFoundError("recipes", "id", nil),
 		},
 	}
 
@@ -220,16 +220,67 @@ func TestGetByID(t *testing.T) {
 	}
 }
 
+func TestGetByName(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	tests := []struct {
+		name       string
+		search     string
+		descending bool
+		expected   []model.Recipe
+	}{
+		{
+			"descending-sorted search",
+			"ICK",
+			true,
+			[]model.Recipe{
+				testRecipes[3], testRecipes[0],
+			},
+		},
+		{
+			"ascending-sorted search",
+			"ch",
+			false,
+			[]model.Recipe{
+				testRecipes[1], testRecipes[0],
+			},
+		},
+		{
+			"not found",
+			"qioubvpioqzhgu",
+			false,
+			[]model.Recipe{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetByName(tt.search, tt.descending)
+
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			if !areRecipeSlicesEqual(actual, tt.expected) {
+				t.Fatal("recipes should be equal")
+			}
+		})
+	}
+}
+
 func TestGetByGroupID(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 
 	tests := []struct {
-		name     string
-		groupID  int64
-		expected []model.Recipe
-		err      error
+		name       string
+		groupID    int64
+		descending bool
+		expected   []model.Recipe
+		err        error
 	}{
 		{
 			name:    "group with one recipe",
@@ -248,6 +299,16 @@ func TestGetByGroupID(t *testing.T) {
 			},
 		},
 		{
+			name:       "group with multiple recipes descending",
+			groupID:    1,
+			descending: true,
+			expected: []model.Recipe{
+				testRecipes[3],
+				testRecipes[0],
+				testRecipes[1],
+			},
+		},
+		{
 			name:     "group without recipe",
 			groupID:  4,
 			expected: []model.Recipe{},
@@ -261,7 +322,7 @@ func TestGetByGroupID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := repo.GetByGroupID(tt.groupID)
+			actual, err := repo.GetByGroupID(tt.groupID, tt.descending)
 
 			if tt.err != nil {
 				if !utils.CompareErrors(err, tt.err) {
@@ -281,6 +342,51 @@ func TestGetByGroupID(t *testing.T) {
 	}
 }
 
+func TestGetRecipeGroupID(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	tests := []struct {
+		name     string
+		id       int64
+		expected int64
+		err      error
+	}{
+		{
+			name:     "valid id",
+			id:       1,
+			expected: 1,
+		},
+		{
+			name:     "invalid id",
+			id:       -1,
+			expected: 0,
+			err:      customErrors.NewNotFoundError("recipes", "id", nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.GetRecipeGroupID(tt.id)
+
+			if tt.err != nil {
+				if !utils.CompareErrors(err, tt.err) {
+					t.Fatalf("expected error %v, got %v", tt.err, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("didn't expected error, got %v", err)
+			}
+
+			if actual != tt.expected {
+				t.Fatalf("expected group ID %v, got %v", tt.expected, actual)
+			}
+		})
+	}
+}
 func TestRecipeRepositoryCreate(t *testing.T) {
 	db := setupRecipeTestDB(t)
 	defer db.Close()
