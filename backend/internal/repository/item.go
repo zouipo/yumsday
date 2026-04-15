@@ -54,7 +54,7 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending 
 	defer rows.Close()
 
 	for rows.Next() {
-		var item model.Item
+		item := model.NewItem()
 		err := rows.Scan(
 			&item.ID,
 			&item.Name,
@@ -70,7 +70,7 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending 
 			return nil, customErrors.NewInternalError("Failed to scan item", err)
 		}
 
-		items = append(items, item)
+		items = append(items, *item)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -186,7 +186,7 @@ func (r *ItemRepository) Delete(id int64) error {
 
 // fetchItem is a helper method to retrieve an item based on a specific column and value.
 func (r *ItemRepository) fetchItem(column string, value any) (*model.Item, error) {
-	item := &model.Item{}
+	item := model.NewItem()
 
 	query := `
 	SELECT i.*, ic.name

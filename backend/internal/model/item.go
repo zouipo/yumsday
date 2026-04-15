@@ -9,6 +9,12 @@ type Item struct {
 	AverageMarketPrice *float64      `json:"average_market_price"`
 	UnitType           enum.UnitType `json:"unit_type"`
 	GroupID            int64         `json:"group_id"`
-	ItemCategory       ItemCategory  `json:"item_category"`
+	ItemCategory       *ItemCategory `json:"item_category"`
 	Ingredients        []Ingredient  `json:"ingredients"`
+}
+
+func NewItem() *Item {
+	return &Item{
+		ItemCategory: &ItemCategory{},
+	}
 }

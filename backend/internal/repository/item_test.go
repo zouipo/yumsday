@@ -30,7 +30,7 @@ var (
 			AverageMarketPrice: nil,
 			UnitType:           enum.Weight,
 			GroupID:            1,
-			ItemCategory: model.ItemCategory{
+			ItemCategory: &model.ItemCategory{
 				ID:   1,
 				Name: "Baking",
 			},
@@ -42,7 +42,7 @@ var (
 			AverageMarketPrice: utils.Ptr(3.5),
 			UnitType:           enum.Weight,
 			GroupID:            1,
-			ItemCategory: model.ItemCategory{
+			ItemCategory: &model.ItemCategory{
 				ID:   2,
 				Name: "Vegetables",
 			},
@@ -54,7 +54,7 @@ var (
 			AverageMarketPrice: utils.Ptr(1.5),
 			UnitType:           enum.Volume,
 			GroupID:            1,
-			ItemCategory: model.ItemCategory{
+			ItemCategory: &model.ItemCategory{
 				ID:   1,
 				Name: "Baking",
 			},
@@ -66,7 +66,7 @@ var (
 			AverageMarketPrice: utils.Ptr(4.2),
 			UnitType:           enum.Numeric,
 			GroupID:            1,
-			ItemCategory: model.ItemCategory{
+			ItemCategory: &model.ItemCategory{
 				ID:   3,
 				Name: "Fruits",
 			},
@@ -425,8 +425,9 @@ func TestCreateItem(t *testing.T) {
 		{
 			name: "Create item with invalid group ID",
 			item: model.Item{
-				Name:    "Invalid Group Item",
-				GroupID: invalidGroupId,
+				Name:         "Invalid Group Item",
+				ItemCategory: &model.ItemCategory{},
+				GroupID:      invalidGroupId,
 			},
 			expectErr: customErrors.NewInternalError("Failed to create item", nil),
 		},
@@ -435,7 +436,7 @@ func TestCreateItem(t *testing.T) {
 			item: model.Item{
 				Name:    "Invalid Category Item",
 				GroupID: invalidGroupId,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   invalidCategoryId,
 					Name: "Invalid Category",
 				},
@@ -508,7 +509,7 @@ func TestUpdateItem(t *testing.T) {
 				AverageMarketPrice: utils.Ptr(2.5),
 				UnitType:           enum.Numeric,
 				GroupID:            1,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   2,
 					Name: "Vegetables",
 				},
@@ -520,7 +521,7 @@ func TestUpdateItem(t *testing.T) {
 				AverageMarketPrice: utils.Ptr(2.5),
 				UnitType:           enum.Numeric,
 				GroupID:            1,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   2,
 					Name: "Vegetables",
 				},
@@ -539,7 +540,7 @@ func TestUpdateItem(t *testing.T) {
 				ID:      invalidItemId,
 				Name:    "Non-existing Item",
 				GroupID: 1,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   1,
 					Name: "Baking",
 				},
@@ -556,7 +557,7 @@ func TestUpdateItem(t *testing.T) {
 				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
 				UnitType:           expectedItems[0].UnitType,
 				GroupID:            2,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   1,
 					Name: "Baking",
 				},
@@ -568,7 +569,7 @@ func TestUpdateItem(t *testing.T) {
 				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
 				UnitType:           expectedItems[0].UnitType,
 				GroupID:            expectedItems[0].GroupID,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   1,
 					Name: "Baking",
 				},
@@ -581,7 +582,7 @@ func TestUpdateItem(t *testing.T) {
 				ID:      expectedItems[0].ID,
 				Name:    "Valid name",
 				GroupID: 1,
-				ItemCategory: model.ItemCategory{
+				ItemCategory: &model.ItemCategory{
 					ID:   invalidCategoryId,
 					Name: "Invalid Category",
 				},
