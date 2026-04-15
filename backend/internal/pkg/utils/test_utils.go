@@ -73,6 +73,10 @@ func SortSliceByFieldName[T any](s []T, sortBy string, descending bool) []T {
 }
 
 func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool) bool {
+	if len(sortWords) == 0 {
+		return false
+	}
+
 	a := reflect.ValueOf(t1).FieldByName(sortWords[0])
 	b := reflect.ValueOf(t2).FieldByName(sortWords[0])
 	var res bool
@@ -101,6 +105,11 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	case reflect.Float32, reflect.Float64:
 		res = cmp.Less(a.Float(), b.Float())
 	case reflect.Struct:
+		// If this is the last field, no need for recursion
+		if len(sortWords) == 1 {
+			res = cmp.Less(fmt.Sprint(a.Interface()), fmt.Sprint(b.Interface()))
+			break
+		}
 		return compareFieldsByName(a.Interface(), b.Interface(), sortWords[1:], descending)
 	default:
 		panic(fmt.Errorf("unhandled kind %v", a.Kind()))

@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"reflect"
-	"sort"
 	"testing"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -194,49 +193,6 @@ func compareListItems(s1, s2 []model.Item) bool {
 	return true
 }
 
-// sortItemsByField sorts a slice of Item objects by the specified field and returns the sorted slice.
-func sortItemsByField(items []model.Item, sortBy string, descending bool) []model.Item {
-	sorted := append([]model.Item(nil), items...)
-
-	sort.Slice(sorted, func(i, j int) bool {
-		switch sortBy {
-		case "name":
-			if descending {
-				return sorted[i].Name > sorted[j].Name
-			}
-			return sorted[i].Name < sorted[j].Name
-		case "average_market_price":
-			if sorted[i].AverageMarketPrice == nil {
-				return true
-			}
-			if sorted[j].AverageMarketPrice == nil {
-				return false
-			}
-			if descending {
-				return *sorted[i].AverageMarketPrice > *sorted[j].AverageMarketPrice
-			}
-			return *sorted[i].AverageMarketPrice < *sorted[j].AverageMarketPrice
-		case "unit_type":
-			if descending {
-				return sorted[i].UnitType.String() > sorted[j].UnitType.String()
-			}
-			return sorted[i].UnitType.String() < sorted[j].UnitType.String()
-		case "item_categories.name":
-			if descending {
-				return sorted[i].ItemCategory.Name > sorted[j].ItemCategory.Name
-			}
-			return sorted[i].ItemCategory.Name < sorted[j].ItemCategory.Name
-		default:
-			if descending {
-				return sorted[i].ID > sorted[j].ID
-			}
-			return sorted[i].ID < sorted[j].ID
-		}
-	})
-
-	return sorted
-}
-
 /*** TEST CONSTRUCTOR ***/
 func TestNewItemRepository(t *testing.T) {
 	db := utils.SetUpTestDB(t)
@@ -299,7 +255,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    1,
 			sortBy:     "items.unit_type",
 			descending: false,
-			expected:   sortItemsByField(itemsByGroupID(expectedItems, 1), "unit_type", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "UnitType", false),
 			expectErr:  nil,
 		},
 		{
@@ -307,7 +263,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    1,
 			sortBy:     "item_categories.name",
 			descending: false,
-			expected:   sortItemsByField(itemsByGroupID(expectedItems, 1), "item_categories.name", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "ItemCategory.Name", false),
 			expectErr:  nil,
 		},
 		{
@@ -331,7 +287,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    2,
 			sortBy:     "items.name",
 			descending: false,
-			expected:   sortItemsByField(itemsByGroupID(expectedItems, 2), "name", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 2), "Name", false),
 			expectErr:  nil,
 		},
 		{
@@ -389,13 +345,13 @@ func TestGetItemById(t *testing.T) {
 		{
 			name:      "Get item by valid ID 1",
 			id:        validItemID,
-			expected:  sortItemsByField(expectedItems, "id", false)[validItemID-1],
+			expected:  utils.SortSliceByFieldName(expectedItems, "ID", false)[validItemID-1],
 			expectErr: nil,
 		},
 		{
 			name:      "Get item by valid ID 2",
 			id:        validItemID + 1,
-			expected:  sortItemsByField(expectedItems, "id", false)[validItemID],
+			expected:  utils.SortSliceByFieldName(expectedItems, "ID", false)[validItemID],
 			expectErr: nil,
 		},
 		{

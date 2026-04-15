@@ -48,12 +48,12 @@ func setUpDataTestGroup() *MockGroupRepository {
 		ImageURL:  new("/static/images/family.jpg"),
 		CreatedAt: time.Now(),
 		Members: []model.GroupMember{
-			model.GroupMember{
+			{
 				UserID:   1,
 				Admin:    true,
 				JoinedAt: time.Now().AddDate(0, 0, -1),
 			},
-			model.GroupMember{
+			{
 				UserID:   2,
 				Admin:    false,
 				JoinedAt: time.Now().AddDate(0, 0, -1),
