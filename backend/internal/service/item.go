@@ -14,6 +14,7 @@ type ItemServiceInterface interface {
 	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
 	GetByName(name string) (*model.Item, error)
+	GetRecipe(id int64) ([]model.Recipe, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -80,6 +81,16 @@ func (s *ItemService) GetByName(name string) ([]model.Item, error) {
 	}
 
 	return items, nil
+}
+
+// GetRecipe returns the recipes in which the item is used.
+func (s *ItemService) GetRecipe(id int64) ([]model.Recipe, error) {
+	recipes, err := s.recipeService.GetByItemID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return recipes, nil
 }
 
 /*** CREATE OPERATIONS ***/

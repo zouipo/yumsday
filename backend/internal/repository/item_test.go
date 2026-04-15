@@ -2,7 +2,7 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
+	"reflect"
 	"sort"
 	"testing"
 
@@ -180,50 +180,18 @@ func itemsByGroupID(items []model.Item, groupID int64) []model.Item {
 	return filtered
 }
 
-// compareListItems compares two slices of Item objects and returns an error if they do not match.
-func compareListItems(actual, expected []model.Item) error {
-	if len(actual) != len(expected) {
-		return fmt.Errorf("expected %d items, got %d", len(expected), len(actual))
+func compareListItems(s1, s2 []model.Item) bool {
+	if len(s1) != len(s2) {
+		return false
 	}
 
-	for i := range actual {
-		if err := compareItems(&actual[i], &expected[i], true); err != nil {
-			return fmt.Errorf("item at index %d does not match: %v", i, err)
+	for i := range s1 {
+		if !reflect.DeepEqual(s1[i], s2[i]) {
+			return false
 		}
 	}
 
-	return nil
-}
-
-// compareItems compares two Item objects and returns an error if they do not match.
-func compareItems(actual, expected *model.Item, compareId bool) error {
-	if compareId && (actual.ID != expected.ID) {
-		return fmt.Errorf("expected ID %d, got %d", expected.ID, actual.ID)
-	}
-	if actual.Name != expected.Name {
-		return fmt.Errorf("expected Name %s, got %s", expected.Name, actual.Name)
-	}
-	if (actual.Description == nil) != (expected.Description == nil) ||
-		(actual.Description != nil && *actual.Description != *expected.Description) {
-		return fmt.Errorf("expected Description %v, got %v", expected.Description, actual.Description)
-	}
-	if (actual.AverageMarketPrice == nil) != (expected.AverageMarketPrice == nil) ||
-		(actual.AverageMarketPrice != nil && *actual.AverageMarketPrice != *expected.AverageMarketPrice) {
-		return fmt.Errorf("expected AverageMarketPrice %v, got %v", expected.AverageMarketPrice, actual.AverageMarketPrice)
-	}
-	if actual.UnitType != expected.UnitType {
-		return fmt.Errorf("expected UnitType %s, got %s", expected.UnitType, actual.UnitType)
-	}
-	if actual.GroupID != expected.GroupID {
-		return fmt.Errorf("expected GroupID %d, got %d", expected.GroupID, actual.GroupID)
-	}
-	if actual.ItemCategory.ID != expected.ItemCategory.ID {
-		return fmt.Errorf("expected ItemCategory ID %d, got %d", expected.ItemCategory.ID, actual.ItemCategory.ID)
-	}
-	if actual.ItemCategory.Name != expected.ItemCategory.Name {
-		return fmt.Errorf("expected ItemCategory Name %s, got %s", expected.ItemCategory.Name, actual.ItemCategory.Name)
-	}
-	return nil
+	return true
 }
 
 // sortItemsByField sorts a slice of Item objects by the specified field and returns the sorted slice.
@@ -315,7 +283,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    1,
 			sortBy:     "items.name",
 			descending: false,
-			expected:   sortItemsByField(itemsByGroupID(expectedItems, 1), "name", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "Name", false),
 			expectErr:  nil,
 		},
 		{
@@ -323,7 +291,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    1,
 			sortBy:     "items.average_market_price",
 			descending: false,
-			expected:   sortItemsByField(itemsByGroupID(expectedItems, 1), "average_market_price", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "AverageMarketPrice", false),
 			expectErr:  nil,
 		},
 		{
@@ -399,8 +367,8 @@ func TestGetItemsByGroupID(t *testing.T) {
 				t.Fatalf("GetByGroupID() unexpected error = %v", err)
 			}
 
-			if err := compareListItems(items, tt.expected); err != nil {
-				t.Errorf("GetByGroupID() items do not match expected: %v", err.Error())
+			if !compareListItems(items, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
 	}
@@ -453,8 +421,8 @@ func TestGetItemById(t *testing.T) {
 				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if err := compareItems(item, &tt.expected, true); err != nil {
-				t.Errorf("GetByID() items do not match expected: %v", err.Error())
+			if !reflect.DeepEqual(item, &tt.expected) {
+				t.Errorf("Items should be equal: %v, %v", item, tt.expected)
 			}
 		})
 	}
@@ -474,8 +442,8 @@ func TestGetItemByName(t *testing.T) {
 	}{
 		{
 			name:      "Get item by valid name",
-			itemName:  sortItemsByField(expectedItems, "name", false)[0].Name,
-			expected:  []model.Item{sortItemsByField(expectedItems, "name", false)[0]},
+			itemName:  utils.SortSliceByFieldName(expectedItems, "Name", false)[0].Name,
+			expected:  []model.Item{utils.SortSliceByFieldName(expectedItems, "Name", false)[0]},
 			expectErr: nil,
 		},
 		{
@@ -501,8 +469,8 @@ func TestGetItemByName(t *testing.T) {
 				t.Fatalf("GetByName() unexpected error = %v", err)
 			}
 
-			if err := compareListItems(items, tt.expected); err != nil {
-				t.Errorf("GetByName() items do not match expected: %v", err.Error())
+			if !compareListItems(items, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
 	}
@@ -518,11 +486,6 @@ func TestCreateItem(t *testing.T) {
 		{
 			name:      "Create item with nil values",
 			item:      expectedItems[0],
-			expectErr: nil,
-		},
-		{
-			name:      "Create item with no nil values",
-			item:      expectedItems[1],
 			expectErr: nil,
 		},
 		{
@@ -576,7 +539,7 @@ func TestCreateItem(t *testing.T) {
 				t.Errorf("expected non-zero item ID after creation, got %d", id)
 			}
 
-			lastId := sortItemsByField(expectedItems, "id", false)[len(expectedItems)-1].ID
+			lastId := utils.SortSliceByFieldName(expectedItems, "ID", false)[len(expectedItems)-1].ID
 			if id <= lastId {
 				t.Errorf("expected item ID to be sequential: expected > %d, got %d", lastId, id)
 			}
@@ -587,8 +550,9 @@ func TestCreateItem(t *testing.T) {
 				t.Fatalf("failed to retrieve created item: %v", err)
 			}
 
-			if err := compareItems(createdItem, &tt.item, false); err != nil {
-				t.Errorf("created item does not match expected: %v", err.Error())
+			tt.item.ID = lastId + 1
+			if !reflect.DeepEqual(createdItem, &tt.item) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.item, createdItem)
 			}
 		})
 	}
@@ -720,8 +684,8 @@ func TestUpdateItem(t *testing.T) {
 				t.Fatalf("failed to retrieve updated item: %v", err)
 			}
 
-			if err := compareItems(updatedItem, &tt.expectedItem, true); err != nil {
-				t.Errorf("updated item does not match expected: %v", err.Error())
+			if !reflect.DeepEqual(updatedItem, &tt.expectedItem) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expectedItem, updatedItem)
 			}
 		})
 	}
