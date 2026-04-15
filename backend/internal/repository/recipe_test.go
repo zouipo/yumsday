@@ -230,38 +230,34 @@ func TestGetByName(t *testing.T) {
 		search     string
 		descending bool
 		expected   []model.Recipe
-		err        error
 	}{
 		{
-			"",
-			"ick",
+			"descending-sorted search",
+			"ICK",
 			true,
 			[]model.Recipe{
 				testRecipes[3], testRecipes[0],
 			},
-			nil,
 		},
 		{
-			"",
-			"Ch",
+			"ascending-sorted search",
+			"ch",
 			false,
 			[]model.Recipe{
 				testRecipes[1], testRecipes[0],
 			},
-			nil,
+		},
+		{
+			"not found",
+			"qioubvpioqzhgu",
+			false,
+			[]model.Recipe{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := repo.GetByName(tt.search, tt.descending)
-
-			if tt.err != nil {
-				if !utils.CompareErrors(err, tt.err) {
-					t.Fatalf("expected error %v, got %v", tt.err, err)
-				}
-				return
-			}
 
 			if err != nil {
 				t.Fatalf("didn't expected error, got %v", err)
