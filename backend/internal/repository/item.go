@@ -2,13 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 )
@@ -34,22 +30,15 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 }
 
 // GetAllByGroupID fetches all items by group ID, ordered by a specified column.
-func (r *ItemRepository) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "items.group_id", Values: []any{groupID}},
-		},
-		OrderBy: []utils.OrderByClause{
-			{Column: sort, Descending: descending},
-		},
+func (r *ItemRepository) GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error) {
+	clauses := "WHERE items.group_id = ? ORDER by " + sort
+
+	if desc {
+		clauses += " DESC"
 	}
 
-	items, err := r.fetchItems(opt)
+	items, err := r.fetchItems(clauses, groupID, sort)
 	if err != nil {
-		// Returns an empty slice if no items were found for this group ID
-		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-			return []model.Item{}, nil
-		}
 		return nil, err
 	}
 
@@ -58,15 +47,13 @@ func (r *ItemRepository) GetByGroupID(groupID int64, sort string, descending boo
 
 // GetByID retrieves an item from the database by its ID.
 func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "items.id", Values: []any{id}},
-		},
-	}
-
-	items, err := r.fetchItems(opt)
+	items, err := r.fetchItems("WHERE items.id = ?", id)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, customErrors.NewNotFoundError("Item", "id", nil)
 	}
 
 	return &items[0], nil
@@ -74,18 +61,8 @@ func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
 
 // GetByName retrieves an item from the database by its name.
 func (r *ItemRepository) GetByName(name string) ([]model.Item, error) {
-	opt := &utils.SelectFilteringOptions{
-		Where: []utils.WhereClause{
-			{Column: "items.name", Values: []any{name}},
-		},
-	}
-
-	items, err := r.fetchItems(opt)
+	items, err := r.fetchItems("WHERE items.name LIKE concat('%', ?, '%') ORDER BY items.name", name)
 	if err != nil {
-		// Returns an empty slice if no items were found for this group ID
-		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-			return []model.Item{}, nil
-		}
 		return nil, err
 	}
 
@@ -142,7 +119,7 @@ func (r *ItemRepository) Update(item *model.Item) error {
 
 	// If no rows were updated, it means the item was not found.
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("Item", "items.id", err)
+		return customErrors.NewNotFoundError("Item", "id", err)
 	}
 
 	return nil
@@ -162,23 +139,22 @@ func (r *ItemRepository) Delete(id int64) error {
 
 	// If no rows were deleted, it means the item was not found.
 	if deletedRow == 0 {
-		return customErrors.NewNotFoundError("Item", "items.id", err)
+		return customErrors.NewNotFoundError("Item", "id", err)
 	}
 
 	return nil
 }
 
 // fetchItems is a helper method to retrieve multiple items based on filtering options.
-func (r *ItemRepository) fetchItems(opt *utils.SelectFilteringOptions) ([]model.Item, error) {
-	query := fmt.Sprintf(`
-	SELECT items.*, item_categories.name
+func (r *ItemRepository) fetchItems(clauses string, values ...any) ([]model.Item, error) {
+	query := `SELECT 
+	items.*, item_categories.name 
 	FROM items
-	LEFT JOIN item_categories ON items.item_category_id = item_categories.id
-	%s;`, utils.MakeSelectFiltering(opt))
+	LEFT JOIN item_categories ON items.item_category_id = item_categories.id ` + clauses
 
 	slog.Debug("fetching items", "query", query)
 
-	rows, err := r.db.Query(query, opt.WhereValues()...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch items", err)
 	}
@@ -207,10 +183,6 @@ func (r *ItemRepository) fetchItems(opt *utils.SelectFilteringOptions) ([]model.
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to iterate rows", err)
-	}
-
-	if len(items) == 0 {
-		return nil, customErrors.NewNotFoundError("Item", strings.Join(opt.WhereColumns(), ","), err)
 	}
 
 	return items, nil
