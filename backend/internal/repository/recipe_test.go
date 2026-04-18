@@ -98,6 +98,7 @@ var (
 		{
 			ID:        4,
 			Name:      "Quick Salad",
+			Servings:  2,
 			CreatedAt: time.Unix(0, 0).UTC(),
 			Public:    true,
 			GroupID:   1,
