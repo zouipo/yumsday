@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -214,6 +215,10 @@ func (m *MockRecipeServiceForItem) GetByItemID(_ int64) ([]model.Recipe, error) 
 	}
 
 	return m.recipes, nil
+}
+
+func (m *MockRecipeServiceForItem) Create(_ context.Context, _ model.Recipe) (int64, error) {
+	return 0, nil
 }
 
 type MockGroceryServiceForItem struct {

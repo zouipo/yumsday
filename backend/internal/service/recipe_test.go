@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -36,7 +37,7 @@ func (m *MockRecipeRepository) GetByItemID(itemID int64) ([]model.Recipe, error)
 	return m.recipes, nil
 }
 
-func (m *MockRecipeRepository) Create(_ *model.Recipe) (int64, error) {
+func (m *MockRecipeRepository) Create(_ context.Context, _ *model.Recipe) (int64, error) {
 	return 0, nil
 }
 
@@ -48,17 +49,65 @@ func (m *MockRecipeRepository) Delete(_ int64) error {
 	return nil
 }
 
+/*** MOCK SERVICES ***/
+type MockIngredientForRecipe struct {
+	validateIngError error
+}
+
+func (m *MockIngredientForRecipe) validateIngredient(ing model.Ingredient) error {
+	if m.validateIngError != nil {
+		return m.validateIngError
+	}
+
+	return nil
+}
+
+type MockCategoryForRecipe struct {
+	validateCatError error
+}
+
+func (m *MockCategoryForRecipe) validateRecipeCategory(cat model.RecipeCategory) error {
+	if m.validateCatError != nil {
+		return m.validateCatError
+	}
+
+	return nil
+}
+
+type MockGroupForRecipe struct {
+	GetByIDError error
+	group        *model.Group
+}
+
+func (m *MockGroupForRecipe) GetByID(_ int64) (*model.Group, error) {
+	if m.GetByIDError != nil {
+		return nil, m.GetByIDError
+	}
+
+	return m.group, nil
+}
+
+func (m *MockGroupForRecipe) validateGroup(group model.Group) error {
+	if m.GetByIDError != nil {
+		return m.GetByIDError
+	}
+
+	_ = group
+	return nil
+}
+
 func TestNewRecipeService(t *testing.T) {
 	mockRepo := &MockRecipeRepository{}
 
-	service := NewRecipeService(mockRepo)
+	service := NewRecipeService(
+		mockRepo,
+		&MockIngredientForRecipe{},
+		&MockCategoryForRecipe{},
+		&MockGroupForRecipe{},
+	)
 
 	if service == nil {
 		t.Fatal("NewRecipeService() returned nil")
-	}
-
-	if service.repo == nil {
-		t.Error("NewRecipeService() repo is nil")
 	}
 }
 
@@ -97,7 +146,12 @@ func TestGetByItemID(t *testing.T) {
 				getByItemErr: tt.err,
 			}
 
-			service := NewRecipeService(mockRepo)
+			service := NewRecipeService(
+				mockRepo,
+				&MockIngredientForRecipe{},
+				&MockCategoryForRecipe{},
+				&MockGroupForRecipe{},
+			)
 			actual, err := service.GetByItemID(tt.itemID)
 
 			if tt.err != nil {
