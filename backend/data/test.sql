@@ -77,7 +77,7 @@ INSERT INTO recipes (name, description, image_url, original_link, preparation_ti
     ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', 0, 1, NULL, 1),
     ('Chocolate Chip Cookies', 'Classic homemade chocolate chip cookies', '/static/recipes/cookies.jpg', 'https://example.com/cookies', 15, 12, 24, 'Mix ingredients and bake at 350F', 0, 1, 'Family favorite!', 1),
     ('Tomato Soup', 'Creamy tomato soup', '/static/recipes/soup.jpg', 'https://example.com/soup', 10, 30, 6, 'Cook tomatoes with onions and blend', 0, 0, 'Great for winter', 2),
-    ('Quick Salad', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, 1);
+    ('Quick Salad', NULL, NULL, NULL, NULL, NULL, 2, NULL, 0, 1, NULL, 1);
 
 INSERT INTO recipe_categories (name, group_id) VALUES
     ('DESSERT', 1),

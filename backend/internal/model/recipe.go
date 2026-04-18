@@ -10,7 +10,7 @@ type Recipe struct {
 	OriginalLink       *string          `json:"original_link"`
 	PreparationTimeMin *int             `json:"preparation_time_min"`
 	CookingTimeMin     *int             `json:"cooking_time_min"`
-	Servings           *int             `json:"servings"`
+	Servings           int              `json:"servings"`
 	Instructions       *string          `json:"instructions"`
 	CreatedAt          time.Time        `json:"created_at"`
 	Public             bool             `json:"public"`

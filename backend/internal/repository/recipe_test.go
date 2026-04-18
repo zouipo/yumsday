@@ -31,7 +31,7 @@ var (
 			ImageURL:           new("/static/recipes/chicken.jpg"),
 			PreparationTimeMin: new(10),
 			CookingTimeMin:     new(20),
-			Servings:           new(4),
+			Servings:           4,
 			Instructions:       new("Season and grill until cooked through"),
 			CreatedAt:          time.Unix(0, 0).UTC(),
 			Public:             true,
@@ -53,7 +53,7 @@ var (
 			OriginalLink:       new("https://example.com/cookies"),
 			PreparationTimeMin: new(15),
 			CookingTimeMin:     new(12),
-			Servings:           new(24),
+			Servings:           24,
 			Instructions:       new("Mix ingredients and bake at 350F"),
 			CreatedAt:          time.Unix(0, 0).UTC(),
 			Public:             true,
@@ -78,7 +78,7 @@ var (
 			OriginalLink:       new("https://example.com/soup"),
 			PreparationTimeMin: new(10),
 			CookingTimeMin:     new(30),
-			Servings:           new(6),
+			Servings:           6,
 			Instructions:       new("Cook tomatoes with onions and blend"),
 			CreatedAt:          time.Unix(0, 0).UTC(),
 			Public:             false,
@@ -431,7 +431,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		OriginalLink:       new("http://marmiton/test"),
 		PreparationTimeMin: new(4),
 		CookingTimeMin:     new(2),
-		Servings:           new(1),
+		Servings:           1,
 		Instructions:       new("[\"faire cuire !!\"]"),
 		CreatedAt:          time.Now().UTC(),
 		Public:             true,
@@ -467,7 +467,7 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		},
 	}
 
-	id, err := repo.Create(context.Background(), newRecipe, nil)
+	id, err := repo.Create(context.Background(), newRecipe)
 	if err != nil {
 		t.Fatalf("expected no error, got '%s'", err)
 	}
@@ -505,7 +505,7 @@ func TestRecipeRepositoryUpdate(t *testing.T) {
 		OriginalLink:       new("https://example.com/cookies"),
 		PreparationTimeMin: new(16),                                  // modified
 		CookingTimeMin:     new(13),                                  // modified
-		Servings:           new(25),                                  // modified
+		Servings:           25,                                       // modified
 		Instructions:       new("Mix ingredients and bake at 350°C"), // modified
 		CreatedAt:          time.Unix(0, 0).UTC(),
 		Public:             true,

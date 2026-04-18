@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     original_link VARCHAR,
     preparation_time_min INTEGER,
     cooking_time_min INTEGER,
-    servings INTEGER,
+    servings INTEGER NOT NULL,
     instructions VARCHAR(1000000),
     created_at TIMESTAMP NOT NULL,
     public BOOLEAN NOT NULL,
