@@ -17,7 +17,7 @@ type RecipeRepositoryInterface interface {
 	GetByID(id int64) (model.Recipe, error)
 	GetByGroupID(groupID int64) ([]model.Recipe, error)
 	GetByItemID(itemID int64) ([]model.Recipe, error)
-	Create(recipe *model.Recipe) (int64, error)
+	Create(ctx context.Context, recipe *model.Recipe) (int64, error)
 	Update(recipe *model.Recipe) error
 	Delete(id int64) error
 }
@@ -124,7 +124,7 @@ func (r *RecipeRepository) GetRecipeGroupID(id int64) (int64, error) {
 	return groupID, nil
 }
 
-func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
+func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe) (int64, error) {
 	tx, _ := r.db.BeginTx(ctx, nil)
 	defer tx.Rollback()
 
