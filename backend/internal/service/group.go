@@ -5,21 +5,21 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 )
 
-type GroupServiceInterface interface {
+type GroupService interface {
 	GetByID(id int64) (*model.Group, error)
 }
 
-type GroupService struct {
+type groupService struct {
 	repo repository.GroupRepositoryInterface
 }
 
-func NewGroupService(repo repository.GroupRepositoryInterface) *GroupService {
-	return &GroupService{
+func NewGroupService(repo repository.GroupRepositoryInterface) GroupService {
+	return &groupService{
 		repo: repo,
 	}
 }
 
-func (s *GroupService) GetByID(id int64) (*model.Group, error) {
+func (s *groupService) GetByID(id int64) (*model.Group, error) {
 	group, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err

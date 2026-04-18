@@ -24,7 +24,7 @@ type ItemService struct {
 	repo                repository.ItemRepositoryInterface
 	recipeService       RecipeServiceInterface
 	groceryService      GroceryServiceInterface
-	groupService        GroupServiceInterface
+	groupService        GroupService
 	itemCategoryService ItemCategoryServiceInterface
 }
 
@@ -32,7 +32,7 @@ type ItemService struct {
 func NewItemService(itemRepo repository.ItemRepositoryInterface,
 	recipeService RecipeServiceInterface,
 	groceryService GroceryServiceInterface,
-	groupService GroupServiceInterface,
+	groupService GroupService,
 	itemCategoryService ItemCategoryServiceInterface) *ItemService {
 	return &ItemService{
 		repo:                itemRepo,

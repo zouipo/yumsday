@@ -79,10 +79,6 @@ func TestNewGroupService(t *testing.T) {
 	if service == nil {
 		t.Fatal("NewItemCategoryService returned nil")
 	}
-
-	if service.repo == nil {
-		t.Fatal("NewItemCategoryService repo is nil")
-	}
 }
 
 func TestGetGroupByID(t *testing.T) {
