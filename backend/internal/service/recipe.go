@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
@@ -12,25 +11,22 @@ import (
 
 type RecipeServiceInterface interface {
 	GetByItemID(itemID int64) ([]model.Recipe, error)
-	Create(ctx context.Context, recipe model.Recipe) (int64, error)
+	Create(ctx context.Context, recipe *model.Recipe) (int64, error)
 }
 
 type RecipeService struct {
 	repo              repository.RecipeRepositoryInterface
 	ingredientService IngredientService
 	categoryService   RecipeCategoryService
-	groupService      GroupService
 }
 
 func NewRecipeService(recipeRepo repository.RecipeRepositoryInterface,
 	ingredientService IngredientService,
-	categoryService RecipeCategoryService,
-	groupService GroupService) RecipeServiceInterface {
+	categoryService RecipeCategoryService) RecipeServiceInterface {
 	return &RecipeService{
 		repo:              recipeRepo,
 		ingredientService: ingredientService,
 		categoryService:   categoryService,
-		groupService:      groupService,
 	}
 }
 
@@ -43,27 +39,15 @@ func (s *RecipeService) GetByItemID(itemID int64) ([]model.Recipe, error) {
 	return recipes, nil
 }
 
-// Create validates the recipe and its ingredients before creating it in the database.
-func (s *RecipeService) Create(ctx context.Context, recipe model.Recipe) (int64, error) {
+// Create validates the recipe's fields before creating it in the database.
+func (s *RecipeService) Create(ctx context.Context, recipe *model.Recipe) (int64, error) {
 	if err := s.validateRecipe(recipe); err != nil {
 		return 0, err
 	}
 
-	for _, ing := range recipe.Ingredients {
-		if err := s.ingredientService.validateIngredient(ing); err != nil {
-			return 0, err
-		}
-	}
-
-	for _, cat := range recipe.Categories {
-		if err := s.categoryService.validateRecipeCategory(cat); err != nil {
-			return 0, err
-		}
-	}
-
 	recipe.CreatedAt = time.Now().UTC()
 
-	id, err := s.repo.Create(ctx, &recipe)
+	id, err := s.repo.Create(ctx, recipe)
 	if err != nil {
 		return 0, err
 	}
@@ -71,8 +55,8 @@ func (s *RecipeService) Create(ctx context.Context, recipe model.Recipe) (int64,
 	return id, nil
 }
 
-// validateRecipe verifies the validity of the simple fields and the existence of the group associated with the recipe.
-func (s *RecipeService) validateRecipe(recipe model.Recipe) error {
+// validateRecipe verifies the recipe's fields.
+func (s *RecipeService) validateRecipe(recipe *model.Recipe) error {
 	if recipe.Name == "" {
 		return customErrors.NewValidationError("name", "recipe must have a name", nil)
 	}
@@ -93,12 +77,25 @@ func (s *RecipeService) validateRecipe(recipe model.Recipe) error {
 		return customErrors.NewValidationError("ingredients", "recipe must have at least one ingredient", nil)
 	}
 
-	if recipe.ID != 0 {
-		if _, err := s.groupService.GetByID(recipe.GroupID); err != nil {
-			if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-				return customErrors.NewConflictError("Group", "group must exists", nil)
-			}
+	for _, ing := range recipe.Ingredients {
+		if err := s.ingredientService.validateIngredient(ing); err != nil {
 			return err
+		}
+
+		// Checks if the ingredient's item belongs to the same group as recipe
+		if ing.Item.GroupID != recipe.GroupID {
+			return customErrors.NewConflictError("Ingredient", "item composing ingredient must belongs to the same group as the recipe", nil)
+		}
+	}
+
+	for _, cat := range recipe.Categories {
+		if err := s.categoryService.validateRecipeCategory(cat); err != nil {
+			return err
+		}
+
+		// Checks if the recipe category belongs to the same group as recipe
+		if cat.GroupID != recipe.GroupID {
+			return customErrors.NewConflictError("RecipeCategory", "recipe category must belongs to the same group as the recipe", nil)
 		}
 	}
 

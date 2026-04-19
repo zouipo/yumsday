@@ -14,12 +14,14 @@ import (
 )
 
 type RecipeRepositoryInterface interface {
-	GetByID(id int64) (model.Recipe, error)
-	GetByGroupID(groupID int64) ([]model.Recipe, error)
+	GetByID(id int64) (*model.Recipe, error)
+	GetByName(name string, descending bool) ([]model.Recipe, error)
+	GetByGroupID(groupID int64, descending bool) ([]model.Recipe, error)
 	GetByItemID(itemID int64) ([]model.Recipe, error)
+	GetRecipeGroupID(id int64) (int64, error)
 	Create(ctx context.Context, recipe *model.Recipe) (int64, error)
-	Update(recipe *model.Recipe) error
-	Delete(id int64) error
+	Update(ctx context.Context, recipe *model.Recipe) error
+	Delete(ctx context.Context, id int64) error
 }
 
 type RecipeRepository struct {

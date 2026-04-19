@@ -217,7 +217,7 @@ func (m *MockRecipeServiceForItem) GetByItemID(_ int64) ([]model.Recipe, error) 
 	return m.recipes, nil
 }
 
-func (m *MockRecipeServiceForItem) Create(_ context.Context, _ model.Recipe) (int64, error) {
+func (m *MockRecipeServiceForItem) Create(_ context.Context, _ *model.Recipe) (int64, error) {
 	return 0, nil
 }
 
@@ -896,7 +896,7 @@ func TestCreateItem(t *testing.T) {
 
 			newItem, err := repo.GetByID(id)
 			if err != nil {
-				t.Fatalf("GetByID() after Update() error = %v", err)
+				t.Fatalf("GetByID() after Create() error = %v", err)
 			}
 
 			if !reflect.DeepEqual(newItem, tt.expectedItem) {

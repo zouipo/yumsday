@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
@@ -418,7 +419,7 @@ func TestGetRecipeGroupID(t *testing.T) {
 	}
 }
 
-func TestRecipeRepositoryCreate(t *testing.T) {
+func TestRecipeRepositoryCreate_Success(t *testing.T) {
 	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
@@ -490,6 +491,43 @@ func TestRecipeRepositoryCreate(t *testing.T) {
 		actualJson, _ := json.MarshalIndent(actual, "", "  ")
 		expectedJson, _ := json.MarshalIndent(newRecipe, "", "  ")
 		t.Fatalf("recipes should be equal: %s vs %s", actualJson, expectedJson)
+	}
+}
+
+func TestRecipeRepositoryCreate_GroupConstraintError(t *testing.T) {
+	db := utils.SetUpTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+
+	newRecipe := &model.Recipe{
+		Name:      "test",
+		Servings:  1,
+		CreatedAt: time.Now().UTC(),
+		Public:    true,
+		GroupID:   1000, // invalid groupID
+	}
+
+	id, err := repo.Create(context.Background(), newRecipe)
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+
+	wantErr := customErrors.NewInternalError("Failed to create recipe", sqlite3.ErrConstraintForeignKey)
+	if !utils.CompareErrors(err, wantErr) {
+		t.Fatalf("expected error %v, got %v", wantErr, err)
+	}
+
+	sqlErr, ok := errors.AsType[sqlite3.Error](err)
+	if !ok {
+		t.Fatalf("expected wrapped sqlite3.Error, got %T (%v)", err, err)
+	}
+
+	if sqlErr.ExtendedCode != sqlite3.ErrConstraintForeignKey {
+		t.Fatalf("expected sqlite extended code %v, got %v", sqlite3.ErrConstraintForeignKey, sqlErr.ExtendedCode)
+	}
+
+	if id != 0 {
+		t.Fatalf("expected id = 0, got %d", id)
 	}
 }
 
