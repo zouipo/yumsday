@@ -31,7 +31,10 @@ func NewAuthService(sessionService SessionServiceInterface, userService UserServ
 func (s *AuthService) Authenticate(session *model.Session, username, password string) (*model.User, error) {
 	user, err := s.userService.GetByUsername(username)
 	if err != nil {
-		return nil, err
+		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
+			return nil, err
+		}
+		return nil, customErrors.NewUnauthorizedError("invalid credentials", err)
 	}
 
 	slog.Debug("Checking password", "username", username)
