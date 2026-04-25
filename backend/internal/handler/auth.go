@@ -24,9 +24,9 @@ func NewAuthHandler(s service.AuthServiceInterface) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /login", h.postLogin)
-	mux.HandleFunc("POST /logout", h.postLogout)
+func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
+	mux.HandleFunc("POST "+prefix+"/login", h.postLogin)
+	mux.HandleFunc("POST "+prefix+"/logout", h.postLogout)
 }
 
 // PostLogin godoc
@@ -40,7 +40,7 @@ func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Failure 400 {string} string "Missing username or password"
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
-// @Router /login [post]
+// @Router /auth/login [post]
 func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 	var loginReq dto.LoginDto
 	err := json.NewDecoder(r.Body).Decode(&loginReq)
@@ -54,7 +54,11 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	if !ok || session == nil {
+		http.Error(w, "session not available", http.StatusInternalServerError)
+		return
+	}
 	user, err := h.s.Authenticate(session, loginReq.Username, loginReq.Password)
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
@@ -79,9 +83,13 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Success 204 {string} string "Logout successful"
 // @Failure 500 {string} string "Internal server error"
-// @Router /logout [post]
+// @Router /auth/logout [post]
 func (h *AuthHandler) postLogout(w http.ResponseWriter, r *http.Request) {
-	session := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	if !ok || session == nil {
+		http.Error(w, "session not available", http.StatusInternalServerError)
+		return
+	}
 	err := h.s.Logout(session)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

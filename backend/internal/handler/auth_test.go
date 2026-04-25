@@ -18,6 +18,9 @@ import (
 )
 
 var (
+	loginRoute  = "/auth/login"
+	logoutRoute = "/auth/logout"
+
 	username      = "username"
 	password      = "password1234"
 	wrongPassword = "wrong-password"
@@ -87,7 +90,7 @@ func TestPostLogin_Success(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
@@ -134,7 +137,7 @@ func TestPostLogin_MissingCredentials(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -166,7 +169,7 @@ func TestPostLogin_AppError(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
@@ -195,7 +198,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
@@ -218,7 +221,7 @@ func TestPostLogout_Success(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	r := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
@@ -242,7 +245,7 @@ func TestPostLogout_Error(t *testing.T) {
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
-	r := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
