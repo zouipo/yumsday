@@ -35,7 +35,7 @@ async function handleLogin() {
 
     <div class="login-card card">
       <header class="card-header">
-        <span class="logo">●</span>
+        <span class="symbol" :class="{ 'symbol--error': !!error }">●</span>
         <h1>Feeling hungry?</h1>
         <p>Welcome back — enter your details below.</p>
       </header>
@@ -110,11 +110,15 @@ async function handleLogin() {
   margin-bottom: 2rem;
 }
 
-.logo {
+.symbol {
   display: inline-block;
   font-size: 1.5rem;
-  color: var(--color-danger);
+  color: var(--color-secondary);
   margin-bottom: .75rem;
+}
+
+.symbol--error {
+  color: var(--color-danger);
 }
 
 .card-header p {
