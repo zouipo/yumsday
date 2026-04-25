@@ -17,7 +17,7 @@ import (
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
-func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
+func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 	err := migration.Migrate(db, migrationsFs)
 	if err != nil {
 		panic(err)
@@ -64,6 +64,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 	apiMux := http.NewServeMux()
 	authMux := http.NewServeMux()
 
+	mux.Handle("/", http.FileServerFS(front))
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
 	mux.Handle("/api/", middlewareStack(apiMux))
 	mux.Handle("/login", authMiddlewareStack(authMux))
