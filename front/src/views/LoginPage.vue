@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -11,8 +11,11 @@ const username = ref('')
 const password = ref('')
 const error    = ref('')
 const loading  = ref(false)
+const canSubmit = computed(() => username.value.trim() !== '' && password.value.trim() !== '')
 
 async function handleLogin() {
+  if (!canSubmit.value) return
+
   error.value   = ''
   loading.value = true
   try {
@@ -70,7 +73,11 @@ async function handleLogin() {
           />
         </div>
 
-        <button type="submit" class="btn btn--primary btn--full btn-submit" :disabled="loading">
+        <button
+          type="submit"
+          class="btn btn--primary btn--full btn-submit"
+          :disabled="loading || !canSubmit"
+        >
           <span v-if="loading" class="spinner" aria-hidden="true" />
           {{ loading ? 'Signing in…' : 'Sign in' }}
         </button>
