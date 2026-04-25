@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
  */
 export function redirectIfAuthenticated(_to, _from) {
   const auth = useAuthStore()
-  return auth.isAuthenticated ? { name: 'dashboard' } : undefined
+  return auth.isAuthenticated ? { name: 'home' } : undefined
 }
 
 /**
@@ -21,12 +21,12 @@ export function requireAuth(to, _from) {
 
 /**
  * Allows access only to authenticated admin users.
- * - Not logged in → redirected to /login
- * - Logged in but not admin → redirected to /dashboard (or any appropriate fallback)
+ * - Not logged in -> redirected to /login
+ * - Logged in but not admin -> redirected to / (home fallback)
  */
 export function requireAdmin(to, _from) {
   const auth = useAuthStore()
   if (!auth.isAuthenticated) return { name: 'login', query: { redirect: to.fullPath } }
-  if (!auth.isAdmin) return { name: 'dashboard' }
+  if (!auth.isAdmin) return { name: 'home' }
   return undefined
 }
