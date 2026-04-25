@@ -7,17 +7,20 @@ export const useAuthStore = defineStore('auth', () => {
     const isAuthenticated = computed(() => !!user.value)  // does user exists?
     const isAdmin = computed(() => !!user.value?.admin)     // is the user an app admin?
 
-    async function login(credentials) {
+    async function login(username, password) {
         // The server sets the session cookie in its response headers (Set-Cookie).
         // For later requests, the browser will manage to include session cookie for this site (Same-Site: script).
-        const res = await fetch('/api/login', {
+        const res = await fetch('/auth/login', {
             method: 'POST',
             credentials: 'include', // send and receive cookies; not necessary for same-origin requests but good practice
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials),
+            body: JSON.stringify({ username, password }),
         })
 
-        if (!res.ok) throw new Error('Login failed!')
+        if (!res.ok) {
+            const message = await res.text().catch(() => 'Login failed!')
+            throw new Error(message || 'Login failed!')
+        }
 
         user.value = await res.json()
     }
@@ -25,7 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Verify if an existing session is still valid.
     async function fetchCurrentUser() {
         try {
-            const res = await fetch('/api/auth/me', {
+            const res = await fetch('/auth/me', {
                 credentials: 'include',
             })
 
@@ -44,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Remove the session from the server, then clear local storage.
     async function logout() {
         try {
-            await fetch('/api/logout', {
+            await fetch('/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
             })
