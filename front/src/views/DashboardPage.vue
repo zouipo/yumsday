@@ -51,12 +51,4 @@ const props = defineProps({
   opacity: 0.6;
   margin: 0;
 }
-
-/* ── Features Grid ─────────────────────────────────────────────── */
-.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem; max-width: 960px; margin: 0 auto 2.5rem; }
-.feature-card { background: #fff; border: 1px solid #eee; border-radius: 12px;
-  padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .25rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04); }
-.feature-label { font-size: .8rem; opacity: .5; text-transform: uppercase; letter-spacing: .08em; }
 </style>

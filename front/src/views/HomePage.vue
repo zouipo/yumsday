@@ -48,20 +48,8 @@ const features = [
 .hero h1 em { font-style: italic; color: var(--color-danger); }
 .cta-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
 
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem; max-width: 860px; margin: 0 auto; }
-.feature-card { padding: 1.5rem; }
-.feature-icon { font-size: 1.75rem; }
-.feature-card h3 { margin: .5rem 0 .25rem; }
-.feature-card p  { opacity: .6; margin: 0; }
-
 /* ── Authenticated ──────────────────────────────────────────── */
 .dash-header { display: flex; justify-content: space-between; align-items: flex-end;
   max-width: 960px; margin: 0 auto 2.5rem; }
 .dash-header h1 { margin: 0; font-size: 2rem; }
-
-.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem; max-width: 960px; margin: 0 auto 2.5rem; }
-.feature-card { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .25rem; }
-.feature-label { font-size: .8rem; opacity: .5; text-transform: uppercase; letter-spacing: .08em; }
 </style>

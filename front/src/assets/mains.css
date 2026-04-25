@@ -3,6 +3,8 @@
    Import this once in main.js: import './assets/main.css'
    ═══════════════════════════════════════════════════════════════ */
 
+@import './features.css';
+
 /* ── Palette & tokens ────────────────────────────────────────── */
 :root {
   /* Brand colours */
