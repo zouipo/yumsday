@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
     const user = ref(null)
     
     const isAuthenticated = computed(() => !!user.value)  // does user exists?
+    const isAdmin = computed(() => !!user.value?.admin)     // is the user an app admin?
 
     async function login(credentials) {
         // The server sets the session cookie in its response headers (Set-Cookie).
@@ -53,5 +54,5 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    return {user, isAuthenticated, login, logout, fetchCurrentUser}
+    return {user, isAuthenticated, isAdmin, login, logout, fetchCurrentUser}
 })
