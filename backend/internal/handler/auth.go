@@ -26,10 +26,10 @@ func NewAuthHandler(s service.AuthServiceInterface) *AuthHandler {
 
 func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.HandleFunc("POST "+prefix+"/login", h.postLogin)
+	mux.HandleFunc("GET "+prefix+"/me", h.authMe)
 	mux.HandleFunc("POST "+prefix+"/logout", h.postLogout)
 }
 
-// PostLogin godoc
 // @Summary Authenticate user
 // @Description Authenticate user with username and password
 // @Tags auth
@@ -76,7 +76,28 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PostLogout godoc
+// @Summary Get authenticated user
+// @Description Get authenticated user
+// @Tags auth
+// @Produce json
+// @Success 200 {string} string "Login successful"
+// @Failure 401 {string} string "Invalid credentials"
+// @Failure 500 {string} string "Internal server error"
+// @Router /auth/me [get]
+func (h *AuthHandler) authMe(w http.ResponseWriter, r *http.Request) {
+	u, ok := r.Context().Value(ctx.UserCtxKey{}).(*model.User)
+	if !ok || u == nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	if err := json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(u)); err != nil {
+		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		return
+	}
+}
+
 // @Summary Logout user
 // @Description Logout the authenticated user
 // @Tags auth
