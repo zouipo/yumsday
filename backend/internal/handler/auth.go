@@ -5,9 +5,11 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/zouipo/yumsday/backend/internal/constant"
 	"github.com/zouipo/yumsday/backend/internal/ctx"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/mapper"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
@@ -34,7 +36,7 @@ func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Accept json
 // @Produce json
 // @Param credentials body dto.LoginDto true "Login credentials"
-// @Success 204 {string} string "Login successful"
+// @Success 200 {string} string "Login successful"
 // @Failure 400 {string} string "Missing username or password"
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
@@ -53,7 +55,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	session := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
-	err = h.s.Authenticate(session, loginReq.Username, loginReq.Password)
+	user, err := h.s.Authenticate(session, loginReq.Username, loginReq.Password)
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
 			http.Error(w, err.Error(), appErr.HTTPStatus())
@@ -63,7 +65,11 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	if err = json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(user)); err != nil {
+		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		return
+	}
 }
 
 // PostLogout godoc

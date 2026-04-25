@@ -8,11 +8,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
+	"github.com/zouipo/yumsday/backend/internal/model/enum"
 )
 
 var (
@@ -23,6 +25,7 @@ var (
 
 type mockAuthService struct {
 	authErr      error
+	authUser     *model.User
 	logoutErr    error
 	authCalls    int
 	logoutCalls  int
@@ -31,12 +34,15 @@ type mockAuthService struct {
 	lastPassword string
 }
 
-func (m *mockAuthService) Authenticate(session *model.Session, username, password string) error {
+func (m *mockAuthService) Authenticate(session *model.Session, username, password string) (*model.User, error) {
 	m.authCalls++
 	m.lastSession = session
 	m.lastUsername = username
 	m.lastPassword = password
-	return m.authErr
+	if m.authErr != nil {
+		return nil, m.authErr
+	}
+	return m.authUser, nil
 }
 
 func (m *mockAuthService) Logout(session *model.Session) error {
@@ -61,7 +67,17 @@ func TestNewAuthHandler(t *testing.T) {
 /*** TESTS PostLogin ***/
 
 func TestPostLogin_Success(t *testing.T) {
-	mockService := &mockAuthService{}
+	avatar := enum.Avatar1
+	authenticatedUser := &model.User{
+		ID:        42,
+		Username:  username,
+		AppAdmin:  true,
+		CreatedAt: time.Now().UTC(),
+		Avatar:    &avatar,
+		Language:  enum.English,
+		AppTheme:  enum.Light,
+	}
+	mockService := &mockAuthService{authUser: authenticatedUser}
 	handler := NewAuthHandler(mockService)
 	session := model.NewSession()
 
@@ -78,8 +94,17 @@ func TestPostLogin_Success(t *testing.T) {
 
 	handler.postLogin(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
+	}
+
+	var userDto dto.UserDto
+	if err := json.Unmarshal(w.Body.Bytes(), &userDto); err != nil {
+		t.Fatalf("expected valid user JSON response, got error: %v", err)
+	}
+
+	if err := compareUserToUserDto(&userDto, authenticatedUser); err != nil {
+		t.Errorf("response body mismatch: %v", err)
 	}
 
 	if mockService.authCalls != 1 {
