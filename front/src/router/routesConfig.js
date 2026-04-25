@@ -1,4 +1,4 @@
-import { redirectIfAuthenticated } from './guards'
+import { redirectIfAuthenticated } from './guard'
 import HomePage from '@/views/HomePage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import DashboardPage from '@/views/DashboardPage.vue'
