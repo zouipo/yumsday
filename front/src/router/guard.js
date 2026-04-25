@@ -3,17 +3,20 @@ import { useAuthStore } from '@/stores/auth'
 /**
  * Redirects authenticated users away from the login route
  */
-export function redirectIfAuthenticated(_to, _from, next) {
+export function redirectIfAuthenticated(_to, _from) {
   const auth = useAuthStore()
-  auth.isAuthenticated ? next({ name: 'dashboard' }) : next()
+  return auth.isAuthenticated ? { name: 'dashboard' } : undefined
 }
 
 /**
  * Redirects unauthenticated users to /login, preserving the intended URL.
  */
-export function requireAuth(to, _from, next) {
+export function requireAuth(to, _from) {
+  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth)
+  if (!requiresAuth) return undefined
+
   const auth = useAuthStore()
-  auth.isAuthenticated ? next() : next({ name: 'login', query: { redirect: to.fullPath } })
+  return auth.isAuthenticated ? undefined : { name: 'login', query: { redirect: to.fullPath } }
 }
 
 /**
@@ -21,9 +24,9 @@ export function requireAuth(to, _from, next) {
  * - Not logged in → redirected to /login
  * - Logged in but not admin → redirected to /dashboard (or any appropriate fallback)
  */
-export function requireAdmin(to, _from, next) {
+export function requireAdmin(to, _from) {
   const auth = useAuthStore()
-  if (!auth.isAuthenticated) return next({ name: 'login', query: { redirect: to.fullPath } })
-  if (!auth.isAdmin) return next({ name: 'dashboard' })
-  next()
+  if (!auth.isAuthenticated) return { name: 'login', query: { redirect: to.fullPath } }
+  if (!auth.isAdmin) return { name: 'dashboard' }
+  return undefined
 }
