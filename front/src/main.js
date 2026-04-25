@@ -9,4 +9,9 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
-app.mount('#app')
+// If the user is still authenticated, no authentication required
+const auth = useAuthStore()
+auth.fetchCurrentUser().finally(() => {
+  app.mount('#app')
+})
+
