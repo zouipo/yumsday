@@ -26,7 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Verify if an existing session is still valid.
     async function fetchCurrentUser() {
         try {
-            const res = await fetch('/auth/me', {
+            const res = await fetch('/api/user/me', {
                 credentials: 'include',
             })
 
