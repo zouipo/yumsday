@@ -46,12 +46,6 @@ func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup
 		middleware.UserInjector(userService),
 	)
 
-	authMiddlewareStack := middleware.Stack(
-		middleware.ResponseWriter,
-		middleware.Logger,
-		sessionInjector,
-	)
-
 	swaggerMiddlewareStack := middleware.Stack(
 		middleware.ResponseWriter,
 		middleware.Logger,
@@ -61,17 +55,15 @@ func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup
 	// It matches the URL of each incoming request against a list of registered patterns
 	// and calls the handler for the pattern tha most closely matches the URL.
 	mux := http.NewServeMux()
-	apiMux := http.NewServeMux()
-	authMux := http.NewServeMux()
+	backMux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServerFS(front))
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
-	mux.Handle("/api/", middlewareStack(apiMux))
-	mux.Handle("/login", authMiddlewareStack(authMux))
-	mux.Handle("/logout", middlewareStack(authMux))
+	mux.Handle("/api/", middlewareStack(backMux))
+	mux.Handle("/auth/", middlewareStack(backMux))
 
-	userHandler.RegisterRoutes(apiMux, "/api/user")
-	authHandler.RegisterRoutes(authMux)
+	userHandler.RegisterRoutes(backMux, "/api/user")
+	authHandler.RegisterRoutes(backMux, "/auth")
 
 	return mux
 }
