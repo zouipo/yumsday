@@ -5,12 +5,18 @@ TEST_REPORT=test/test-report.json
 .PHONY: all
 all: build
 
+.PHONY: front
+front:
+	@cd front && \
+		npm install && \
+		npm run build
+
 .PHONY: swagger
 swagger:
 	@swag init
 
 .PHONY: build
-build: swagger
+build: swagger front
 	@go build -ldflags="-s -w" -o $(OUT) main.go
 
 .PHONY: image
