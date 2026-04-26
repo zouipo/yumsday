@@ -2,21 +2,20 @@ package utils
 
 import (
 	"cmp"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/zouipo/yumsday/backend/internal/migration"
 )
-
-// Ptr returns a pointer of type T initialized to v.
-func Ptr[T any](v T) *T {
-	return &v
-}
 
 // TimesApproximatelyEqual checks if two time values are approximately equal within a specified tolerance.
 func TimesApproximatelyEqual(t1, t2 time.Time, tolerance time.Duration) bool {
@@ -74,6 +73,10 @@ func SortSliceByFieldName[T any](s []T, sortBy string, descending bool) []T {
 }
 
 func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool) bool {
+	if len(sortWords) == 0 {
+		return false
+	}
+
 	a := reflect.ValueOf(t1).FieldByName(sortWords[0])
 	b := reflect.ValueOf(t2).FieldByName(sortWords[0])
 	var res bool
@@ -102,10 +105,37 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	case reflect.Float32, reflect.Float64:
 		res = cmp.Less(a.Float(), b.Float())
 	case reflect.Struct:
+		// If this is the last field, no need for recursion
+		if len(sortWords) == 1 {
+			res = cmp.Less(fmt.Sprint(a.Interface()), fmt.Sprint(b.Interface()))
+			break
+		}
 		return compareFieldsByName(a.Interface(), b.Interface(), sortWords[1:], descending)
 	default:
 		panic(fmt.Errorf("unhandled kind %v", a.Kind()))
 	}
 
 	return res != descending
+}
+
+func SetUpTestDB(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	if err != nil {
+		t.Fatalf("failed to open test database: %v", err)
+	}
+
+	// Apply migrations using the migration package
+	migrationsFS := os.DirFS("../../data/migrations")
+	err = migration.Migrate(db, migrationsFS)
+	if err != nil {
+		t.Fatalf("failed to apply migrations: %v", err)
+	}
+
+	testScript, _ := os.ReadFile("../../data/test.sql")
+	_, err = db.Exec(string(testScript))
+	if err != nil {
+		t.Fatalf("failed to run test.sql: %v", err)
+	}
+
+	return db
 }

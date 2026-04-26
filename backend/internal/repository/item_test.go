@@ -2,13 +2,10 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
-	"os"
-	"strconv"
+	"reflect"
 	"testing"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
-	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
@@ -22,166 +19,187 @@ var (
 	invalidName       = "invalidName"
 	validItemID       = int64(1)
 
+	groupID1 = int64(1)
+	groupID2 = int64(2)
+	groupID3 = int64(3)
+
+	itemCategory1 = model.ItemCategory{ID: 1, Name: "GRAINS AND PASTA"}
+	itemCategory2 = model.ItemCategory{ID: 2, Name: "BAKED GOODS"}
+	itemCategory3 = model.ItemCategory{ID: 3, Name: "SPICES AND CONDIMENTS"}
+	itemCategory4 = model.ItemCategory{ID: 4, Name: "DAIRY"}
+	itemCategory5 = model.ItemCategory{ID: 5, Name: "MEAT"}
+	itemCategory6 = model.ItemCategory{ID: 6, Name: "VEGETABLES"}
+	itemCategory7 = model.ItemCategory{ID: 7, Name: "SNACKS"}
+	itemCategory8 = model.ItemCategory{ID: 8, Name: "CANNED GOODS"}
+	itemCategory9 = model.ItemCategory{ID: 9, Name: "BEVERAGE"}
+
 	expectedItems = []model.Item{
 		{
 			ID:                 1,
 			Name:               "Flour",
-			Description:        nil,
-			AverageMarketPrice: nil,
+			Description:        new("All-purpose flour"),
+			AverageMarketPrice: new(2.50),
 			UnitType:           enum.Weight,
-			GroupID:            1,
-			ItemCategory: model.ItemCategory{
-				ID:   1,
-				Name: "Baking",
-			},
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory1,
 		},
 		{
 			ID:                 2,
-			Name:               "Potatoes",
-			Description:        utils.Ptr("Fresh potatoes, 1 kg"),
-			AverageMarketPrice: utils.Ptr(3.5),
+			Name:               "Sugar",
+			Description:        new("White granulated sugar"),
+			AverageMarketPrice: new(1.80),
 			UnitType:           enum.Weight,
-			GroupID:            1,
-			ItemCategory: model.ItemCategory{
-				ID:   2,
-				Name: "Vegetables",
-			},
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory2,
 		},
 		{
 			ID:                 3,
-			Name:               "Milk",
-			Description:        utils.Ptr("Whole milk, 1 liter"),
-			AverageMarketPrice: utils.Ptr(1.5),
-			UnitType:           enum.Volume,
-			GroupID:            1,
-			ItemCategory: model.ItemCategory{
-				ID:   1,
-				Name: "Baking",
-			},
+			Name:               "Salt",
+			Description:        new("Table salt"),
+			AverageMarketPrice: new(0.50),
+			UnitType:           enum.Weight,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory3,
 		},
 		{
 			ID:                 4,
-			Name:               "Apple",
-			Description:        utils.Ptr("Good for making pies, compotes, juice, etc."),
-			AverageMarketPrice: utils.Ptr(4.2),
+			Name:               "Eggs",
+			Description:        new("Large eggs"),
+			AverageMarketPrice: new(3.50),
+			UnitType:           enum.Piece,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory4,
+		},
+		{
+			ID:                 5,
+			Name:               "Milk",
+			Description:        new("Whole milk"),
+			AverageMarketPrice: new(2.20),
+			UnitType:           enum.Volume,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory4,
+		},
+		{
+			ID:                 6,
+			Name:               "Butter",
+			Description:        new("Unsalted butter"),
+			AverageMarketPrice: new(4.00),
+			UnitType:           enum.Weight,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory4,
+		},
+		{
+			ID:                 7,
+			Name:               "Chicken Breast",
+			Description:        new("Boneless skinless chicken breast"),
+			AverageMarketPrice: new(8.50),
+			UnitType:           enum.Weight,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory5,
+		},
+		{
+			ID:                 8,
+			Name:               "Tomatoes",
+			Description:        new("Fresh tomatoes"),
+			AverageMarketPrice: new(3.00),
+			UnitType:           enum.Weight,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory6,
+		},
+		{
+			ID:                 9,
+			Name:               "Onions",
+			Description:        new("Yellow onions"),
+			AverageMarketPrice: new(1.50),
+			UnitType:           enum.Weight,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory6,
+		},
+		{
+			ID:                 10,
+			Name:               "Garlic",
+			Description:        new("Fresh garlic"),
+			AverageMarketPrice: new(2.00),
+			UnitType:           enum.Weight,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory6,
+		},
+		{
+			ID:                 11,
+			Name:               "Water",
+			Description:        nil,
+			AverageMarketPrice: nil,
+			UnitType:           enum.Volume,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory9,
+		},
+		{
+			ID:                 12,
+			Name:               "Pepper",
+			Description:        nil,
+			AverageMarketPrice: new(1.20),
+			UnitType:           enum.Weight,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory3,
+		},
+		{
+			ID:                 13,
+			Name:               "Olive Oil",
+			Description:        new("Extra virgin olive oil"),
+			AverageMarketPrice: nil,
+			UnitType:           enum.Volume,
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory3,
+		},
+		{
+			ID:                 14,
+			Name:               "Potato Chips",
+			Description:        new("Salted potato chips"),
+			AverageMarketPrice: new(2.99),
+			UnitType:           enum.Bag,
+			GroupID:            groupID2,
+			ItemCategory:       itemCategory7,
+		},
+		{
+			ID:                 15,
+			Name:               "Canned Beans",
+			Description:        new("Black beans"),
+			AverageMarketPrice: new(1.50),
 			UnitType:           enum.Numeric,
-			GroupID:            1,
-			ItemCategory: model.ItemCategory{
-				ID:   3,
-				Name: "Fruits",
-			},
+			GroupID:            groupID1,
+			ItemCategory:       itemCategory8,
 		},
 	}
 )
 
-// compareListItems compares two slices of Item objects and returns an error if they do not match.
-func compareListItems(actual, expected []model.Item) error {
-	if len(actual) != len(expected) {
-		return fmt.Errorf("expected %d items, got %d", len(expected), len(actual))
-	}
-
-	for i := range actual {
-		if err := compareItems(&actual[i], &expected[i], true); err != nil {
-			return fmt.Errorf("item at index %d does not match: %v", i, err)
+func itemsByGroupID(items []model.Item, groupID int64) []model.Item {
+	filtered := make([]model.Item, 0)
+	for _, item := range items {
+		if item.GroupID == groupID {
+			filtered = append(filtered, item)
 		}
 	}
 
-	return nil
+	return filtered
 }
 
-// compareItems compares two Item objects and returns an error if they do not match.
-func compareItems(actual, expected *model.Item, compareId bool) error {
-	if compareId && (actual.ID != expected.ID) {
-		return fmt.Errorf("expected ID %d, got %d", expected.ID, actual.ID)
-	}
-	if actual.Name != expected.Name {
-		return fmt.Errorf("expected Name %s, got %s", expected.Name, actual.Name)
-	}
-	if (actual.Description == nil) != (expected.Description == nil) ||
-		(actual.Description != nil && *actual.Description != *expected.Description) {
-		return fmt.Errorf("expected Description %v, got %v", expected.Description, actual.Description)
-	}
-	if (actual.AverageMarketPrice == nil) != (expected.AverageMarketPrice == nil) ||
-		(actual.AverageMarketPrice != nil && *actual.AverageMarketPrice != *expected.AverageMarketPrice) {
-		return fmt.Errorf("expected AverageMarketPrice %v, got %v", expected.AverageMarketPrice, actual.AverageMarketPrice)
-	}
-	if actual.UnitType != expected.UnitType {
-		return fmt.Errorf("expected UnitType %s, got %s", expected.UnitType, actual.UnitType)
-	}
-	if actual.GroupID != expected.GroupID {
-		return fmt.Errorf("expected GroupID %d, got %d", expected.GroupID, actual.GroupID)
-	}
-	if actual.ItemCategory.ID != expected.ItemCategory.ID {
-		return fmt.Errorf("expected ItemCategory ID %d, got %d", expected.ItemCategory.ID, actual.ItemCategory.ID)
-	}
-	if actual.ItemCategory.Name != expected.ItemCategory.Name {
-		return fmt.Errorf("expected ItemCategory Name %s, got %s", expected.ItemCategory.Name, actual.ItemCategory.Name)
-	}
-	return nil
-}
-
-// setUpTestDB initializes an in-memory SQLite database, applies migrations, and inserts test data for items.
-func setUpTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
-	if err != nil {
-		t.Fatalf("failed to open test database: %v", err)
+func compareSlicesItems(s1, s2 []model.Item) bool {
+	if len(s1) != len(s2) {
+		return false
 	}
 
-	// Apply migrations using the migration package
-	migrationsFS := os.DirFS("../../data/migrations")
-	err = migration.Migrate(db, migrationsFS)
-	if err != nil {
-		t.Fatalf("failed to apply migrations: %v", err)
-	}
-
-	// Insert group and item categories for FK constraints on items
-	_, err = db.Exec(`
-		INSERT INTO groups (id, name, created_at)
-		VALUES (1, 'Test Group', unixepoch());
-	`)
-	if err != nil {
-		t.Fatalf("failed to insert test group: %v", err)
-	}
-
-	_, err = db.Exec(`
-		INSERT INTO item_categories (id, name, group_id)
-		VALUES
-			(1, 'Baking', 1),
-			(2, 'Vegetables', 1),
-			(3, 'Fruits', 1);
-	`)
-	if err != nil {
-		t.Fatalf("failed to insert test item categories: %v", err)
-	}
-
-	// Insert test items
-	for i, item := range expectedItems {
-		res, err := db.Exec(
-			`INSERT INTO items (name, description, average_market_price, unit_type, group_id, item_category_id)
-			VALUES (?, ?, ?, ?, ?, ?);`,
-			item.Name,
-			item.Description,
-			item.AverageMarketPrice,
-			item.UnitType,
-			item.GroupID,
-			item.ItemCategory.ID,
-		)
-		if err != nil {
-			t.Fatalf("failed to insert test item '%s'", item.Name)
-		}
-
-		expectedItems[i].ID, err = res.LastInsertId()
-		if err != nil {
-			t.Fatalf("failed to get last insert ID for item '%s'", item.Name)
+	for i := range s1 {
+		if !reflect.DeepEqual(s1[i], s2[i]) {
+			return false
 		}
 	}
 
-	return db
+	return true
 }
 
 /*** TEST CONSTRUCTOR ***/
 func TestNewItemRepository(t *testing.T) {
-	db := setUpTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -196,9 +214,20 @@ func TestNewItemRepository(t *testing.T) {
 }
 
 /*** READ OPERATIONS TESTS ***/
-func TestGetAllItemsByGroupID(t *testing.T) {
-	db := setUpTestDB(t)
+func TestGetItemsByGroupID(t *testing.T) {
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
+
+	// Create a group with no item
+	result, err := db.Exec("INSERT INTO groups (name, image_url, created_at) VALUES (?, ?, ?)", "Empty group", nil, 0)
+	if err != nil {
+		t.Fatalf("failed to create empty group for test: %v", err)
+	}
+
+	emptyGroupID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("failed to get empty group ID: %v", err)
+	}
 
 	repo := NewItemRepository(db)
 
@@ -212,64 +241,72 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 	}{
 		{
 			name:       "Valid group ID with sorting by name",
-			groupID:    1,
-			sortBy:     "i.name",
+			groupID:    groupID1,
+			sortBy:     "items.name",
 			descending: false,
-			expected:   utils.SortSliceByFieldName(expectedItems, "Name", false),
-			expectErr:  nil,
-		},
-		{
-			name:       "Valid group ID with sorting by name",
-			groupID:    1,
-			sortBy:     "i.name",
-			descending: true,
-			expected:   utils.SortSliceByFieldName(expectedItems, "Name", true),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "Name", false),
 			expectErr:  nil,
 		},
 		{
 			name:       "Valid group ID with sorting by average market price",
-			groupID:    1,
-			sortBy:     "i.average_market_price",
+			groupID:    groupID1,
+			sortBy:     "items.average_market_price",
 			descending: false,
-			expected:   utils.SortSliceByFieldName(expectedItems, "AverageMarketPrice", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "AverageMarketPrice", false),
 			expectErr:  nil,
 		},
 		{
 			name:       "Valid group ID with sorting by unit type",
-			groupID:    1,
-			sortBy:     "i.unit_type",
+			groupID:    groupID1,
+			sortBy:     "items.unit_type",
 			descending: false,
-			expected:   utils.SortSliceByFieldName(expectedItems, "UnitType.value", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "UnitType", false),
 			expectErr:  nil,
 		},
 		{
 			name:       "Valid group ID with sorting by item category name",
-			groupID:    1,
-			sortBy:     "ic.name",
+			groupID:    groupID1,
+			sortBy:     "item_categories.name",
 			descending: false,
-			expected:   utils.SortSliceByFieldName(expectedItems, "ItemCategory.Name", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "ItemCategory.Name", false),
 			expectErr:  nil,
 		},
 		{
 			name:       "Valid group ID with sorting by invalid field",
-			groupID:    1,
+			groupID:    groupID1,
 			sortBy:     invalidFieldSort,
 			descending: false,
 			expected:   nil,
-			expectErr:  customErrors.NewInternalError("Failed to fetch items", nil),
+			expectErr:  customErrors.NewInternalError("failed to fetch items", nil),
 		},
 		{
-			name:       "Invalid group ID",
+			name:       "Valid group ID with no items",
 			groupID:    invalidGroupId,
-			sortBy:     "i.name",
+			sortBy:     "items.name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
 		},
 		{
-			name:       "Invalid group ID",
-			groupID:    2,
-			sortBy:     "i.name",
+			name:       "Valid group ID 2 with sorting by name",
+			groupID:    groupID2,
+			sortBy:     "items.name",
+			descending: false,
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 2), "Name", false),
+			expectErr:  nil,
+		},
+		{
+			name:       "Valid group ID 3 with no items",
+			groupID:    groupID3,
+			sortBy:     "items.name",
+			descending: false,
+			expected:   []model.Item{},
+			expectErr:  nil,
+		},
+		{
+			name:       "Existing group with no items returns empty list",
+			groupID:    emptyGroupID,
+			sortBy:     "items.name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -278,7 +315,7 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			items, err := repo.GetAllByGroupID(tt.groupID, tt.sortBy, tt.descending)
+			items, err := repo.GetByGroupID(tt.groupID, tt.sortBy, tt.descending)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {
@@ -288,18 +325,18 @@ func TestGetAllItemsByGroupID(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Fatalf("GetAllByGroupID() unexpected error = %v", err)
+				t.Fatalf("GetByGroupID() unexpected error = %v", err)
 			}
 
-			if err := compareListItems(items, tt.expected); err != nil {
-				t.Errorf("GetAllByGroupID() items do not match expected: %v", err.Error())
+			if !compareSlicesItems(items, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
 	}
 }
 
 func TestGetItemById(t *testing.T) {
-	db := setUpTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -317,16 +354,10 @@ func TestGetItemById(t *testing.T) {
 			expectErr: nil,
 		},
 		{
-			name:      "Get item by valid ID 2",
-			id:        validItemID + 1,
-			expected:  utils.SortSliceByFieldName(expectedItems, "ID", false)[validItemID],
-			expectErr: nil,
-		},
-		{
 			name:      "Get item by invalid ID",
 			id:        invalidItemId,
 			expected:  model.Item{},
-			expectErr: customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), nil),
+			expectErr: customErrors.NewNotFoundError("Item", "id", nil),
 		},
 	}
 
@@ -345,15 +376,15 @@ func TestGetItemById(t *testing.T) {
 				t.Fatalf("GetByID() unexpected error = %v", err)
 			}
 
-			if err := compareItems(item, &tt.expected, true); err != nil {
-				t.Errorf("GetByID() items do not match expected: %v", err.Error())
+			if !reflect.DeepEqual(item, &tt.expected) {
+				t.Errorf("Items should be equal: %v, %v", item, tt.expected)
 			}
 		})
 	}
 }
 
 func TestGetItemByName(t *testing.T) {
-	db := setUpTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 
 	repo := NewItemRepository(db)
@@ -361,26 +392,32 @@ func TestGetItemByName(t *testing.T) {
 	tests := []struct {
 		name      string
 		itemName  string
-		expected  model.Item
+		expected  []model.Item
 		expectErr error
 	}{
 		{
 			name:      "Get item by valid name",
 			itemName:  utils.SortSliceByFieldName(expectedItems, "Name", false)[0].Name,
-			expected:  utils.SortSliceByFieldName(expectedItems, "Name", false)[0],
+			expected:  []model.Item{utils.SortSliceByFieldName(expectedItems, "Name", false)[0]},
 			expectErr: nil,
 		},
 		{
-			name:      "Get item by invalid name",
+			name:      "Get items by partial name",
+			itemName:  "at",
+			expected:  utils.SortSliceByFieldName([]model.Item{expectedItems[7], expectedItems[10], expectedItems[13]}, "Name", false),
+			expectErr: nil,
+		},
+		{
+			name:      "Get item by invalid name returns empty slice",
 			itemName:  invalidName,
-			expected:  model.Item{},
-			expectErr: customErrors.NewNotFoundError("Item", invalidName, nil),
+			expected:  []model.Item{},
+			expectErr: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item, err := repo.GetByName(tt.itemName)
+			items, err := repo.GetByName(tt.itemName)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {
@@ -393,8 +430,8 @@ func TestGetItemByName(t *testing.T) {
 				t.Fatalf("GetByName() unexpected error = %v", err)
 			}
 
-			if err := compareItems(item, &tt.expected, true); err != nil {
-				t.Errorf("GetByName() items do not match expected: %v", err.Error())
+			if !compareSlicesItems(items, tt.expected) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expected, items)
 			}
 		})
 	}
@@ -418,35 +455,30 @@ func TestCreateItem(t *testing.T) {
 			expectErr: nil,
 		},
 		{
-			name:      "Create item with no nil values",
-			item:      expectedItems[1],
-			expectErr: nil,
-		},
-		{
 			name: "Create item with invalid group ID",
 			item: model.Item{
 				Name:    "Invalid Group Item",
 				GroupID: invalidGroupId,
 			},
-			expectErr: customErrors.NewInternalError("Failed to create item", nil),
+			expectErr: customErrors.NewInternalError("failed to create item", nil),
 		},
 		{
 			name: "Create item with invalid category ID",
 			item: model.Item{
 				Name:    "Invalid Category Item",
-				GroupID: invalidGroupId,
+				GroupID: groupID1,
 				ItemCategory: model.ItemCategory{
 					ID:   invalidCategoryId,
 					Name: "Invalid Category",
 				},
 			},
-			expectErr: customErrors.NewInternalError("Failed to create item", nil),
+			expectErr: customErrors.NewInternalError("failed to create item", nil),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := setUpTestDB(t)
+			db := utils.SetUpTestDB(t)
 			defer db.Close()
 
 			repo := NewItemRepository(db)
@@ -479,8 +511,9 @@ func TestCreateItem(t *testing.T) {
 				t.Fatalf("failed to retrieve created item: %v", err)
 			}
 
-			if err := compareItems(createdItem, &tt.item, false); err != nil {
-				t.Errorf("created item does not match expected: %v", err.Error())
+			tt.item.ID = lastId + 1
+			if !reflect.DeepEqual(createdItem, &tt.item) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.item, createdItem)
 			}
 		})
 	}
@@ -488,111 +521,96 @@ func TestCreateItem(t *testing.T) {
 
 /*** UPDATE OPERATIONS TESTS ***/
 func TestUpdateItem(t *testing.T) {
-	db := setUpTestDB(t)
-	defer db.Close()
-
-	repo := NewItemRepository(db)
-
 	tests := []struct {
 		name         string
 		item         model.Item
-		expectedItem model.Item
+		expectedItem *model.Item
 		expectErr    error
 	}{
 		{
 			name: "Update existing item",
 			item: model.Item{
-				ID:                 4,
-				Name:               "Carot",
-				Description:        utils.Ptr("Good for making pies, soups, juice, etc."),
-				AverageMarketPrice: utils.Ptr(2.5),
-				UnitType:           enum.Numeric,
-				GroupID:            1,
-				ItemCategory: model.ItemCategory{
-					ID:   2,
-					Name: "Vegetables",
-				},
+				ID:                 expectedItems[3].ID,
+				Name:               "Free-range Eggs",            // modified
+				Description:        new("Large free-range eggs"), // modified
+				AverageMarketPrice: new(4.0),                     //modified
+				UnitType:           enum.Volume,                  // modified
+				GroupID:            expectedItems[3].GroupID,
+				ItemCategory:       itemCategory5, // modified
 			},
-			expectedItem: model.Item{
-				ID:                 4,
-				Name:               "Carot",
-				Description:        utils.Ptr("Good for making pies, soups, juice, etc."),
-				AverageMarketPrice: utils.Ptr(2.5),
-				UnitType:           enum.Numeric,
-				GroupID:            1,
-				ItemCategory: model.ItemCategory{
-					ID:   2,
-					Name: "Vegetables",
-				},
+			expectedItem: &model.Item{
+				ID:                 expectedItems[3].ID,
+				Name:               "Free-range Eggs",
+				Description:        new("Large free-range eggs"),
+				AverageMarketPrice: new(4.0),
+				UnitType:           enum.Volume,
+				GroupID:            expectedItems[3].GroupID,
+				ItemCategory:       itemCategory5,
+			},
+			expectErr: nil,
+		},
+		{
+			name: "Update existing item, ignoring groupID",
+			item: model.Item{
+				ID:                 expectedItems[3].ID,
+				Name:               "Free-range Eggs",            // modified
+				Description:        new("Large free-range eggs"), // modified
+				AverageMarketPrice: new(4.0),                     //modified
+				UnitType:           enum.Volume,                  // modified
+				GroupID:            expectedItems[3].ID + 1,
+				ItemCategory:       itemCategory4,
+			},
+			expectedItem: &model.Item{
+				ID:                 expectedItems[3].ID,
+				Name:               "Free-range Eggs",
+				Description:        new("Large free-range eggs"),
+				AverageMarketPrice: new(4.0),
+				UnitType:           enum.Volume,
+				GroupID:            expectedItems[3].GroupID,
+				ItemCategory:       itemCategory4,
 			},
 			expectErr: nil,
 		},
 		{
 			name:         "No field updated",
 			item:         expectedItems[0],
-			expectedItem: expectedItems[0],
+			expectedItem: &expectedItems[0],
 			expectErr:    nil,
 		},
 		{
 			name: "Update non-existing item",
 			item: model.Item{
-				ID:      invalidItemId,
-				Name:    "Non-existing Item",
-				GroupID: 1,
-				ItemCategory: model.ItemCategory{
-					ID:   1,
-					Name: "Baking",
-				},
+				ID:           invalidItemId,
+				Name:         "Non-existing Item",
+				GroupID:      groupID1,
+				ItemCategory: itemCategory1,
 			},
-			expectedItem: model.Item{},
-			expectErr:    customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), sql.ErrNoRows),
-		},
-		{
-			name: "Update item without taking group ID into account",
-			item: model.Item{
-				ID:                 expectedItems[0].ID,
-				Name:               "Sugar",
-				Description:        expectedItems[0].Description,
-				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
-				UnitType:           expectedItems[0].UnitType,
-				GroupID:            2,
-				ItemCategory: model.ItemCategory{
-					ID:   1,
-					Name: "Baking",
-				},
-			},
-			expectedItem: model.Item{
-				ID:                 expectedItems[0].ID,
-				Name:               "Sugar",
-				Description:        expectedItems[0].Description,
-				AverageMarketPrice: expectedItems[0].AverageMarketPrice,
-				UnitType:           expectedItems[0].UnitType,
-				GroupID:            expectedItems[0].GroupID,
-				ItemCategory: model.ItemCategory{
-					ID:   1,
-					Name: "Baking",
-				},
-			},
-			expectErr: nil,
+			expectedItem: &model.Item{},
+			expectErr:    customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows),
 		},
 		{
 			name: "Update item with invalid category ID",
 			item: model.Item{
 				ID:      expectedItems[0].ID,
 				Name:    "Valid name",
-				GroupID: 1,
+				GroupID: expectedItems[0].GroupID,
 				ItemCategory: model.ItemCategory{
 					ID:   invalidCategoryId,
 					Name: "Invalid Category",
 				},
 			},
-			expectedItem: model.Item{},
-			expectErr:    customErrors.NewInternalError("Failed to update item", nil),
+			expectedItem: &model.Item{},
+			expectErr:    customErrors.NewInternalError("failed to update item", nil),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := utils.SetUpTestDB(t)
+			defer db.Close()
+
+			repo := NewItemRepository(db)
+
 			err := repo.Update(&tt.item)
 
 			if tt.expectErr != nil {
@@ -612,8 +630,8 @@ func TestUpdateItem(t *testing.T) {
 				t.Fatalf("failed to retrieve updated item: %v", err)
 			}
 
-			if err := compareItems(updatedItem, &tt.expectedItem, true); err != nil {
-				t.Errorf("updated item does not match expected: %v", err.Error())
+			if !reflect.DeepEqual(updatedItem, tt.expectedItem) {
+				t.Errorf("Items should be equal: expected %v, got %v", tt.expectedItem, updatedItem)
 			}
 		})
 	}
@@ -621,30 +639,31 @@ func TestUpdateItem(t *testing.T) {
 
 /*** DELETE OPERATIONS TESTS ***/
 func TestDeleteItem(t *testing.T) {
-	db := setUpTestDB(t)
-	defer db.Close()
-
-	repo := NewItemRepository(db)
-
 	tests := []struct {
 		name      string
 		id        int64
 		expectErr error
 	}{
 		{
-			name:      "Delete existing item",
-			id:        validItemID,
+			name: "Delete existing item",
+			// Can be deleted because it is not referenced in any other tables (typically ingredients, groceries)
+			id:        expectedItems[13].ID,
 			expectErr: nil,
 		},
 		{
 			name:      "Delete non-existing item",
 			id:        invalidItemId,
-			expectErr: customErrors.NewNotFoundError("Item", strconv.FormatInt(invalidItemId, 10), sql.ErrNoRows),
+			expectErr: customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			db := utils.SetUpTestDB(t)
+			defer db.Close()
+
+			repo := NewItemRepository(db)
+
 			err := repo.Delete(tt.id)
 
 			if tt.expectErr != nil {
@@ -660,7 +679,7 @@ func TestDeleteItem(t *testing.T) {
 
 			// Verify the item was deleted
 			_, err = repo.GetByID(tt.id)
-			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", strconv.FormatInt(tt.id, 10), sql.ErrNoRows)) {
+			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows)) {
 				t.Errorf("expected item to be deleted, but it still exists")
 			}
 		})

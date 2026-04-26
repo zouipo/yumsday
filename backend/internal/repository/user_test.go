@@ -33,7 +33,7 @@ var (
 			Avatar:             &enum.Avatar1,
 			Language:           enum.English,
 			AppTheme:           enum.Light,
-			LastVisitedGroupID: utils.Ptr(int64(1)),
+			LastVisitedGroupID: new(int64(1)),
 		},
 		{
 			Username:           "testuser2",
@@ -43,7 +43,7 @@ var (
 			Avatar:             &enum.Avatar2,
 			Language:           enum.French,
 			AppTheme:           enum.Dark,
-			LastVisitedGroupID: utils.Ptr(int64(2)),
+			LastVisitedGroupID: new(int64(2)),
 		},
 		{
 			Username:           "testuser3",
@@ -53,7 +53,7 @@ var (
 			Avatar:             &enum.Avatar3,
 			Language:           enum.English,
 			AppTheme:           enum.System,
-			LastVisitedGroupID: utils.Ptr(int64(3)),
+			LastVisitedGroupID: new(int64(3)),
 		},
 		{
 			Username:           "testuser4",
@@ -68,7 +68,7 @@ var (
 	}
 )
 
-func compareListUsers(actual, expected []model.User) error {
+func compareSlicesUsers(actual, expected []model.User) error {
 	if len(actual) != (len(expected) + 1) {
 		return fmt.Errorf("expected %d users, got %d", len(expected)+1, len(actual))
 	}
@@ -131,8 +131,8 @@ func compareUsers(actual, expected *model.User) error {
 	return nil
 }
 
-// setupTestDB initializes an in-memory SQLite database with test data for testing.
-func setupTestDB(t *testing.T) *sql.DB {
+// setupUserTestDB initializes an in-memory SQLite database with test data for testing.
+func setupUserTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
@@ -188,7 +188,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 /*** TEST CONSTRUCTOR ***/
 
 func TestNewUserRepository(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -205,7 +205,7 @@ func TestNewUserRepository(t *testing.T) {
 /*** READ OPERATIONS TESTS ***/
 
 func TestGetAllUsers(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -215,13 +215,13 @@ func TestGetAllUsers(t *testing.T) {
 		t.Fatalf("GetAll() error = %v", err)
 	}
 
-	if err := compareListUsers(users, expectedUsers); err != nil {
+	if err := compareSlicesUsers(users, expectedUsers); err != nil {
 		t.Error("GetAll() returned users with mismatched fields: " + err.Error())
 	}
 }
 
 func TestGetByUserID(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -273,7 +273,7 @@ func TestGetByUserID(t *testing.T) {
 }
 
 func TestGetByUsername(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -328,7 +328,7 @@ func TestGetByUsername(t *testing.T) {
 /*** CREATE OPERATIONS TESTS ***/
 
 func TestCreateUser(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -405,7 +405,7 @@ func TestCreateUser(t *testing.T) {
 /*** UPDATE OPERATIONS TESTS ***/
 
 func TestUpdate(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -507,7 +507,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateAdminRole(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -569,7 +569,7 @@ func TestUpdateAdminRole(t *testing.T) {
 /*** DELETE OPERATIONS TESTS ***/
 
 func TestDeleteUser(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
@@ -623,7 +623,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteThenGetAll(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupUserTestDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)

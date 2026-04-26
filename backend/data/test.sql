@@ -53,7 +53,7 @@ INSERT INTO item_categories (name, group_id) VALUES
     ('MEAT', (SELECT id FROM groups WHERE name = 'Friends')),
     ('VEGETABLES', (SELECT id FROM groups WHERE name = 'Friends')),
     ('SNACKS', (SELECT id FROM groups WHERE name = 'Friends')),
-    ('CANNED GOODS', (SELECT id FROM groups WHERE name = 'Friends')),
+    ('CANNED GOODS', (SELECT id FROM groups WHERE name = 'Family')),
     ('BEVERAGE', (SELECT id FROM groups WHERE name = 'Friends'));
 
 INSERT INTO items (name, description, average_market_price, unit_type, item_category_id, group_id) VALUES
@@ -71,7 +71,7 @@ INSERT INTO items (name, description, average_market_price, unit_type, item_cate
     ('Pepper', NULL, 1.20, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
     ('Olive Oil', 'Extra virgin olive oil', NULL, 'VOLUME', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
     ('Potato Chips', 'Salted potato chips', 2.99, 'BAG', (SELECT id FROM item_categories WHERE name = 'SNACKS'), (SELECT id FROM groups WHERE name = 'Friends')),
-    ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Friends'));
+    ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Family'));
 
 INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, group_id) VALUES
     ('Grilled Chicken', 'Simple grilled chicken breast with herbs', '/static/recipes/chicken.jpg', NULL, 10, 20, 4, 'Season and grill until cooked through', 0, 1, NULL, 1),

@@ -78,7 +78,7 @@ func compareSessions(actual, expected *model.Session) error {
 	return nil
 }
 
-// setupTestDB initializes an in-memory SQLite database with test data for testing.
+// setupSessionTestDB initializes an in-memory SQLite database with test data for testing.
 func setupSessionTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
