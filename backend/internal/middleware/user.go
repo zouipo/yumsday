@@ -13,14 +13,14 @@ import (
 func UserInjector(userService service.UserServiceInterface) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			s, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
-			if !ok || s == nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			if r.URL.Path == "/auth/login" {
+				next.ServeHTTP(w, r)
 				return
 			}
 
-			if r.URL.Path == "/auth/login" {
-				next.ServeHTTP(w, r)
+			s, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+			if !ok || s == nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 
