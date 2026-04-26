@@ -135,10 +135,14 @@ func TestAuthenticate_Success(t *testing.T) {
 	service := NewAuthService(mockSessionService, mockUserService)
 
 	session := model.NewSession()
-	err := service.Authenticate(session, username, ValidPassword)
+	authenticatedUser, err := service.Authenticate(session, username, ValidPassword)
 
 	if err != nil {
 		t.Fatalf("Authenticate() error = %v, want nil", err)
+	}
+
+	if authenticatedUser != testUser {
+		t.Error("Authenticate() returned user pointer does not match expected user")
 	}
 
 	if session.UserID != testUser.ID {
@@ -155,13 +159,17 @@ func TestAuthenticate_Success(t *testing.T) {
 }
 
 func TestAuthenticate_UserServiceError(t *testing.T) {
-	expectedErr := customErrors.NewNotFoundError("User", username, nil)
+	expectedErr := customErrors.NewInternalError("user lookup failed", nil)
 	mockUserService := &MockUserService{getByUsernameErr: expectedErr}
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
 	session := model.NewSession()
-	err := service.Authenticate(session, username, "irrelevant")
+	authenticatedUser, err := service.Authenticate(session, username, "irrelevant")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when user retrieval fails")
+	}
 
 	if !utils.CompareErrors(err, expectedErr) {
 		t.Errorf("Authenticate() error = %v, want %v", err, expectedErr)
@@ -169,6 +177,43 @@ func TestAuthenticate_UserServiceError(t *testing.T) {
 
 	if len(mockSessionService.savedSessions) != 0 {
 		t.Error("Authenticate() should not save session when user retrieval fails")
+	}
+}
+
+func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
+	badUsername := "missing-user"
+	repoErr := customErrors.NewNotFoundError("User", badUsername, nil)
+	mockUserService := &MockUserService{getByUsernameErr: repoErr}
+	mockSessionService := &MockSessionService{}
+	service := NewAuthService(mockSessionService, mockUserService)
+
+	session := model.NewSession()
+	authenticatedUser, err := service.Authenticate(session, badUsername, "anything")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when username does not exist")
+	}
+
+	expectedErr := customErrors.NewUnauthorizedError("invalid credentials", repoErr)
+	if !utils.CompareErrors(err, expectedErr) {
+		t.Errorf("Authenticate() error = %v, want %v", err, expectedErr)
+	}
+
+	unauthorizedErr, ok := errors.AsType[*customErrors.UnauthorizedError](err)
+	if !ok {
+		t.Fatalf("Authenticate() error type = %T, want *UnauthorizedError", err)
+	}
+
+	if unauthorizedErr.HTTPStatus() != http.StatusUnauthorized {
+		t.Errorf("Authenticate() status = %d, want %d", unauthorizedErr.HTTPStatus(), http.StatusUnauthorized)
+	}
+
+	if session.UserID != 0 {
+		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
+	}
+
+	if len(mockSessionService.savedSessions) != 0 {
+		t.Error("Authenticate() should not save session when username does not exist")
 	}
 }
 
@@ -180,7 +225,11 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 	service := NewAuthService(mockSessionService, mockUserService)
 
 	session := model.NewSession()
-	err := service.Authenticate(session, username, InvalidPassword)
+	authenticatedUser, err := service.Authenticate(session, username, InvalidPassword)
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when credentials are invalid")
+	}
 
 	expectedErr := customErrors.NewUnauthorizedError("invalid credentials", bcrypt.ErrMismatchedHashAndPassword)
 	if !utils.CompareErrors(err, expectedErr) {
@@ -213,7 +262,11 @@ func TestAuthenticate_InvalidPasswordHash_ReturnsInternalServerError(t *testing.
 	service := NewAuthService(mockSessionService, mockUserService)
 
 	session := model.NewSession()
-	err := service.Authenticate(session, username, "any-password")
+	authenticatedUser, err := service.Authenticate(session, username, "any-password")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user for invalid password hash")
+	}
 
 	if err == nil {
 		t.Fatal("Authenticate() error = nil, want non-nil")

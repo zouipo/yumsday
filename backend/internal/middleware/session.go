@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,7 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 
 			next.ServeHTTP(w, r)
 
-			if r.URL.Path != "/logout" {
+			if !strings.HasPrefix(r.URL.Path, "/auth") {
 				// Save session in dedicated goroutine to reduce response latency.
 				wg.Go(func() { sessionService.Save(s) })
 			}

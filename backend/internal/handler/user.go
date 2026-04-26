@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/zouipo/yumsday/backend/internal/ctx"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/model"
 
 	"github.com/zouipo/yumsday/backend/internal/constant"
 	"github.com/zouipo/yumsday/backend/internal/dto"
@@ -30,6 +32,7 @@ func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 // RegisterRoutes registers the user-related routes on the provided ServeMux with the given prefix.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.HandleFunc("GET "+prefix, h.getUsers)
+	mux.HandleFunc("GET "+prefix+"/me", h.authMe)
 	mux.Handle("GET "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.getUserByID)))
 	mux.HandleFunc("POST "+prefix, h.createUser)
 	mux.HandleFunc("PUT "+prefix, h.updateUser)
@@ -93,6 +96,28 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	if err = json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(user)); err != nil {
+		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		return
+	}
+}
+
+// @Summary Get authenticated user
+// @Description Get authenticated user
+// @Tags user
+// @Produce json
+// @Success 200 {string} string "Login successful"
+// @Failure 401 {string} string "Invalid credentials"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/user/me [get]
+func (h *UserHandler) authMe(w http.ResponseWriter, r *http.Request) {
+	u, ok := r.Context().Value(ctx.UserCtxKey{}).(*model.User)
+	if !ok || u == nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	if err := json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(u)); err != nil {
 		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
 		return
 	}

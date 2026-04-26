@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL STYLES
+   Import this once in main.js: import './assets/main.css'
+   ═══════════════════════════════════════════════════════════════ */
+
+@import './features.css';
+
+/* ── Palette & tokens ────────────────────────────────────────── */
+:root {
+  /* Brand colours */
+  --color-primary:   #6A994E;   /* forest green  — main actions, links   */
+  --color-secondary: #A7C957;   /* lime green    — focus glow, accents   */
+  --color-bg:        #F2E8CF;   /* warm cream    — page background       */
+  --color-danger:    #EF7474;   /* coral         — errors, destructive   */
+
+  /* Neutrals */
+  --color-surface:   #ffffff;
+  --color-border:    rgba(106, 153, 78, .2);
+  --color-text:      #1a1a1a;
+  --color-muted:     #888888;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(106, 153, 78, .08);
+  --shadow-sm:   0 1px 4px  rgba(0, 0, 0, .04);
+
+  /* Radii */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+
+  /* Typography */
+  --font-base: 'Georgia', serif;
+}
+
+/* ── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Base ────────────────────────────────────────────────────── */
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: var(--font-base);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+/* ── Typography ──────────────────────────────────────────────── */
+h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); line-height: 1.15; }
+h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .1em; opacity: .4; }
+h3 { font-size: 1rem; }
+
+p  { font-size: .95rem; line-height: 1.6; }
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .65rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: .9rem;
+  font-family: var(--font-base);
+  font-weight: 400;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: opacity .15s, transform .15s;
+}
+.btn:hover:not(:disabled) {
+  opacity: .85;
+  transform: translateY(-1px);
+}
+.btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+.btn--secondary {
+  background: var(--color-secondary);
+  color: #fff;
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+}
+.btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+.btn--full { width: 100%; }
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Form elements ───────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-bottom: 1.25rem;
+}
+
+.field label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: .8rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: .7rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: .95rem;
+  font-family: var(--font-base);
+  color: var(--color-text);
+  background: #fdfaf5;
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+  width: 100%;
+}
+
+.field input::placeholder,
+.field textarea::placeholder { color: #bbb; }
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(167, 201, 87, .25);
+  background: var(--color-surface);
+}
+
+/* ── Error banner ────────────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: #fff5f5;
+  border: 1px solid rgba(239, 116, 116, .4);
+  border-radius: var(--radius-sm);
+  padding: .7rem 1rem;
+  font-size: .875rem;
+  color: #c0392b;
+  margin-bottom: 1.25rem;
+}
+
+.error-banner__icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
