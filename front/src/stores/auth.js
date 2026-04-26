@@ -4,12 +4,10 @@ import {ref, computed} from 'vue'
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null)
     
-    const isAuthenticated = computed(() => !!user.value)  // does user exists?
-    const isAdmin = computed(() => !!user.value?.admin)     // is the user an app admin?
+    const isAuthenticated = computed(() => !!user.value)
+    const isAdmin = computed(() => !!user.value?.admin)
 
     async function login(username, password) {
-        // The server sets the session cookie in its response headers (Set-Cookie).
-        // For later requests, the browser will manage to include session cookie for this site (Same-Site: script).
         const res = await fetch('/auth/login', {
             method: 'POST',
             credentials: 'include', // send and receive cookies; not necessary for same-origin requests but good practice
@@ -39,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
 
             user.value = await res.json()
-        } catch {   // network error for example
+        } catch {   // e.g. network error
             user.value = null
         }
     }
@@ -52,7 +50,6 @@ export const useAuthStore = defineStore('auth', () => {
                 credentials: 'include',
             })
         } finally {
-            // Clear local stage regardless of whether the server call succeeded
             user.value = null
         }
     }
