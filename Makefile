@@ -16,9 +16,8 @@ swagger:
 	@swag init
 
 .PHONY: build
-build: front swagger
+build: swagger front
 	@go build -ldflags="-s -w" -o $(OUT) main.go
-	@cp -r front/dist bin/www
 
 .PHONY: image
 image:

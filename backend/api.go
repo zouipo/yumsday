@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -19,7 +17,7 @@ import (
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
-func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
+func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 	err := migration.Migrate(db, migrationsFs)
 	if err != nil {
 		panic(err)
@@ -59,6 +57,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 	mux := http.NewServeMux()
 	backMux := http.NewServeMux()
 
+	mux.Handle("/", http.FileServerFS(front))
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
 	mux.Handle("/api/", middlewareStack(backMux))
 	mux.Handle("/auth/", middlewareStack(backMux))
@@ -66,18 +65,5 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 	userHandler.RegisterRoutes(backMux, "/api/user")
 	authHandler.RegisterRoutes(backMux, "/auth")
 
-	mountStaticDir(mux)
-
 	return mux
-}
-
-func mountStaticDir(mux *http.ServeMux) {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	exDir := filepath.Dir(ex)
-
-	mux.Handle("/", http.FileServer(http.Dir(exDir+"/www")))
 }
