@@ -17,7 +17,7 @@ swagger:
 
 .PHONY: build
 build: swagger front
-	@go build -ldflags="-s -w" -o $(OUT) main.go
+	@go build -tags dev -ldflags="-s -w" -o $(OUT) main.go
 
 .PHONY: image
 image:
@@ -25,7 +25,7 @@ image:
 
 .PHONY: run
 run: swagger
-	@go run .
+	@go run -tags dev .
 
 .PHONY: test
 test: swagger
