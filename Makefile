@@ -17,11 +17,20 @@ swagger:
 
 .PHONY: build
 build: swagger front
-	@go build -tags dev -ldflags="-s -w" -o $(OUT) main.go
+	@go build -ldflags="-s -w" -o $(OUT) main.go
 
 .PHONY: image
 image:
 	@docker build --target runtime -t zouipo/yumsday:latest .
+
+.PHONY: compose-up
+compose-up:
+	@mkdir test/data
+	@docker compose -f test/compose.yaml up
+
+.PHONY: compose-down
+compose-down:
+	@docker compose -f test/compose.yaml down
 
 .PHONY: run
 run: swagger
@@ -29,15 +38,15 @@ run: swagger
 
 .PHONY: test
 test: swagger
-	@go test -cover -coverprofile=$(COVERAGE_FILE) ./...
+	@go test -tags dev -cover -coverprofile=$(COVERAGE_FILE) ./...
 
 .PHONY: test-cicd
 test-cicd: swagger
-	@go test -v -race -cover -coverprofile=$(COVERAGE_FILE) -json ./... > $(TEST_REPORT)
+	@go test -tags dev -v -race -cover -coverprofile=$(COVERAGE_FILE) -json ./... > $(TEST_REPORT)
 
 .PHONY: benchmark
 benchmark:
-	@go test -bench=. -benchmem -run =^a ./...
+	@go test -tags dev -bench=. -benchmem -run =^a ./...
 
 .PHONY: coverage
 coverage: test
@@ -45,4 +54,4 @@ coverage: test
 
 .PHONY: clean
 clean:
-	@rm -rf bin/
+	@git clean -xdf
