@@ -31,7 +31,7 @@ var migrationsFs embed.FS
 // @host 			localhost:8080
 // @BasePath 		/
 
-//go:embed front
+//go:embed front/dist
 var frontFS embed.FS
 
 var cmd = &cobra.Command{
