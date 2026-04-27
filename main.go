@@ -42,7 +42,7 @@ var cmd = &cobra.Command{
 
 func init() {
 	// Define cli flags
-	cmd.PersistentFlags().String("host", "localhost", "Server host")
+	cmd.PersistentFlags().String("host", "[::0]", "Server host")
 	cmd.PersistentFlags().Int("port", 8080, "Server port")
 	cmd.PersistentFlags().String("db-path", "yumsday.db", "Path to the sqlite database")
 	cmd.PersistentFlags().String("log-level", "info", "Log level")
