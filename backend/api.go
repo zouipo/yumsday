@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -16,6 +14,7 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 	"github.com/zouipo/yumsday/backend/internal/service"
 	_ "github.com/zouipo/yumsday/docs"
+	"github.com/zouipo/yumsday/front"
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
@@ -66,18 +65,6 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 	userHandler.RegisterRoutes(backMux, "/api/user")
 	authHandler.RegisterRoutes(backMux, "/auth")
 
-	mountStaticDir(mux)
-
+	mux.Handle("/", front.Handler())
 	return mux
-}
-
-func mountStaticDir(mux *http.ServeMux) {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-
-	exDir := filepath.Dir(ex)
-
-	mux.Handle("/", http.FileServer(http.Dir(exDir+"/www")))
 }
