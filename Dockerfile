@@ -17,7 +17,7 @@ ENV USER="yumsday"
 RUN addgroup -g 1000 -S $USER && \
     adduser -D -H -u 1000 -g 1000 -S -G $USER $USER
 WORKDIR /app
-COPY --from=build /app/bin/yumsday .
+COPY --from=build /app/bin ./
 USER $USER
 WORKDIR /data
 VOLUME /data
