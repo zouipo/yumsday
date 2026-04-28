@@ -7,11 +7,11 @@ pipeline {
 
     stages {
         stage('Run Tests') {
-            //when {
-            //    not {
-            //        buildingTag()
-            //    }
-            //}
+            when {
+                not {
+                    buildingTag()
+                }
+            }
             steps {
                 script {
                     docker.build('zouipo/yumsday:base', '--target base .').inside {
@@ -21,9 +21,9 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
-            //when {
-            //    branch 'main'
-            //}
+            when {
+                branch 'main'
+            }
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
@@ -35,9 +35,9 @@ pipeline {
             }
         }
         stage('Release Docker Image') {
-            //when {
-            //    buildingTag()
-            //}
+            when {
+                buildingTag()
+            }
             steps {
                 script {
                     def img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
