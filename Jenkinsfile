@@ -25,9 +25,11 @@ pipeline {
             //    branch 'main'
             //}
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    docker.image("sonarsource/sonar-scanner-cli").inside {
-                        sh("sonar-scanner")
+                script {
+                    withSonarQubeEnv('SonarQube') {
+                        docker.image("sonarsource/sonar-scanner-cli").inside {
+                            sh("sonar-scanner")
+                        }
                     }
                 }
             }
