@@ -35,9 +35,9 @@ pipeline {
             }
         }
         stage('Release Docker Image') {
-            when {
-                buildingTag()
-            }
+            //when {
+            //    buildingTag()
+            //}
             steps {
                 script {
                     def img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
