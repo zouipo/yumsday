@@ -42,9 +42,10 @@ pipeline {
                 script {
                     def img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
                     docker.withRegistry('', 'docker-zouipo') {
-                        sh("echo ${img.id}")
-                        //img.push()
-                        //img.push('latest')
+                        img.push()
+                        if (env.TAG_NAME ==~ /^\d+\.\d+\.\d+$/) {
+                            img.push('latest')
+                        }
                     }
                 }
             }
