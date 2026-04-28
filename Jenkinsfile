@@ -27,8 +27,8 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
-                        docker.image("sonarsource/sonar-scanner-cli").inside {
-                            sh("sonar-scanner")
+                        docker.image('sonarsource/sonar-scanner-cli').inside {
+                            sh('sonar-scanner')
                         }
                     }
                 }
