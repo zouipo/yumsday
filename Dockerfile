@@ -1,5 +1,5 @@
 FROM golang:1.26.1-alpine AS base
-RUN apk add --no-cache gcc make musl-dev npm nodejs && \
+RUN apk add --no-cache gcc make musl-dev npm && \
     go install github.com/swaggo/swag/cmd/swag@latest
 WORKDIR /app
 COPY go.mod go.sum ./
