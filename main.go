@@ -31,9 +31,6 @@ var migrationsFs embed.FS
 // @host 			localhost:8080
 // @BasePath 		/
 
-//go:embed front
-var frontFS embed.FS
-
 var cmd = &cobra.Command{
 	Use:   "yumsday",
 	Short: "yumsday",
@@ -42,7 +39,7 @@ var cmd = &cobra.Command{
 
 func init() {
 	// Define cli flags
-	cmd.PersistentFlags().String("host", "localhost", "Server host")
+	cmd.PersistentFlags().String("host", "[::0]", "Server host")
 	cmd.PersistentFlags().Int("port", 8080, "Server port")
 	cmd.PersistentFlags().String("db-path", "yumsday.db", "Path to the sqlite database")
 	cmd.PersistentFlags().String("log-level", "info", "Log level")
@@ -83,13 +80,6 @@ func run(cmd *cobra.Command, args []string) {
 	slog.SetDefault(logger)
 	defer slog.Debug("Closing app")
 
-	// embedded frontend
-	front, err := fs.Sub(frontFS, "front/dist")
-	if err != nil {
-		slog.Error("Failed to load front embedded filesystem", "error", err)
-		return
-	}
-
 	// SQLite DSN (data source name) format: "file:path/to/database.db?_foreign_keys=on".
 	// The query parameter "_foreign_keys=on" is required to enable foreign key constraints in SQLite.
 	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", cfg.DBPath)
@@ -115,7 +105,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), // TCP address to listen on, in the form "host:port"
-		Handler: backend.NewAPIServer(db, migrationsFs, front, &tasksWG),
+		Handler: backend.NewAPIServer(db, migrationsFs, &tasksWG),
 	}
 
 	// Goroutine waiting for a signal from the OS to shut "gracefully" the server and its working goroutines.

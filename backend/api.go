@@ -14,10 +14,11 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 	"github.com/zouipo/yumsday/backend/internal/service"
 	_ "github.com/zouipo/yumsday/docs"
+	"github.com/zouipo/yumsday/front"
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
-func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup) http.Handler {
+func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 	err := migration.Migrate(db, migrationsFs)
 	if err != nil {
 		panic(err)
@@ -57,7 +58,6 @@ func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup
 	mux := http.NewServeMux()
 	backMux := http.NewServeMux()
 
-	mux.Handle("/", http.FileServerFS(front))
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
 	mux.Handle("/api/", middlewareStack(backMux))
 	mux.Handle("/auth/", middlewareStack(backMux))
@@ -65,5 +65,6 @@ func NewAPIServer(db *sql.DB, migrationsFs, front fs.FS, tasksWG *sync.WaitGroup
 	userHandler.RegisterRoutes(backMux, "/api/user")
 	authHandler.RegisterRoutes(backMux, "/auth")
 
+	mux.Handle("/", front.Handler())
 	return mux
 }
