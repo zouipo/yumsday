@@ -1,5 +1,3 @@
-def img
-
 pipeline {
     agent any
 
@@ -16,8 +14,7 @@ pipeline {
             }
             steps {
                 script {
-                    img = docker.build('zouipo/yumsday:base', '--target base .')
-                    img.inside {
+                    docker.build('zouipo/yumsday:base', '--target base .').inside {
                         sh('make test-cicd')
                     }
                 }
@@ -28,8 +25,12 @@ pipeline {
                 branch 'main'
             }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh("${tool('SonarQube Scanner')}/bin/sonar-scanner")
+                script {
+                    withSonarQubeEnv('SonarQube') {
+                        docker.image('sonarsource/sonar-scanner-cli').inside {
+                            sh('sonar-scanner')
+                        }
+                    }
                 }
             }
         }
@@ -39,10 +40,12 @@ pipeline {
             }
             steps {
                 script {
-                    img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
+                    def img = docker.build("zouipo/yumsday:${env.TAG_NAME}", '--target runtime .')
                     docker.withRegistry('', 'docker-zouipo') {
                         img.push()
-                        img.push('latest')
+                        if (env.TAG_NAME ==~ /^\d+\.\d+\.\d+$/) {
+                            img.push('latest')
+                        }
                     }
                 }
             }
