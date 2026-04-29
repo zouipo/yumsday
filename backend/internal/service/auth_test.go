@@ -25,7 +25,7 @@ type MockSessionService struct {
 }
 
 func (m *MockSessionService) GetSession(_ *http.Request) *model.Session {
-	return model.NewSession()
+	return model.NewSession("", "")
 }
 
 func (m *MockSessionService) CookieName() string {
@@ -134,7 +134,7 @@ func TestAuthenticate_Success(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	authenticatedUser, err := service.Authenticate(session, username, ValidPassword)
 
 	if err != nil {
@@ -164,7 +164,7 @@ func TestAuthenticate_UserServiceError(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	authenticatedUser, err := service.Authenticate(session, username, "irrelevant")
 
 	if authenticatedUser != nil {
@@ -187,7 +187,7 @@ func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	authenticatedUser, err := service.Authenticate(session, badUsername, "anything")
 
 	if authenticatedUser != nil {
@@ -224,7 +224,7 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	authenticatedUser, err := service.Authenticate(session, username, InvalidPassword)
 
 	if authenticatedUser != nil {
@@ -261,7 +261,7 @@ func TestAuthenticate_InvalidPasswordHash_ReturnsInternalServerError(t *testing.
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	authenticatedUser, err := service.Authenticate(session, username, "any-password")
 
 	if authenticatedUser != nil {
@@ -299,7 +299,7 @@ func TestLogout_RemovesSession(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	err := service.Logout(session)
 
 	if err != nil {
@@ -322,7 +322,7 @@ func TestLogout_RepositoryError(t *testing.T) {
 	}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	err := service.Logout(session)
 
 	if err == nil {

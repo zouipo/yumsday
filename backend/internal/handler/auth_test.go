@@ -82,7 +82,7 @@ func TestPostLogin_Success(t *testing.T) {
 	}
 	mockService := &mockAuthService{authUser: authenticatedUser}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -161,7 +161,7 @@ func TestPostLogin_AppError(t *testing.T) {
 		authErr: customErrors.NewUnauthorizedError("invalid credentials", nil),
 	}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -190,7 +190,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 		authErr: customErrors.NewInternalError("an error occurred while checking credentials", nil),
 	}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -219,7 +219,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 func TestPostLogout_Success(t *testing.T) {
 	mockService := &mockAuthService{}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -243,7 +243,7 @@ func TestPostLogout_Success(t *testing.T) {
 func TestPostLogout_Error(t *testing.T) {
 	mockService := &mockAuthService{logoutErr: customErrors.NewInternalError("Failed to remove session", nil)}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))

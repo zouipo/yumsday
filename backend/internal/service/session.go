@@ -76,7 +76,7 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	}
 
 	if session == nil {
-		session = model.NewSession()
+		session = model.NewSession(r.RemoteAddr, r.UserAgent())
 		slog.Debug("Generated new session", "id", session.ID)
 	}
 

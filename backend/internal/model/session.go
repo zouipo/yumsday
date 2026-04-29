@@ -16,10 +16,12 @@ type Session struct {
 }
 
 // NewSession creates a new session with a unique session ID and sets the creation and expiration times.
-func NewSession() *Session {
+func NewSession(ipAddress, userAgent string) *Session {
 	return &Session{
 		ID:           utils.GenerateSessionID(),
 		CreatedAt:    time.Now().UTC(),
 		LastActivity: time.Now().UTC(),
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
 	}
 }
