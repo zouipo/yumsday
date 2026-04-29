@@ -25,7 +25,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 			}
 
 			// Not authenticated
-			if s.UserID == 0 {
+			if s.UserID == nil {
 				slog.Debug("session is not authenticated", "id", s.ID)
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
@@ -33,7 +33,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 
 			slog.Debug("session is authenticated", "id", s.ID, "user", s.UserID)
 
-			user, err := userService.GetByID(s.UserID)
+			user, err := userService.GetByID(*s.UserID)
 			if err != nil {
 				panic(err)
 			}

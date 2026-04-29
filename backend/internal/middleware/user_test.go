@@ -64,7 +64,6 @@ func TestUserInjector_unauthenticated_nonLogin(t *testing.T) {
 	})
 
 	session := model.NewSession()
-	session.UserID = 0
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -95,7 +94,6 @@ func TestUserInjector_authLoginBypassesAuthentication(t *testing.T) {
 	})
 
 	session := model.NewSession()
-	session.UserID = 0
 
 	r := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -127,7 +125,7 @@ func TestUserInjector_authenticated_nonLogin(t *testing.T) {
 	})
 
 	session := model.NewSession()
-	session.UserID = 1
+	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -162,7 +160,7 @@ func TestUserInjector_authenticated_getByIDError(t *testing.T) {
 	})
 
 	session := model.NewSession()
-	session.UserID = 1
+	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))

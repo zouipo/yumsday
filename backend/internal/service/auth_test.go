@@ -145,7 +145,7 @@ func TestAuthenticate_Success(t *testing.T) {
 		t.Error("Authenticate() returned user pointer does not match expected user")
 	}
 
-	if session.UserID != testUser.ID {
+	if *session.UserID != testUser.ID {
 		t.Errorf("Authenticate() session UserID = %d, want %d", session.UserID, testUser.ID)
 	}
 
@@ -208,7 +208,7 @@ func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
 		t.Errorf("Authenticate() status = %d, want %d", unauthorizedErr.HTTPStatus(), http.StatusUnauthorized)
 	}
 
-	if session.UserID != 0 {
+	if session.UserID != nil {
 		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
 	}
 
@@ -240,7 +240,7 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 		t.Error("Authenticate() should not save session when credentials are invalid")
 	}
 
-	if session.UserID != 0 {
+	if session.UserID != nil {
 		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
 	}
 }
