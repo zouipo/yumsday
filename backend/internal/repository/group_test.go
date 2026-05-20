@@ -112,10 +112,6 @@ func TestNewGroupRepository(t *testing.T) {
 	if repo == nil {
 		t.Fatal("expected non-nil repository, got nil")
 	}
-
-	if repo.db == nil {
-		t.Fatal("expected non-nil database connection, got nil")
-	}
 }
 
 func TestGetGroupByID(t *testing.T) {

@@ -17,7 +17,7 @@ type GroupRepository struct {
 }
 
 // NewGroupRepository constructs a new GroupRepository using the provided database.
-func NewGroupRepository(db *sql.DB) *GroupRepository {
+func NewGroupRepository(db *sql.DB) GroupRepositoryInterface {
 	return &GroupRepository{
 		db: db,
 	}
