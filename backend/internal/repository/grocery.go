@@ -14,7 +14,7 @@ type GroceryRepository struct {
 	db *sql.DB
 }
 
-func NewGroceryRepository(db *sql.DB) *GroceryRepository {
+func NewGroceryRepository(db *sql.DB) GroceryRepositoryInterface {
 	return &GroceryRepository{
 		db: db,
 	}

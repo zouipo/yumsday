@@ -14,9 +14,6 @@ func TestNewGroceryRepository(t *testing.T) {
 	if repo == nil {
 		t.Fatal("expected non-nil repository, got nil")
 	}
-	if repo.db == nil {
-		t.Fatal("expected non-nil database connection, got nil")
-	}
 }
 
 func TestGroceryRepositoryHasItem(t *testing.T) {
