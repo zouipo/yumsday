@@ -25,7 +25,7 @@ type MockSessionService struct {
 }
 
 func (m *MockSessionService) GetSession(_ *http.Request) *model.Session {
-	return model.NewSession()
+	return model.NewSession("", "")
 }
 
 func (m *MockSessionService) CookieName() string {
@@ -134,14 +134,18 @@ func TestAuthenticate_Success(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
-	err := service.Authenticate(session, username, ValidPassword)
+	session := model.NewSession("", "")
+	authenticatedUser, err := service.Authenticate(session, username, ValidPassword)
 
 	if err != nil {
 		t.Fatalf("Authenticate() error = %v, want nil", err)
 	}
 
-	if session.UserID != testUser.ID {
+	if authenticatedUser != testUser {
+		t.Error("Authenticate() returned user pointer does not match expected user")
+	}
+
+	if *session.UserID != testUser.ID {
 		t.Errorf("Authenticate() session UserID = %d, want %d", session.UserID, testUser.ID)
 	}
 
@@ -155,13 +159,17 @@ func TestAuthenticate_Success(t *testing.T) {
 }
 
 func TestAuthenticate_UserServiceError(t *testing.T) {
-	expectedErr := customErrors.NewNotFoundError("User", username, nil)
+	expectedErr := customErrors.NewInternalError("user lookup failed", nil)
 	mockUserService := &MockUserService{getByUsernameErr: expectedErr}
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
-	err := service.Authenticate(session, username, "irrelevant")
+	session := model.NewSession("", "")
+	authenticatedUser, err := service.Authenticate(session, username, "irrelevant")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when user retrieval fails")
+	}
 
 	if !utils.CompareErrors(err, expectedErr) {
 		t.Errorf("Authenticate() error = %v, want %v", err, expectedErr)
@@ -172,6 +180,43 @@ func TestAuthenticate_UserServiceError(t *testing.T) {
 	}
 }
 
+func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
+	badUsername := "missing-user"
+	repoErr := customErrors.NewNotFoundError("User", badUsername, nil)
+	mockUserService := &MockUserService{getByUsernameErr: repoErr}
+	mockSessionService := &MockSessionService{}
+	service := NewAuthService(mockSessionService, mockUserService)
+
+	session := model.NewSession("", "")
+	authenticatedUser, err := service.Authenticate(session, badUsername, "anything")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when username does not exist")
+	}
+
+	expectedErr := customErrors.NewUnauthorizedError("invalid credentials", repoErr)
+	if !utils.CompareErrors(err, expectedErr) {
+		t.Errorf("Authenticate() error = %v, want %v", err, expectedErr)
+	}
+
+	unauthorizedErr, ok := errors.AsType[*customErrors.UnauthorizedError](err)
+	if !ok {
+		t.Fatalf("Authenticate() error type = %T, want *UnauthorizedError", err)
+	}
+
+	if unauthorizedErr.HTTPStatus() != http.StatusUnauthorized {
+		t.Errorf("Authenticate() status = %d, want %d", unauthorizedErr.HTTPStatus(), http.StatusUnauthorized)
+	}
+
+	if session.UserID != nil {
+		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
+	}
+
+	if len(mockSessionService.savedSessions) != 0 {
+		t.Error("Authenticate() should not save session when username does not exist")
+	}
+}
+
 func TestAuthenticate_WrongPassword(t *testing.T) {
 	mockUserService := &MockUserService{
 		user: createAuthTestUser(t, userID, username, ValidPassword),
@@ -179,8 +224,12 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
-	err := service.Authenticate(session, username, InvalidPassword)
+	session := model.NewSession("", "")
+	authenticatedUser, err := service.Authenticate(session, username, InvalidPassword)
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user when credentials are invalid")
+	}
 
 	expectedErr := customErrors.NewUnauthorizedError("invalid credentials", bcrypt.ErrMismatchedHashAndPassword)
 	if !utils.CompareErrors(err, expectedErr) {
@@ -191,7 +240,7 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 		t.Error("Authenticate() should not save session when credentials are invalid")
 	}
 
-	if session.UserID != 0 {
+	if session.UserID != nil {
 		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
 	}
 }
@@ -212,8 +261,12 @@ func TestAuthenticate_InvalidPasswordHash_ReturnsInternalServerError(t *testing.
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
-	err := service.Authenticate(session, username, "any-password")
+	session := model.NewSession("", "")
+	authenticatedUser, err := service.Authenticate(session, username, "any-password")
+
+	if authenticatedUser != nil {
+		t.Error("Authenticate() returned non-nil user for invalid password hash")
+	}
 
 	if err == nil {
 		t.Fatal("Authenticate() error = nil, want non-nil")
@@ -246,7 +299,7 @@ func TestLogout_RemovesSession(t *testing.T) {
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	err := service.Logout(session)
 
 	if err != nil {
@@ -269,7 +322,7 @@ func TestLogout_RepositoryError(t *testing.T) {
 	}
 	service := NewAuthService(mockSessionService, mockUserService)
 
-	session := model.NewSession()
+	session := model.NewSession("", "")
 	err := service.Logout(session)
 
 	if err == nil {

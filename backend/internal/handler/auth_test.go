@@ -8,14 +8,19 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
+	"github.com/zouipo/yumsday/backend/internal/model/enum"
 )
 
 var (
+	loginRoute  = "/auth/login"
+	logoutRoute = "/auth/logout"
+
 	username      = "username"
 	password      = "password1234"
 	wrongPassword = "wrong-password"
@@ -23,6 +28,7 @@ var (
 
 type mockAuthService struct {
 	authErr      error
+	authUser     *model.User
 	logoutErr    error
 	authCalls    int
 	logoutCalls  int
@@ -31,12 +37,15 @@ type mockAuthService struct {
 	lastPassword string
 }
 
-func (m *mockAuthService) Authenticate(session *model.Session, username, password string) error {
+func (m *mockAuthService) Authenticate(session *model.Session, username, password string) (*model.User, error) {
 	m.authCalls++
 	m.lastSession = session
 	m.lastUsername = username
 	m.lastPassword = password
-	return m.authErr
+	if m.authErr != nil {
+		return nil, m.authErr
+	}
+	return m.authUser, nil
 }
 
 func (m *mockAuthService) Logout(session *model.Session) error {
@@ -61,9 +70,19 @@ func TestNewAuthHandler(t *testing.T) {
 /*** TESTS PostLogin ***/
 
 func TestPostLogin_Success(t *testing.T) {
-	mockService := &mockAuthService{}
+	avatar := enum.Avatar1
+	authenticatedUser := &model.User{
+		ID:        42,
+		Username:  username,
+		AppAdmin:  true,
+		CreatedAt: time.Now().UTC(),
+		Avatar:    &avatar,
+		Language:  enum.English,
+		AppTheme:  enum.Light,
+	}
+	mockService := &mockAuthService{authUser: authenticatedUser}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -71,15 +90,24 @@ func TestPostLogin_Success(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogin(w, r)
 
-	if w.Code != http.StatusNoContent {
-		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
+	}
+
+	var userDto dto.UserDto
+	if err := json.Unmarshal(w.Body.Bytes(), &userDto); err != nil {
+		t.Fatalf("expected valid user JSON response, got error: %v", err)
+	}
+
+	if err := compareUserToUserDto(&userDto, authenticatedUser); err != nil {
+		t.Errorf("response body mismatch: %v", err)
 	}
 
 	if mockService.authCalls != 1 {
@@ -109,7 +137,7 @@ func TestPostLogin_MissingCredentials(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -133,7 +161,7 @@ func TestPostLogin_AppError(t *testing.T) {
 		authErr: customErrors.NewUnauthorizedError("invalid credentials", nil),
 	}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -141,7 +169,7 @@ func TestPostLogin_AppError(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
@@ -162,7 +190,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 		authErr: customErrors.NewInternalError("an error occurred while checking credentials", nil),
 	}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
 	loginReq := dto.LoginDto{
 		Username: username,
@@ -170,7 +198,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 	}
 	body, _ := json.Marshal(loginReq)
 
-	r := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
@@ -191,9 +219,9 @@ func TestPostLogin_GenericError(t *testing.T) {
 func TestPostLogout_Success(t *testing.T) {
 	mockService := &mockAuthService{}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
-	r := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 
@@ -215,9 +243,9 @@ func TestPostLogout_Success(t *testing.T) {
 func TestPostLogout_Error(t *testing.T) {
 	mockService := &mockAuthService{logoutErr: customErrors.NewInternalError("Failed to remove session", nil)}
 	handler := NewAuthHandler(mockService)
-	session := model.NewSession()
+	session := model.NewSession("", "")
 
-	r := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
 	w := httptest.NewRecorder()
 

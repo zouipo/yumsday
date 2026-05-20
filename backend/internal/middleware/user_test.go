@@ -63,8 +63,7 @@ func TestUserInjector_unauthenticated_nonLogin(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	session := model.NewSession()
-	session.UserID = 0
+	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -85,6 +84,36 @@ func TestUserInjector_unauthenticated_nonLogin(t *testing.T) {
 	}
 }
 
+func TestUserInjector_authLoginBypassesAuthentication(t *testing.T) {
+	mockService := &mockUserService{}
+	mw := UserInjector(mockService)
+
+	handlerCalled := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+	})
+
+	session := model.NewSession("", "")
+
+	r := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	w := httptest.NewRecorder()
+
+	mw(next).ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status %d instead of %d", http.StatusOK, w.Code)
+	}
+
+	if !handlerCalled {
+		t.Fatal("expected handler to be called")
+	}
+
+	if mockService.getByIDCalls != 0 {
+		t.Fatalf("expected GetByID not to be called, got %d", mockService.getByIDCalls)
+	}
+}
+
 func TestUserInjector_authenticated_nonLogin(t *testing.T) {
 	mockService := &mockUserService{}
 	mw := UserInjector(mockService)
@@ -95,8 +124,8 @@ func TestUserInjector_authenticated_nonLogin(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	session := model.NewSession()
-	session.UserID = 1
+	session := model.NewSession("", "")
+	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
@@ -130,8 +159,8 @@ func TestUserInjector_authenticated_getByIDError(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	session := model.NewSession()
-	session.UserID = 1
+	session := model.NewSession("", "")
+	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))

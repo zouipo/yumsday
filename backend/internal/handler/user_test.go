@@ -15,6 +15,7 @@ import (
 
 	"github.com/mattn/go-sqlite3"
 	"github.com/zouipo/yumsday/backend/internal/constant"
+	"github.com/zouipo/yumsday/backend/internal/ctx"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 
 	"github.com/zouipo/yumsday/backend/internal/dto"
@@ -490,6 +491,88 @@ func TestGetUserByID_NotFound(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected status %d instead of %d", http.StatusNotFound, w.Code)
+	}
+}
+
+/*** TESTS AuthMe ***/
+
+func TestAuthMe_Success(t *testing.T) {
+	avatar := enum.Avatar1
+	authenticatedUser := &model.User{
+		ID:        42,
+		Username:  username,
+		AppAdmin:  true,
+		CreatedAt: time.Now().UTC(),
+		Avatar:    &avatar,
+		Language:  enum.English,
+		AppTheme:  enum.Light,
+	}
+	mockService := NewMockUserService()
+	handler := NewUserHandler(mockService)
+
+	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
+	r = r.WithContext(context.WithValue(r.Context(), ctx.UserCtxKey{}, authenticatedUser))
+	w := httptest.NewRecorder()
+
+	handler.authMe(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
+	}
+
+	if w.Header().Get(constant.CONTENT_TYPE_HEADER) != constant.CONTENT_TYPE_VALUE {
+		t.Errorf(
+			"expected header %q to be %q instead of %q",
+			constant.CONTENT_TYPE_HEADER,
+			constant.CONTENT_TYPE_VALUE,
+			w.Header().Get(constant.CONTENT_TYPE_HEADER),
+		)
+	}
+
+	var userDto dto.UserDto
+	if err := json.Unmarshal(w.Body.Bytes(), &userDto); err != nil {
+		t.Fatalf("expected valid user JSON response, got error: %v", err)
+	}
+
+	if err := compareUserToUserDto(&userDto, authenticatedUser); err != nil {
+		t.Errorf("response body mismatch: %v", err)
+	}
+}
+
+func TestAuthMe_MissingUserInContext(t *testing.T) {
+	mockService := NewMockUserService()
+	handler := NewUserHandler(mockService)
+
+	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
+	w := httptest.NewRecorder()
+
+	handler.authMe(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	if !strings.Contains(w.Body.String(), http.StatusText(http.StatusInternalServerError)) {
+		t.Errorf("expected error message containing %q instead of %q", http.StatusText(http.StatusInternalServerError), w.Body.String())
+	}
+}
+
+func TestAuthMe_InvalidUserTypeInContext(t *testing.T) {
+	mockService := NewMockUserService()
+	handler := NewUserHandler(mockService)
+
+	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
+	r = r.WithContext(context.WithValue(r.Context(), ctx.UserCtxKey{}, "not-a-user"))
+	w := httptest.NewRecorder()
+
+	handler.authMe(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected status %d instead of %d", http.StatusInternalServerError, w.Code)
+	}
+
+	if !strings.Contains(w.Body.String(), http.StatusText(http.StatusInternalServerError)) {
+		t.Errorf("expected error message containing %q instead of %q", http.StatusText(http.StatusInternalServerError), w.Body.String())
 	}
 }
 

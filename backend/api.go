@@ -14,6 +14,7 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 	"github.com/zouipo/yumsday/backend/internal/service"
 	_ "github.com/zouipo/yumsday/docs"
+	"github.com/zouipo/yumsday/front"
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
@@ -46,12 +47,6 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 		middleware.UserInjector(userService),
 	)
 
-	authMiddlewareStack := middleware.Stack(
-		middleware.ResponseWriter,
-		middleware.Logger,
-		sessionInjector,
-	)
-
 	swaggerMiddlewareStack := middleware.Stack(
 		middleware.ResponseWriter,
 		middleware.Logger,
@@ -61,16 +56,15 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 	// It matches the URL of each incoming request against a list of registered patterns
 	// and calls the handler for the pattern tha most closely matches the URL.
 	mux := http.NewServeMux()
-	apiMux := http.NewServeMux()
-	authMux := http.NewServeMux()
+	backMux := http.NewServeMux()
 
 	mux.Handle("/swagger/", swaggerMiddlewareStack(httpSwagger.Handler()))
-	mux.Handle("/api/", middlewareStack(apiMux))
-	mux.Handle("/login", authMiddlewareStack(authMux))
-	mux.Handle("/logout", middlewareStack(authMux))
+	mux.Handle("/api/", middlewareStack(backMux))
+	mux.Handle("/auth/", middlewareStack(backMux))
 
-	userHandler.RegisterRoutes(apiMux, "/api/user")
-	authHandler.RegisterRoutes(authMux)
+	userHandler.RegisterRoutes(backMux, "/api/user")
+	authHandler.RegisterRoutes(backMux, "/auth")
 
+	mux.Handle("/", front.Handler())
 	return mux
 }

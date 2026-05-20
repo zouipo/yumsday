@@ -53,7 +53,7 @@ func (m *mockSessionService) GetSession(_ *http.Request) *model.Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.sessionToReturn == nil {
-		m.sessionToReturn = model.NewSession()
+		m.sessionToReturn = model.NewSession("", "")
 	}
 	return m.sessionToReturn
 }
@@ -202,7 +202,7 @@ func TestSessionInjector_UsesExistingSession(t *testing.T) {
 // TestSessionInjector_SetsCookie verifies that the middleware sets the session cookie
 // with the correct name, security attributes, and expiry.
 func TestSessionInjector_SetsCookie(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -228,7 +228,7 @@ func TestSessionInjector_SetsCookie(t *testing.T) {
 // TestSessionInjector_CookieValueMatchesSessionID verifies that the value of the session
 // cookie matches the ID of the session injected into the context.
 func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -265,9 +265,9 @@ func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
 }
 
 // TestSessionInjector_SavesSessionAfterHandler verifies that the session is saved
-// after the handler returns when the request path is not /logout.
+// after the handler returns when the request path is not /auth.
 func TestSessionInjector_SavesSessionAfterHandler(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -287,25 +287,31 @@ func TestSessionInjector_SavesSessionAfterHandler(t *testing.T) {
 	}
 }
 
-// TestSessionInjector_DoesNotSaveSessionOnLogout verifies that the session is NOT saved
-// after the handler returns when the request path is /logout.
-func TestSessionInjector_DoesNotSaveSessionOnLogout(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
-	next := &mockSessionHandler{}
+// TestSessionInjector_DoesNotSaveSessionOnAuthRoutes verifies that the session is NOT saved
+// after the handler returns when the request path starts with /auth.
+func TestSessionInjector_DoesNotSaveSessionOnAuthRoutes(t *testing.T) {
+	authRoutes := []string{"/auth/", "/auth/login", "/auth/logout", "/auth/anything"}
 
-	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
-	rr := httptest.NewRecorder()
+	for _, route := range authRoutes {
+		t.Run(route, func(t *testing.T) {
+			svc := newMockSessionService(model.NewSession("", ""))
+			next := &mockSessionHandler{}
 
-	SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
+			req := httptest.NewRequest(http.MethodPost, route, nil)
+			rr := httptest.NewRecorder()
 
-	if !next.called {
-		t.Fatal("expected next handler to be called")
-	}
+			SessionInjector(svc, &wg)(next).ServeHTTP(rr, req)
 
-	// Wait long enough so a goroutine would have run if it was going to.
-	time.Sleep(50 * time.Millisecond)
+			if !next.called {
+				t.Fatal("expected next handler to be called")
+			}
 
-	if svc.getSaveCalled() > 0 {
-		t.Errorf("expected session NOT to be saved on /logout, but Save was called %d time(s)", svc.getSaveCalled())
+			// Wait long enough so a goroutine would have run if it was going to.
+			time.Sleep(50 * time.Millisecond)
+
+			if svc.getSaveCalled() > 0 {
+				t.Errorf("expected session NOT to be saved on %q, but Save was called %d time(s)", route, svc.getSaveCalled())
+			}
+		})
 	}
 }
