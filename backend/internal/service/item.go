@@ -240,13 +240,19 @@ func (s *ItemService) validateItem(item *model.Item) error {
 
 // checkSimpleFields validates the basic fields of the item that don't require database access.
 func checkSimpleFields(item *model.Item) error {
+	invalidFields := []string{}
+
 	if item.Name == "" {
-		return customErrors.NewValidationError("name", "item must have a name", nil)
+		invalidFields = append(invalidFields, "name")
 	}
 
 	// Caught when the field unit_type is omitted in the JSON body (set to the zero value, an empty string)
 	if item.UnitType.String() == "" {
-		return customErrors.NewValidationError("unit type", "item must have a unit type", nil)
+		invalidFields = append(invalidFields, "unit type")
+	}
+
+	if len(invalidFields) > 0 {
+		return customErrors.NewInvalidParamsError(invalidFields, nil)
 	}
 
 	return nil

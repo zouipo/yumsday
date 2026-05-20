@@ -768,7 +768,7 @@ func TestCreateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"name"}, nil),
 		},
 		{
 			name: "Validation error empty unit type",
@@ -777,7 +777,16 @@ func TestCreateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"unit type"}, nil),
+		},
+		{
+			name: "Validation error unit type and name",
+			item: &model.Item{
+				Name:         "",
+				GroupID:      itemCategory1.GroupID,
+				ItemCategory: itemCategory1,
+			},
+			expectedErr: customErrors.NewInvalidParamsError([]string{"name", "unit type"}, nil),
 		},
 		{
 			name: "Item category not found",
@@ -1001,7 +1010,7 @@ func TestUpdateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"name"}, nil),
 		},
 		{
 			name: "Validation unit type error",
@@ -1011,7 +1020,7 @@ func TestUpdateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"unit type"}, nil),
 		},
 		{
 			name: "Category not found",
@@ -1254,12 +1263,12 @@ func TestCheckSimpleFields(t *testing.T) {
 		{
 			name:        "empty name",
 			item:        &model.Item{Name: "", UnitType: enum.Weight},
-			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"name"}, nil),
 		},
 		{
 			name:        "empty unit type",
 			item:        &model.Item{Name: "Flour"},
-			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"unit type"}, nil),
 		},
 	}
 
@@ -1316,7 +1325,7 @@ func TestValidateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("name", "item must have a name", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"name"}, nil),
 		},
 		{
 			name: "invalid unit type",
@@ -1325,7 +1334,7 @@ func TestValidateItem(t *testing.T) {
 				GroupID:      itemCategory1.GroupID,
 				ItemCategory: itemCategory1,
 			},
-			expectedErr: customErrors.NewValidationError("unit type", "item must have a unit type", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"unit type"}, nil),
 		},
 		{
 			name: "item category not found",

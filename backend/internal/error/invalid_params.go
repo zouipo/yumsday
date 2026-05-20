@@ -7,9 +7,8 @@ import (
 )
 
 type InvalidParamsError struct {
-	Fields  []string
-	Message string
-	err     error
+	Fields []string
+	err    error
 }
 
 func NewInvalidParamsError(fields []string, err error) error {
