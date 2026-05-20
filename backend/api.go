@@ -16,9 +16,11 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/repository"
 	"github.com/zouipo/yumsday/backend/internal/service"
 	_ "github.com/zouipo/yumsday/docs"
+	"github.com/zouipo/yumsday/front"
 )
 
 // NewAPIServer registers API routes on a new ServeMux.
+func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.Handler {
 	err := migration.Migrate(db, migrationsFs)
 	if err != nil {
