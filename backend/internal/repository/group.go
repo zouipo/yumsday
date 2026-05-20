@@ -51,12 +51,14 @@ func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Gr
 		return nil, customErrors.NewInternalError("failed to fetch groups", err)
 	}
 
-	m := make(map[int64]*model.Group)
+	ret := []model.Group{}
 	seenUsers := make(map[int64]map[int64]bool)
-	tmpGroup := &model.Group{}
-	tmpUser := &model.GroupMember{}
+	stateMap := make(map[int64]int64)
 
 	for rows.Next() {
+		tmpGroup := &model.Group{}
+		tmpUser := &model.GroupMember{}
+
 		err := rows.Scan(
 			&tmpGroup.ID,
 			&tmpGroup.Name,
@@ -72,24 +74,21 @@ func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Gr
 		}
 
 		id := tmpGroup.ID
-		if _, exists := m[id]; !exists {
-			m[id] = tmpGroup
+		if _, exists := stateMap[id]; !exists {
+			ret = append(ret, *tmpGroup)
+			stateMap[id] = int64(len(ret) - 1)
 			seenUsers[id] = make(map[int64]bool)
 		}
 
+		idx := stateMap[id]
 		if !seenUsers[id][tmpUser.UserID] {
-			m[id].Members = append(m[id].Members, *tmpUser)
+			ret[idx].Members = append(ret[idx].Members, *tmpUser)
 			seenUsers[id][tmpUser.UserID] = true
 		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch groups", err)
-	}
-
-	ret := make([]model.Group, 0, len(m))
-	for _, group := range m {
-		ret = append(ret, *group)
 	}
 
 	return ret, nil
