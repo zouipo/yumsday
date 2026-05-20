@@ -13,7 +13,7 @@ import (
 type ItemServiceInterface interface {
 	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string) (*model.Item, error)
+	GetByName(name string, descending bool) ([]model.Item, error)
 	GetRecipes(id int64) ([]model.Recipe, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
@@ -70,12 +70,12 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName returns the item that matches the provided name or an error.
-func (s *ItemService) GetByName(name string) ([]model.Item, error) {
+func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, error) {
 	if name == "" {
 		return nil, customErrors.NewNotFoundError("Item", "name", nil)
 	}
 
-	items, err := s.repo.GetByName(name)
+	items, err := s.repo.GetByName(name, descending)
 	if err != nil {
 		return nil, err
 	}

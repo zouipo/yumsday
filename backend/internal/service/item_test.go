@@ -139,7 +139,7 @@ func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
 	return nil, customErrors.NewNotFoundError("Item", "id", nil)
 }
 
-func (m *MockItemRepository) GetByName(name string) ([]model.Item, error) {
+func (m *MockItemRepository) GetByName(name string, desc bool) ([]model.Item, error) {
 	if m.getByNameErr != nil {
 		return nil, m.getByNameErr
 	}
@@ -151,7 +151,7 @@ func (m *MockItemRepository) GetByName(name string) ([]model.Item, error) {
 		}
 	}
 
-	return result, nil
+	return sortSliceItem(result, "name", desc), nil
 }
 
 func (m *MockItemRepository) Create(item *model.Item) (int64, error) {
@@ -629,7 +629,7 @@ func TestGetByName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m.getByNameErr = tt.repoErr
 
-			actual, err := s.GetByName(tt.itemName)
+			actual, err := s.GetByName(tt.itemName, false)
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {

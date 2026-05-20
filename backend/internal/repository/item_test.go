@@ -390,34 +390,59 @@ func TestGetItemByName(t *testing.T) {
 	repo := NewItemRepository(db)
 
 	tests := []struct {
-		name      string
-		itemName  string
-		expected  []model.Item
-		expectErr error
+		name       string
+		itemName   string
+		descending bool
+		expected   []model.Item
+		expectErr  error
 	}{
 		{
-			name:      "Get item by valid name",
-			itemName:  utils.SortSliceByFieldName(expectedItems, "Name", false)[0].Name,
-			expected:  []model.Item{utils.SortSliceByFieldName(expectedItems, "Name", false)[0]},
-			expectErr: nil,
+			name:       "Get item by valid name ascending",
+			itemName:   "Butter",
+			descending: false,
+			expected:   []model.Item{expectedItems[5]},
+			expectErr:  nil,
 		},
 		{
-			name:      "Get items by partial name",
-			itemName:  "at",
-			expected:  utils.SortSliceByFieldName([]model.Item{expectedItems[7], expectedItems[10], expectedItems[13]}, "Name", false),
-			expectErr: nil,
+			name:       "Get item by valid name descending",
+			itemName:   "Butter",
+			descending: true,
+			expected:   []model.Item{expectedItems[5]},
+			expectErr:  nil,
 		},
 		{
-			name:      "Get item by invalid name returns empty slice",
-			itemName:  invalidName,
-			expected:  []model.Item{},
-			expectErr: nil,
+			name:       "Get items by partial name ascending",
+			itemName:   "at",
+			descending: false,
+			expected:   utils.SortSliceByFieldName([]model.Item{expectedItems[7], expectedItems[10], expectedItems[13]}, "Name", false),
+			expectErr:  nil,
+		},
+		{
+			name:       "Get items by partial name descending",
+			itemName:   "at",
+			descending: true,
+			expected:   utils.SortSliceByFieldName([]model.Item{expectedItems[7], expectedItems[10], expectedItems[13]}, "Name", true),
+			expectErr:  nil,
+		},
+		{
+			name:       "Get item by invalid name returns empty slice ascending",
+			itemName:   invalidName,
+			descending: false,
+			expected:   []model.Item{},
+			expectErr:  nil,
+		},
+		{
+			name:       "Get item by invalid name returns empty slice descending",
+			itemName:   invalidName,
+			descending: true,
+			expected:   []model.Item{},
+			expectErr:  nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			items, err := repo.GetByName(tt.itemName)
+			items, err := repo.GetByName(tt.itemName, tt.descending)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {

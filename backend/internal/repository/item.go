@@ -10,9 +10,9 @@ import (
 )
 
 type ItemRepositoryInterface interface {
-	GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
+	GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string) ([]model.Item, error)
+	GetByName(name string, desc bool) ([]model.Item, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -60,8 +60,14 @@ func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName retrieves an item from the database by its name.
-func (r *ItemRepository) GetByName(name string) ([]model.Item, error) {
-	items, err := r.fetchItems("WHERE items.name LIKE concat('%', ?, '%') ORDER BY items.name", name)
+func (r *ItemRepository) GetByName(name string, desc bool) ([]model.Item, error) {
+	clauses := "WHERE items.name LIKE concat('%', ?, '%') ORDER BY items.name"
+
+	if desc {
+		clauses += " DESC"
+	}
+
+	items, err := r.fetchItems(clauses, name)
 	if err != nil {
 		return nil, err
 	}
