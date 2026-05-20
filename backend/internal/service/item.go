@@ -199,7 +199,7 @@ func (s *ItemService) mapSortKey(param string) (string, error) {
 	case "category":
 		return "item_categories.name", nil
 	default:
-		return "", customErrors.NewInvalidParamsError(param, nil)
+		return "", customErrors.NewInvalidParamsError([]string{param}, nil)
 	}
 }
 

@@ -473,7 +473,7 @@ func TestGetByGroupID(t *testing.T) {
 			name:        "Invalid sort parameter",
 			groupID:     group1.ID,
 			sort:        "unknown_field",
-			expectedErr: customErrors.NewInvalidParamsError("unknown_field", nil),
+			expectedErr: customErrors.NewInvalidParamsError([]string{"unknown_field"}, nil),
 		},
 		{
 			name:        "Repository error",
@@ -1213,7 +1213,7 @@ func TestMapSortKey(t *testing.T) {
 		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "items.average_market_price"},
 		{name: "unit type", param: "unit_type", expectedKey: "items.unit_type"},
 		{name: "category", param: "category", expectedKey: "item_categories.name"},
-		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError("wrong", nil)},
+		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError([]string{"wrong"}, nil)},
 	}
 
 	for _, tt := range tests {

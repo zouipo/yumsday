@@ -3,23 +3,27 @@ package error
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type InvalidParamsError struct {
-	Field   string
+	Fields  []string
 	Message string
 	err     error
 }
 
-func NewInvalidParamsError(field string, err error) error {
+func NewInvalidParamsError(fields []string, err error) error {
 	return &InvalidParamsError{
-		Field: field,
-		err:   err,
+		Fields: fields,
+		err:    err,
 	}
 }
 
 func (e *InvalidParamsError) Error() string {
-	return fmt.Sprintf("Invalid parameter '%s'", e.Field)
+	if len(e.Fields) == 1 {
+		return fmt.Sprintf("Invalid parameter '%s'", e.Fields[0])
+	}
+	return fmt.Sprintf("Invalid parameters '%s'", strings.Join(e.Fields, "', '"))
 }
 
 func (e *InvalidParamsError) HTTPStatus() int {
