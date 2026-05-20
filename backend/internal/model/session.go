@@ -12,14 +12,16 @@ type Session struct {
 	LastActivity time.Time `json:"last_activity"`
 	IPAddress    string    `json:"ip_address"`
 	UserAgent    string    `json:"user_agent"`
-	UserID       int64     `json:"user_id"`
+	UserID       *int64    `json:"user_id"`
 }
 
 // NewSession creates a new session with a unique session ID and sets the creation and expiration times.
-func NewSession() *Session {
+func NewSession(ipAddress, userAgent string) *Session {
 	return &Session{
 		ID:           utils.GenerateSessionID(),
 		CreatedAt:    time.Now().UTC(),
 		LastActivity: time.Now().UTC(),
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
 	}
 }

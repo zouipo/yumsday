@@ -76,7 +76,7 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 	}
 
 	if session == nil {
-		session = model.NewSession()
+		session = model.NewSession(r.RemoteAddr, r.UserAgent())
 		slog.Debug("Generated new session", "id", session.ID)
 	}
 
@@ -85,21 +85,12 @@ func (s *SessionService) GetSession(r *http.Request) *model.Session {
 
 func (s *SessionService) Save(session *model.Session) error {
 	session.LastActivity = time.Now().UTC()
-	if err := s.repo.Write(session); err != nil {
-		slog.Error("Failed to write session to repository", "error", err)
-		return customErrors.NewInternalError("failed to save session", err)
-	}
-	return nil
+	return s.repo.Write(session)
 }
 
 func (s *SessionService) Remove(session *model.Session) error {
 	slog.Debug("Removing session", "id", session.ID)
-	err := s.repo.Delete(session.ID)
-	if err != nil {
-		slog.Error("Failed to remove session from repository", "error", err)
-		return customErrors.NewInternalError("failed to remove session", err)
-	}
-	return nil
+	return s.repo.Delete(session.ID)
 }
 
 /*** PRIVATE METHODS ***/

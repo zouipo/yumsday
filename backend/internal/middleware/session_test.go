@@ -53,7 +53,7 @@ func (m *mockSessionService) GetSession(_ *http.Request) *model.Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.sessionToReturn == nil {
-		m.sessionToReturn = model.NewSession()
+		m.sessionToReturn = model.NewSession("", "")
 	}
 	return m.sessionToReturn
 }
@@ -202,7 +202,7 @@ func TestSessionInjector_UsesExistingSession(t *testing.T) {
 // TestSessionInjector_SetsCookie verifies that the middleware sets the session cookie
 // with the correct name, security attributes, and expiry.
 func TestSessionInjector_SetsCookie(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -228,7 +228,7 @@ func TestSessionInjector_SetsCookie(t *testing.T) {
 // TestSessionInjector_CookieValueMatchesSessionID verifies that the value of the session
 // cookie matches the ID of the session injected into the context.
 func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -267,7 +267,7 @@ func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
 // TestSessionInjector_SavesSessionAfterHandler verifies that the session is saved
 // after the handler returns when the request path is not /auth.
 func TestSessionInjector_SavesSessionAfterHandler(t *testing.T) {
-	svc := newMockSessionService(model.NewSession())
+	svc := newMockSessionService(model.NewSession("", ""))
 	next := &mockSessionHandler{}
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -294,7 +294,7 @@ func TestSessionInjector_DoesNotSaveSessionOnAuthRoutes(t *testing.T) {
 
 	for _, route := range authRoutes {
 		t.Run(route, func(t *testing.T) {
-			svc := newMockSessionService(model.NewSession())
+			svc := newMockSessionService(model.NewSession("", ""))
 			next := &mockSessionHandler{}
 
 			req := httptest.NewRequest(http.MethodPost, route, nil)

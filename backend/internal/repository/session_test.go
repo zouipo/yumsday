@@ -28,7 +28,7 @@ var (
 			LastActivity: oneHourAgo,
 			IPAddress:    "192.168.1.1",
 			UserAgent:    "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-			UserID:       0,
+			UserID:       nil,
 		},
 		{
 			ID:           "session-id-2",
@@ -36,7 +36,7 @@ var (
 			LastActivity: now,
 			IPAddress:    "192.168.1.2",
 			UserAgent:    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-			UserID:       0,
+			UserID:       nil,
 		},
 		{
 			ID:           "session-id-3",
@@ -44,7 +44,7 @@ var (
 			LastActivity: twoDaysAgo,
 			IPAddress:    "192.168.1.3",
 			UserAgent:    "Mozilla/5.0 (X11; Linux x86_64)",
-			UserID:       0,
+			UserID:       nil,
 		},
 	}
 )
@@ -71,7 +71,7 @@ func compareSessions(actual, expected *model.Session) error {
 		return fmt.Errorf("UserAgent = %s instead of %s", actual.UserAgent, expected.UserAgent)
 	}
 
-	if actual.UserID != expected.UserID {
+	if *actual.UserID != *expected.UserID {
 		return fmt.Errorf("UserID = %d instead of %d", actual.UserID, expected.UserID)
 	}
 
@@ -123,9 +123,9 @@ func setupSessionTestDB(t *testing.T) *sql.DB {
 		userIDs = append(userIDs, userID)
 	}
 
-	expectedSessions[0].UserID = userIDs[0]
-	expectedSessions[1].UserID = userIDs[1]
-	expectedSessions[2].UserID = userIDs[0]
+	expectedSessions[0].UserID = &userIDs[0]
+	expectedSessions[1].UserID = &userIDs[1]
+	expectedSessions[2].UserID = &userIDs[0]
 
 	for _, session := range expectedSessions {
 		_, err := db.Exec(

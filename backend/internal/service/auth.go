@@ -45,7 +45,7 @@ func (s *AuthService) Authenticate(session *model.Session, username, password st
 		return nil, customErrors.NewInternalError("an error occurred while checking credentials", err)
 	}
 
-	session.UserID = user.ID
+	session.UserID = &user.ID
 	err = s.sessionService.Save(session)
 	if err != nil {
 		return nil, err

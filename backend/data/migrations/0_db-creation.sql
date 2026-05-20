@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     last_activity TIMESTAMP NOT NULL,
     ip_address VARCHAR,
     user_agent VARCHAR,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX idx_session_id ON sessions (id);

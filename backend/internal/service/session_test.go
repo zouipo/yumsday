@@ -133,7 +133,7 @@ func createTestSession(id string, lastActivity time.Time) *model.Session {
 		LastActivity: lastActivity,
 		IPAddress:    "127.0.0.1",
 		UserAgent:    "Test Agent",
-		UserID:       1,
+		UserID:       new(int64(1)),
 	}
 }
 
