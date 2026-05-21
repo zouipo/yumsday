@@ -21,19 +21,9 @@ func NewItemCategoryService(repo repository.ItemCategoryRepositoryInterface) *It
 }
 
 func (s *ItemCategoryService) GetByID(id int64) (*model.ItemCategory, error) {
-	ic, err := s.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return ic, nil
+	return s.repo.GetByID(id)
 }
 
 func (s *ItemCategoryService) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
-	ic, err := s.repo.GetByNameAndGroupID(name, groupID)
-	if err != nil {
-		return nil, err
-	}
-
-	return ic, nil
+	return s.repo.GetByNameAndGroupID(name, groupID)
 }

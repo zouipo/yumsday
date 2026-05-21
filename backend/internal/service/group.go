@@ -20,10 +20,5 @@ func NewGroupService(repo repository.GroupRepositoryInterface) *GroupService {
 }
 
 func (s *GroupService) GetByID(id int64) (*model.Group, error) {
-	group, err := s.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return group, nil
+	return s.repo.GetByID(id)
 }

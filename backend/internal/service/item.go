@@ -61,12 +61,7 @@ func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) 
 
 // GetByID returns the item identified by id or an error if not found.
 func (s *ItemService) GetByID(id int64) (*model.Item, error) {
-	item, err := s.repo.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return item, nil
+	return s.repo.GetByID(id)
 }
 
 // GetByName returns the item that matches the provided name or an error.
@@ -75,22 +70,12 @@ func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, err
 		return nil, customErrors.NewNotFoundError("Item", "name", nil)
 	}
 
-	items, err := s.repo.GetByName(name, descending)
-	if err != nil {
-		return nil, err
-	}
-
-	return items, nil
+	return s.repo.GetByName(name, descending)
 }
 
 // GetRecipes returns the recipes in which the item is used.
 func (s *ItemService) GetRecipes(id int64) ([]model.Recipe, error) {
-	recipes, err := s.recipeService.GetRecipeLiteByItemID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return recipes, nil
+	return s.recipeService.GetRecipeLiteByItemID(id)
 }
 
 /*** CREATE OPERATIONS ***/
@@ -109,12 +94,7 @@ func (s *ItemService) Create(item *model.Item) (int64, error) {
 		return 0, err
 	}
 
-	id, err := s.repo.Create(item)
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
+	return s.repo.Create(item)
 }
 
 /*** UPDATE OPERATIONS ***/
@@ -146,12 +126,7 @@ func (s *ItemService) Update(item *model.Item) error {
 		}
 	}
 
-	err = s.repo.Update(item)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Update(item)
 }
 
 /*** DELETE OPERATIONS ***/
@@ -176,12 +151,7 @@ func (s *ItemService) Delete(id int64) error {
 		return customErrors.NewConflictError("Item", "can't delete item used in groceries", nil)
 	}
 
-	err = s.repo.Delete(id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Delete(id)
 }
 
 /*** HELPER FUNCTIONS ***/
