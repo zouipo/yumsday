@@ -256,7 +256,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 
 	rows, err := r.db.Query(query, values...)
 	if err != nil {
-		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+		return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 	}
 
 	ret := []model.Recipe{}
@@ -303,7 +303,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 		)
 
 		if err != nil {
-			return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+			return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 		}
 
 		id := tmpRecipe.ID
@@ -330,7 +330,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+		return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 	}
 
 	return ret, nil
