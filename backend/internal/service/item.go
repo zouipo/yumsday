@@ -85,7 +85,7 @@ func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, err
 
 // GetRecipes returns the recipes in which the item is used.
 func (s *ItemService) GetRecipes(id int64) ([]model.Recipe, error) {
-	recipes, err := s.recipeService.GetByItemID(id)
+	recipes, err := s.recipeService.GetRecipeLiteByItemID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *ItemService) Update(item *model.Item) error {
 // Delete removes the item identified by id from the database.
 // It checks for any dependencies in recipes and groceries before deletion.
 func (s *ItemService) Delete(id int64) error {
-	r, err := s.recipeService.GetByItemID(id)
+	r, err := s.recipeService.GetRecipeLiteByItemID(id)
 	if err != nil {
 		return err
 	}

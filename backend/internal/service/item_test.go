@@ -208,7 +208,7 @@ type MockRecipeServiceForItem struct {
 }
 
 // Use by Delete to check if item is used by any recipe
-func (m *MockRecipeServiceForItem) GetByItemID(_ int64) ([]model.Recipe, error) {
+func (m *MockRecipeServiceForItem) GetRecipeLiteByItemID(_ int64) ([]model.Recipe, error) {
 	if m.getByItemErr != nil {
 		return nil, m.getByItemErr
 	}

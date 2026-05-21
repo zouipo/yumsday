@@ -6,7 +6,7 @@ import (
 )
 
 type RecipeServiceInterface interface {
-	GetByItemID(itemID int64) ([]model.Recipe, error)
+	GetRecipeLiteByItemID(itemID int64) ([]model.Recipe, error)
 }
 
 type RecipeService struct {
@@ -19,8 +19,8 @@ func NewRecipeService(recipeRepo repository.RecipeRepositoryInterface) *RecipeSe
 	}
 }
 
-func (s *RecipeService) GetByItemID(itemID int64) ([]model.Recipe, error) {
-	recipes, err := s.repo.GetByItemID(itemID)
+func (s *RecipeService) GetRecipeLiteByItemID(itemID int64) ([]model.Recipe, error) {
+	recipes, err := s.repo.GetRecipeLiteByItemID(itemID)
 	if err != nil {
 		return nil, err
 	}
