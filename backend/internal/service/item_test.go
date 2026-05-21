@@ -94,7 +94,6 @@ type MockItemRepository struct {
 	createErr       error
 	updateErr       error
 	deleteErr       error
-	lastSortKey     string
 	lastDescending  bool
 }
 
@@ -112,17 +111,31 @@ func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, desc bo
 		return nil, m.getBygroupIDErr
 	}
 
-	m.lastSortKey = sortKey
+	result := make([]model.Item, 0)
+	sortKey = strings.ToLower(sortKey)
+	sort := ""
+
+	switch sortKey {
+	case "name", "":
+		sort = "items.name"
+	case "average_market_price":
+		sort = "items.average_market_price"
+	case "unit_type":
+		sort = "items.unit_type"
+	case "category":
+		sort = "item_categories.name"
+	default:
+		return nil, customErrors.NewInvalidParamsError([]string{sortKey}, nil)
+	}
 	m.lastDescending = desc
 
-	result := make([]model.Item, 0)
 	for _, item := range m.items {
 		if item.GroupID == groupID {
 			result = append(result, item)
 		}
 	}
 
-	return sortSliceItem(result, sortKey, desc), nil
+	return sortSliceItem(result, sort, desc), nil
 }
 
 func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
@@ -420,54 +433,48 @@ func TestGetByGroupID(t *testing.T) {
 	)
 
 	tests := []struct {
-		name            string
-		groupID         int64
-		sort            string
-		descending      bool
-		expected        []model.Item
-		expectedSortKey string
-		repoErr         error
-		expectedErr     error
+		name        string
+		groupID     int64
+		sort        string
+		descending  bool
+		expected    []model.Item
+		repoErr     error
+		expectedErr error
 	}{
 		{
-			name:            "Sort by name asc",
-			groupID:         group1.ID,
-			sort:            "name",
-			descending:      false,
-			expected:        getByGroupID(group1.ID, "items.name", false),
-			expectedSortKey: "items.name",
+			name:       "Sort by name asc",
+			groupID:    group1.ID,
+			sort:       "name",
+			descending: false,
+			expected:   getByGroupID(group1.ID, "items.name", false),
 		},
 		{
-			name:            "Sort by name UPPERCASE asc",
-			groupID:         group1.ID,
-			sort:            "NAME",
-			descending:      false,
-			expected:        getByGroupID(group1.ID, "items.name", false),
-			expectedSortKey: "items.name",
+			name:       "Sort by name UPPERCASE asc",
+			groupID:    group1.ID,
+			sort:       "NAME",
+			descending: false,
+			expected:   getByGroupID(group1.ID, "items.name", false),
 		},
 		{
-			name:            "Sort by category desc",
-			groupID:         group2.ID,
-			sort:            "category",
-			descending:      true,
-			expected:        getByGroupID(group2.ID, "item_categories.name", true),
-			expectedSortKey: "item_categories.name",
+			name:       "Sort by category desc",
+			groupID:    group2.ID,
+			sort:       "category",
+			descending: true,
+			expected:   getByGroupID(group2.ID, "item_categories.name", true),
 		},
 		{
-			name:            "Sort by average market price asc",
-			groupID:         group1.ID,
-			sort:            "average_market_price",
-			descending:      false,
-			expected:        getByGroupID(group1.ID, "items.average_market_price", false),
-			expectedSortKey: "items.average_market_price",
+			name:       "Sort by average market price asc",
+			groupID:    group1.ID,
+			sort:       "average_market_price",
+			descending: false,
+			expected:   getByGroupID(group1.ID, "items.average_market_price", false),
 		},
 		{
-			name:            "Sort by unit type asc",
-			groupID:         group2.ID,
-			sort:            "unit_type",
-			descending:      false,
-			expected:        getByGroupID(group2.ID, "items.unit_type", false),
-			expectedSortKey: "items.unit_type",
+			name:       "Sort by unit type asc",
+			groupID:    group2.ID,
+			sort:       "unit_type",
+			descending: false,
+			expected:   getByGroupID(group2.ID, "items.unit_type", false),
 		},
 		{
 			name:        "Invalid sort parameter",
@@ -502,10 +509,6 @@ func TestGetByGroupID(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("GetByGroupID() unexpected error = %v", err)
-			}
-
-			if m.lastSortKey != tt.expectedSortKey {
-				t.Errorf("GetByGroupID() sort key = %s, want %s", m.lastSortKey, tt.expectedSortKey)
 			}
 
 			if m.lastDescending != tt.descending {
@@ -1194,57 +1197,6 @@ func TestDeleteItem(t *testing.T) {
 			deleted, err := repo.GetByID(tt.itemID)
 			if err == nil || deleted != nil {
 				t.Fatalf("Delete() item with ID %d should be deleted", tt.itemID)
-			}
-		})
-	}
-}
-
-func TestMapSortKey(t *testing.T) {
-	repo := setUpDataTestItem()
-	s := newItemServiceForTest(
-		repo,
-		&MockRecipeServiceForItem{},
-		&MockGroceryServiceForItem{},
-		&MockGroupServiceForItem{},
-		&MockItemCategoryServiceForItem{},
-	)
-
-	tests := []struct {
-		name        string
-		param       string
-		expectedKey string
-		expectedErr error
-	}{
-		{name: "default empty", param: "", expectedKey: "items.name"},
-		{name: "name", param: "name", expectedKey: "items.name"},
-		{name: "name Capital Letters", param: "Name", expectedKey: "items.name"},
-		{name: "average market price", param: "average_market_price", expectedKey: "items.average_market_price"},
-		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "items.average_market_price"},
-		{name: "unit type", param: "unit_type", expectedKey: "items.unit_type"},
-		{name: "category", param: "category", expectedKey: "item_categories.name"},
-		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError([]string{"wrong"}, nil)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual, err := s.mapSortKey(tt.param)
-
-			if tt.expectedErr != nil {
-				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Fatalf("mapSortKey() error = %v, want %v", err, tt.expectedErr)
-				}
-				if actual != "" {
-					t.Fatalf("mapSortKey() expected empty key on error, got %q", actual)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("mapSortKey() unexpected error = %v", err)
-			}
-
-			if actual != tt.expectedKey {
-				t.Fatalf("mapSortKey() key = %q, want %q", actual, tt.expectedKey)
 			}
 		})
 	}

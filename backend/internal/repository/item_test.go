@@ -15,7 +15,7 @@ var (
 	invalidItemId     = int64(-1)
 	invalidGroupId    = int64(-1)
 	invalidCategoryId = int64(-1)
-	invalidFieldSort  = "invalidField"
+	invalidFieldSort  = "invalidfield"
 	invalidName       = "invalidName"
 	validItemID       = int64(1)
 
@@ -242,7 +242,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by name",
 			groupID:    groupID1,
-			sortBy:     "items.name",
+			sortBy:     "name",
 			descending: false,
 			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "Name", false),
 			expectErr:  nil,
@@ -250,7 +250,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by average market price",
 			groupID:    groupID1,
-			sortBy:     "items.average_market_price",
+			sortBy:     "average_market_price",
 			descending: false,
 			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "AverageMarketPrice", false),
 			expectErr:  nil,
@@ -258,7 +258,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by unit type",
 			groupID:    groupID1,
-			sortBy:     "items.unit_type",
+			sortBy:     "unit_type",
 			descending: false,
 			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "UnitType", false),
 			expectErr:  nil,
@@ -266,7 +266,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID with sorting by item category name",
 			groupID:    groupID1,
-			sortBy:     "item_categories.name",
+			sortBy:     "category",
 			descending: false,
 			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "ItemCategory.Name", false),
 			expectErr:  nil,
@@ -277,12 +277,12 @@ func TestGetItemsByGroupID(t *testing.T) {
 			sortBy:     invalidFieldSort,
 			descending: false,
 			expected:   nil,
-			expectErr:  customErrors.NewInternalError("failed to fetch items", nil),
+			expectErr:  customErrors.NewInvalidParamsError([]string{invalidFieldSort}, nil),
 		},
 		{
 			name:       "Valid group ID with no items",
 			groupID:    invalidGroupId,
-			sortBy:     "items.name",
+			sortBy:     "name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -290,7 +290,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID 2 with sorting by name",
 			groupID:    groupID2,
-			sortBy:     "items.name",
+			sortBy:     "name",
 			descending: false,
 			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 2), "Name", false),
 			expectErr:  nil,
@@ -298,7 +298,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Valid group ID 3 with no items",
 			groupID:    groupID3,
-			sortBy:     "items.name",
+			sortBy:     "name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -306,7 +306,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 		{
 			name:       "Existing group with no items returns empty list",
 			groupID:    emptyGroupID,
-			sortBy:     "items.name",
+			sortBy:     "name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -706,6 +706,53 @@ func TestDeleteItem(t *testing.T) {
 			_, err = repo.GetByID(tt.id)
 			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows)) {
 				t.Errorf("expected item to be deleted, but it still exists")
+			}
+		})
+	}
+}
+
+func TestMapSortKey(t *testing.T) {
+	db := utils.SetUpTestDB(t)
+	defer db.Close()
+
+	repo := NewItemRepository(db)
+
+	tests := []struct {
+		name        string
+		param       string
+		expectedKey string
+		expectedErr error
+	}{
+		{name: "default empty", param: "", expectedKey: "items.name"},
+		{name: "name", param: "name", expectedKey: "items.name"},
+		{name: "name Capital Letters", param: "Name", expectedKey: "items.name"},
+		{name: "average market price", param: "average_market_price", expectedKey: "items.average_market_price"},
+		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "items.average_market_price"},
+		{name: "unit type", param: "unit_type", expectedKey: "items.unit_type"},
+		{name: "category", param: "category", expectedKey: "item_categories.name"},
+		{name: "invalid", param: "wrong", expectedErr: customErrors.NewInvalidParamsError([]string{"wrong"}, nil)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := repo.mapSortKey(tt.param)
+
+			if tt.expectedErr != nil {
+				if !utils.CompareErrors(err, tt.expectedErr) {
+					t.Fatalf("mapSortKey() error = %v, want %v", err, tt.expectedErr)
+				}
+				if actual != "" {
+					t.Fatalf("mapSortKey() expected empty key on error, got %q", actual)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("mapSortKey() unexpected error = %v", err)
+			}
+
+			if actual != tt.expectedKey {
+				t.Fatalf("mapSortKey() key = %q, want %q", actual, tt.expectedKey)
 			}
 		})
 	}

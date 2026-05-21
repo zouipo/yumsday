@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/repository"
@@ -46,17 +45,7 @@ func NewItemService(itemRepo repository.ItemRepositoryInterface,
 /*** READ OPERATIONS ***/
 // GetAllByGroupID returns all items for a given group ID, sorted by the specified key and order.
 func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	sortKey, err := s.mapSortKey(sort)
-	if err != nil {
-		return nil, err
-	}
-
-	items, err := s.repo.GetByGroupID(groupID, sortKey, descending)
-	if err != nil {
-		return nil, err
-	}
-
-	return items, nil
+	return s.repo.GetByGroupID(groupID, sort, descending)
 }
 
 // GetByID returns the item identified by id or an error if not found.
@@ -155,24 +144,6 @@ func (s *ItemService) Delete(id int64) error {
 }
 
 /*** HELPER FUNCTIONS ***/
-// mapSortKey maps the sort parameter to the corresponding database column.
-func (s *ItemService) mapSortKey(param string) (string, error) {
-	param = strings.ToLower(param)
-
-	switch param {
-	case "name", "":
-		return "items.name", nil
-	case "average_market_price":
-		return "items.average_market_price", nil
-	case "unit_type":
-		return "items.unit_type", nil
-	case "category":
-		return "item_categories.name", nil
-	default:
-		return "", customErrors.NewInvalidParamsError([]string{param}, nil)
-	}
-}
-
 // validateItem checks the validity of the item fields and ensures that related entities exist and are consistent.
 func (s *ItemService) validateItem(item *model.Item) error {
 	err := checkSimpleFields(item)

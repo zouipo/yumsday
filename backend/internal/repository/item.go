@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"log/slog"
+	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 
@@ -31,13 +32,18 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 
 // GetAllByGroupID fetches all items by group ID, ordered by a specified column.
 func (r *ItemRepository) GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error) {
-	clauses := "WHERE items.group_id = ? ORDER by " + sort
+	sortKey, err := r.mapSortKey(sort)
+	if err != nil {
+		return nil, err
+	}
+
+	clauses := "WHERE items.group_id = ? ORDER by " + sortKey
 
 	if desc {
 		clauses += " DESC"
 	}
 
-	items, err := r.fetchItems(clauses, groupID, sort)
+	items, err := r.fetchItems(clauses, groupID, sortKey)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +155,25 @@ func (r *ItemRepository) Delete(id int64) error {
 	}
 
 	return nil
+}
+
+/*** HELPER FUNCTIONS ***/
+// mapSortKey maps the sort parameter to the corresponding database column.
+func (r *ItemRepository) mapSortKey(param string) (string, error) {
+	param = strings.ToLower(param)
+
+	switch param {
+	case "name", "":
+		return "items.name", nil
+	case "average_market_price":
+		return "items.average_market_price", nil
+	case "unit_type":
+		return "items.unit_type", nil
+	case "category":
+		return "item_categories.name", nil
+	default:
+		return "", customErrors.NewInvalidParamsError([]string{param}, nil)
+	}
 }
 
 // fetchItems is a helper method to retrieve multiple items based on filtering options.
