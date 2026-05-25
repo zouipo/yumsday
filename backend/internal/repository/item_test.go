@@ -260,7 +260,7 @@ func TestGetItemsByGroupID(t *testing.T) {
 			groupID:    groupID1,
 			sortBy:     "unit_type",
 			descending: false,
-			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "UnitType", false),
+			expected:   utils.SortSliceByFieldName(itemsByGroupID(expectedItems, 1), "UnitType.value", false),
 			expectErr:  nil,
 		},
 		{

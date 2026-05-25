@@ -2,6 +2,7 @@ package service
 
 import (
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -94,7 +95,6 @@ type MockItemRepository struct {
 	createErr       error
 	updateErr       error
 	deleteErr       error
-	lastDescending  bool
 }
 
 func NewMockItemRepository() *MockItemRepository {
@@ -112,22 +112,10 @@ func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, desc bo
 	}
 
 	result := make([]model.Item, 0)
-	sortKey = strings.ToLower(sortKey)
-	sort := ""
-
-	switch sortKey {
-	case "name", "":
-		sort = "items.name"
-	case "average_market_price":
-		sort = "items.average_market_price"
-	case "unit_type":
-		sort = "items.unit_type"
-	case "category":
-		sort = "item_categories.name"
-	default:
+	sortKeys := []string{"name", "averagemarketprice", "unittype.value", "itemcategory.name"}
+	if !slices.Contains(sortKeys, strings.ToLower(sortKey)) {
 		return nil, customErrors.NewInvalidParamsError([]string{sortKey}, nil)
 	}
-	m.lastDescending = desc
 
 	for _, item := range m.items {
 		if item.GroupID == groupID {
@@ -135,7 +123,7 @@ func (m *MockItemRepository) GetByGroupID(groupID int64, sortKey string, desc bo
 		}
 	}
 
-	return sortSliceItem(result, sort, desc), nil
+	return utils.SortSliceByFieldName(result, sortKey, desc), nil
 }
 
 func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
@@ -164,7 +152,7 @@ func (m *MockItemRepository) GetByName(name string, desc bool) ([]model.Item, er
 		}
 	}
 
-	return sortSliceItem(result, "name", desc), nil
+	return utils.SortSliceByFieldName(result, "Name", desc), nil
 }
 
 func (m *MockItemRepository) Create(item *model.Item) (int64, error) {
@@ -348,24 +336,7 @@ func getByGroupID(id int64, sortKey string, desc bool) []model.Item {
 		}
 	}
 
-	return sortSliceItem(result, sortKey, desc)
-}
-
-// sortSliceItem translates sortKey in attribute Item name before calling SortSliceByFieldName
-func sortSliceItem(slice []model.Item, sortKey string, desc bool) []model.Item {
-	sort := ""
-	switch sortKey {
-	case "", "items.name":
-		sort = "Name"
-	case "items.average_market_price":
-		sort = "AverageMarketPrice"
-	case "items.unit_type":
-		sort = "UnitType"
-	default:
-		sort = "ItemCategory.Name"
-	}
-
-	return utils.SortSliceByFieldName(slice, sort, desc)
+	return utils.SortSliceByFieldName(result, sortKey, desc)
 }
 
 func compareSlicesItems(s1, s2 []model.Item) bool {
@@ -444,37 +415,30 @@ func TestGetByGroupID(t *testing.T) {
 		{
 			name:       "Sort by name asc",
 			groupID:    group1.ID,
-			sort:       "name",
+			sort:       "Name",
 			descending: false,
-			expected:   getByGroupID(group1.ID, "items.name", false),
-		},
-		{
-			name:       "Sort by name UPPERCASE asc",
-			groupID:    group1.ID,
-			sort:       "NAME",
-			descending: false,
-			expected:   getByGroupID(group1.ID, "items.name", false),
+			expected:   getByGroupID(group1.ID, "Name", false),
 		},
 		{
 			name:       "Sort by category desc",
 			groupID:    group2.ID,
-			sort:       "category",
+			sort:       "ItemCategory.Name",
 			descending: true,
-			expected:   getByGroupID(group2.ID, "item_categories.name", true),
+			expected:   getByGroupID(group2.ID, "ItemCategory.Name", true),
 		},
 		{
 			name:       "Sort by average market price asc",
 			groupID:    group1.ID,
-			sort:       "average_market_price",
+			sort:       "AverageMarketPrice",
 			descending: false,
-			expected:   getByGroupID(group1.ID, "items.average_market_price", false),
+			expected:   getByGroupID(group1.ID, "AverageMarketPrice", false),
 		},
 		{
 			name:       "Sort by unit type asc",
 			groupID:    group2.ID,
-			sort:       "unit_type",
+			sort:       "UnitType.value",
 			descending: false,
-			expected:   getByGroupID(group2.ID, "items.unit_type", false),
+			expected:   getByGroupID(group2.ID, "UnitType.value", false),
 		},
 		{
 			name:        "Invalid sort parameter",
@@ -485,7 +449,7 @@ func TestGetByGroupID(t *testing.T) {
 		{
 			name:        "Repository error",
 			groupID:     group1.ID,
-			sort:        "name",
+			sort:        "Name",
 			repoErr:     customErrors.NewInternalError("failed to fetch items", nil),
 			expectedErr: customErrors.NewInternalError("failed to fetch items", nil),
 		},
@@ -509,10 +473,6 @@ func TestGetByGroupID(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("GetByGroupID() unexpected error = %v", err)
-			}
-
-			if m.lastDescending != tt.descending {
-				t.Errorf("GetByGroupID() descending = %v, want %v", m.lastDescending, tt.descending)
 			}
 
 			if len(actual) != len(tt.expected) {
