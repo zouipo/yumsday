@@ -25,6 +25,12 @@ func (e *InvalidParamsError) Error() string {
 	return fmt.Sprintf("Invalid parameters '%s'", strings.Join(e.Fields, "', '"))
 }
 
+func (e *InvalidParamsError) AddInvalidField(fields ...string) {
+	for _, field := range fields {
+		e.Fields = append(e.Fields, field)
+	}
+}
+
 func (e *InvalidParamsError) HTTPStatus() int {
 	return http.StatusBadRequest
 }
