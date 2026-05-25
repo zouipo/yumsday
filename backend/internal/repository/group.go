@@ -52,8 +52,12 @@ func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Gr
 	}
 
 	ret := []model.Group{}
-	seenUsers := make(map[int64]map[int64]bool)
-	stateMap := make(map[int64]int64)
+
+	type state struct {
+		retIndex  int64
+		seenUsers map[int64]bool
+	}
+	stateMap := make(map[int64]state)
 
 	for rows.Next() {
 		tmpGroup := &model.Group{}
@@ -76,14 +80,17 @@ func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Gr
 		id := tmpGroup.ID
 		if _, exists := stateMap[id]; !exists {
 			ret = append(ret, *tmpGroup)
-			stateMap[id] = int64(len(ret) - 1)
-			seenUsers[id] = make(map[int64]bool)
+			stateMap[id] = state{
+				retIndex:  int64(len(ret) - 1),
+				seenUsers: make(map[int64]bool),
+			}
 		}
 
-		idx := stateMap[id]
-		if !seenUsers[id][tmpUser.UserID] {
-			ret[idx].Members = append(ret[idx].Members, *tmpUser)
-			seenUsers[id][tmpUser.UserID] = true
+		i := stateMap[id].retIndex
+
+		if !stateMap[id].seenUsers[tmpUser.UserID] {
+			ret[i].Members = append(ret[i].Members, *tmpUser)
+			stateMap[id].seenUsers[tmpUser.UserID] = true
 		}
 	}
 
