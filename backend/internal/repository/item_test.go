@@ -726,6 +726,7 @@ func TestMapSortKey(t *testing.T) {
 		{name: "default empty", param: "", expectedKey: "items.name"},
 		{name: "name", param: "name", expectedKey: "items.name"},
 		{name: "name Capital Letters", param: "Name", expectedKey: "items.name"},
+		{name: "name UPPERCASE", param: "NAME", expectedKey: "items.name"},
 		{name: "average market price", param: "average_market_price", expectedKey: "items.average_market_price"},
 		{name: "average market price UPPER CASE", param: "AVERAGE_MARKET_PRICE", expectedKey: "items.average_market_price"},
 		{name: "unit type", param: "unit_type", expectedKey: "items.unit_type"},
