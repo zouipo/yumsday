@@ -28,7 +28,7 @@ func (m *MockRecipeRepository) GetByGroupID(_ int64) ([]model.Recipe, error) {
 	return nil, nil
 }
 
-func (m *MockRecipeRepository) GetRecipeLiteByItemID(itemID int64) ([]model.Recipe, error) {
+func (m *MockRecipeRepository) GetRecipeByItemID(itemID int64) ([]model.Recipe, error) {
 	if m.getByItemErr != nil {
 		return nil, m.getByItemErr
 	}
@@ -98,7 +98,7 @@ func TestGetByItemID(t *testing.T) {
 			}
 
 			service := NewRecipeService(mockRepo)
-			actual, err := service.GetRecipeLiteByItemID(tt.itemID)
+			actual, err := service.GetRecipeByItemID(tt.itemID)
 
 			if tt.err != nil {
 				if !utils.CompareErrors(err, tt.err) {

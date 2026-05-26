@@ -331,15 +331,15 @@ func TestGetByItemID(t *testing.T) {
 			name:   "item in multiple recipes",
 			itemID: 10,
 			expected: []model.Recipe{
-				{ID: testRecipes[0].ID, Name: testRecipes[0].Name, ImageURL: testRecipes[0].ImageURL},
-				{ID: testRecipes[2].ID, Name: testRecipes[2].Name, ImageURL: testRecipes[2].ImageURL},
+				testRecipes[0],
+				testRecipes[2],
 			},
 		},
 		{
 			name:   "item in one recipe",
 			itemID: 13,
 			expected: []model.Recipe{
-				{ID: testRecipes[3].ID, Name: testRecipes[3].Name, ImageURL: testRecipes[3].ImageURL},
+				testRecipes[3],
 			},
 		},
 		{
@@ -356,7 +356,7 @@ func TestGetByItemID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := repo.GetRecipeLiteByItemID(tt.itemID)
+			actual, err := repo.GetRecipeByItemID(tt.itemID)
 			if err != nil {
 				t.Fatalf("didn't expected error, got %v", err)
 			}
@@ -364,7 +364,7 @@ func TestGetByItemID(t *testing.T) {
 			actual = utils.SortSliceByFieldName(actual, "ID", false)
 			tt.expected = utils.SortSliceByFieldName(tt.expected, "ID", false)
 
-			if !reflect.DeepEqual(actual, tt.expected) {
+			if !areRecipeSlicesEqual(actual, tt.expected) {
 				t.Fatalf("expected %v, got %v", tt.expected, actual)
 			}
 		})
