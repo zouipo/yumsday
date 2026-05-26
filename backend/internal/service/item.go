@@ -43,8 +43,12 @@ func NewItemService(itemRepo repository.ItemRepositoryInterface,
 }
 
 /*** READ OPERATIONS ***/
-// GetAllByGroupID returns all items for a given group ID, sorted by the specified key and order.
+// GetByGroupID returns all items for a given group ID, sorted by the specified key and order.
 func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
+	if _, err := s.groupService.GetByID(groupID); err != nil {
+		return nil, err
+	}
+
 	return s.repo.GetByGroupID(groupID, sort, descending)
 }
 

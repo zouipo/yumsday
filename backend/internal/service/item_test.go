@@ -395,11 +395,12 @@ func TestNewItemService(t *testing.T) {
 
 func TestGetByGroupID(t *testing.T) {
 	m := setUpDataTestItem()
+	groupService := setUpGroupServiceData()
 	s := newItemServiceForTest(
 		m,
 		&MockRecipeServiceForItem{},
 		&MockGroceryServiceForItem{},
-		&MockGroupServiceForItem{},
+		groupService,
 		&MockItemCategoryServiceForItem{},
 	)
 
@@ -409,6 +410,7 @@ func TestGetByGroupID(t *testing.T) {
 		sort        string
 		descending  bool
 		expected    []model.Item
+		groupErr    error
 		repoErr     error
 		expectedErr error
 	}{
@@ -441,6 +443,19 @@ func TestGetByGroupID(t *testing.T) {
 			expected:   getByGroupID(group2.ID, "UnitType.value", false),
 		},
 		{
+			name:        "Group not found",
+			groupID:     invalidItemGroupID,
+			sort:        "Name",
+			expectedErr: customErrors.NewNotFoundError("Group", "id", nil),
+		},
+		{
+			name:        "Group service error",
+			groupID:     group1.ID,
+			sort:        "Name",
+			groupErr:    customErrors.NewInternalError("failed to fetch groups", nil),
+			expectedErr: customErrors.NewInternalError("failed to fetch groups", nil),
+		},
+		{
 			name:        "Invalid sort parameter",
 			groupID:     group1.ID,
 			sort:        "unknown_field",
@@ -457,6 +472,7 @@ func TestGetByGroupID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			groupService.getByIDErr = tt.groupErr
 			m.getBygroupIDErr = tt.repoErr
 
 			actual, err := s.GetByGroupID(tt.groupID, tt.sort, tt.descending)
