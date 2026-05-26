@@ -42,7 +42,7 @@ func (r *SessionRepository) GetByID(id string) (*model.Session, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Session", id, err)
+			return nil, customErrors.NewNotFoundError("sessions", id, err)
 		}
 		return nil, customErrors.NewInternalError("Failed to fetch session by ID", err)
 	}

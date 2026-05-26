@@ -243,7 +243,7 @@ func TestGetByUserID(t *testing.T) {
 		},
 		{
 			name:    "non-existing user",
-			wantErr: customErrors.NewNotFoundError("User", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
+			wantErr: customErrors.NewNotFoundError("users", fmt.Sprintf("%d", invalidId), sql.ErrNoRows),
 			wantUser: model.User{
 				ID: invalidId,
 			},
@@ -299,7 +299,7 @@ func TestGetByUsername(t *testing.T) {
 		{
 			name:     "non-existing user",
 			username: invalidUsername,
-			wantErr:  customErrors.NewNotFoundError("User", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
+			wantErr:  customErrors.NewNotFoundError("users", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
 		},
 	}
 
@@ -444,7 +444,7 @@ func TestUpdate(t *testing.T) {
 				Language: enum.English,
 				AppTheme: enum.Light,
 			},
-			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("users", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name: "no field updated",
@@ -522,7 +522,7 @@ func TestUpdateAdminRole(t *testing.T) {
 			name:    "update admin role for non-existing user",
 			userID:  invalidId,
 			role:    true,
-			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("users", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name:    "set admin role for existing user",
@@ -582,7 +582,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:    "delete non-existing user",
 			id:      invalidId,
-			wantErr: customErrors.NewNotFoundError("User", strconv.FormatInt(invalidId, 10), nil),
+			wantErr: customErrors.NewNotFoundError("users", strconv.FormatInt(invalidId, 10), nil),
 		},
 		{
 			name:    "delete existing user",

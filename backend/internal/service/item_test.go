@@ -137,7 +137,7 @@ func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("Item", "id", nil)
+	return nil, customErrors.NewNotFoundError("items", "id", nil)
 }
 
 func (m *MockItemRepository) GetByName(name string, desc bool) ([]model.Item, error) {
@@ -183,7 +183,7 @@ func (m *MockItemRepository) Update(item *model.Item) error {
 		}
 	}
 
-	return customErrors.NewNotFoundError("Item", "id", nil)
+	return customErrors.NewNotFoundError("items", "id", nil)
 }
 
 func (m *MockItemRepository) Delete(id int64) error {
@@ -198,7 +198,7 @@ func (m *MockItemRepository) Delete(id int64) error {
 		}
 	}
 
-	return customErrors.NewNotFoundError("Item", "id", nil)
+	return customErrors.NewNotFoundError("items", "id", nil)
 }
 
 /*** MOCK SERVICES ***/
@@ -248,7 +248,7 @@ func (m *MockGroupServiceForItem) GetByID(id int64) (*model.Group, error) {
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("Group", "id", nil)
+	return nil, customErrors.NewNotFoundError("groups", "id", nil)
 }
 
 type MockItemCategoryServiceForItem struct {
@@ -268,7 +268,7 @@ func (m *MockItemCategoryServiceForItem) GetByID(id int64) (*model.ItemCategory,
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "id", nil)
+	return nil, customErrors.NewNotFoundError("item_categories", "id", nil)
 }
 
 func (m *MockItemCategoryServiceForItem) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
@@ -284,7 +284,7 @@ func (m *MockItemCategoryServiceForItem) GetByNameAndGroupID(name string, groupI
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "name, group_id", nil)
+	return nil, customErrors.NewNotFoundError("item_categories", "name, group_id", nil)
 }
 
 /*** HELPER ***/
@@ -446,7 +446,7 @@ func TestGetByGroupID(t *testing.T) {
 			name:        "Group not found",
 			groupID:     invalidItemGroupID,
 			sort:        "Name",
-			expectedErr: customErrors.NewNotFoundError("Group", "id", nil),
+			expectedErr: customErrors.NewNotFoundError("groups", "id", nil),
 		},
 		{
 			name:        "Group service error",
@@ -527,7 +527,7 @@ func TestGetItemByID(t *testing.T) {
 		{
 			name:        "Non existing ID",
 			itemID:      invalidItemID,
-			expectedErr: customErrors.NewNotFoundError("Item", "id", nil),
+			expectedErr: customErrors.NewNotFoundError("items", "id", nil),
 		},
 		{
 			name:        "Repository error",
@@ -594,7 +594,7 @@ func TestGetByName(t *testing.T) {
 		{
 			name:        "Empty name validation",
 			itemName:    "",
-			expectedErr: customErrors.NewNotFoundError("Item", "name", nil),
+			expectedErr: customErrors.NewNotFoundError("items", "name", nil),
 		},
 		{
 			name:        "Repository error",
@@ -1130,7 +1130,7 @@ func TestDeleteItem(t *testing.T) {
 		{
 			name:        "Not found",
 			itemID:      invalidItemID,
-			expectedErr: customErrors.NewNotFoundError("Item", "id", nil),
+			expectedErr: customErrors.NewNotFoundError("items", "id", nil),
 		},
 	}
 

@@ -60,7 +60,7 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 // GetByName returns the item that matches the provided name or an error.
 func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, error) {
 	if name == "" {
-		return nil, customErrors.NewNotFoundError("Item", "name", nil)
+		return nil, customErrors.NewNotFoundError("items", "name", nil)
 	}
 
 	return s.repo.GetByName(name, descending)

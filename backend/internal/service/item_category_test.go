@@ -39,7 +39,7 @@ func (m *MockItemCategoryRepository) GetByID(id int64) (*model.ItemCategory, err
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "items.id", nil)
+	return nil, customErrors.NewNotFoundError("item_categories", "items.id", nil)
 }
 
 func (m *MockItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64) (*model.ItemCategory, error) {
@@ -53,7 +53,7 @@ func (m *MockItemCategoryRepository) GetByNameAndGroupID(name string, groupID in
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil)
+	return nil, customErrors.NewNotFoundError("item_categories", "items.name, items.group_id", nil)
 }
 
 func setUpDataTestIC() *MockItemCategoryRepository {
@@ -111,7 +111,7 @@ func TestGetItemCategoryByID(t *testing.T) {
 			name:        "Non existing ID",
 			icID:        int64(invalidIcID),
 			expected:    nil,
-			expectedErr: customErrors.NewNotFoundError("ItemCategory", "items.id", nil),
+			expectedErr: customErrors.NewNotFoundError("item_categories", "items.id", nil),
 		},
 		{
 			name:        "Repository error",
@@ -177,14 +177,14 @@ func TestGetItemCategoryByNameAndGroupID(t *testing.T) {
 			icName:      invalidICName,
 			groupID:     invalidICGroupID,
 			expected:    nil,
-			expectedErr: customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil),
+			expectedErr: customErrors.NewNotFoundError("item_categories", "items.name, items.group_id", nil),
 		},
 		{
 			name:        "Existing name, bad group ID",
 			icName:      firstItem.Name,
 			groupID:     secondItem.GroupID,
 			expected:    nil,
-			expectedErr: customErrors.NewNotFoundError("ItemCategory", "items.name, items.group_id", nil),
+			expectedErr: customErrors.NewNotFoundError("item_categories", "items.name, items.group_id", nil),
 		},
 		{
 			name:        "Repository error",

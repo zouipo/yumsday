@@ -43,7 +43,7 @@ func (m *MockSessionRepository) GetByID(id string) (*model.Session, error) {
 
 	session, exists := m.sessions[id]
 	if !exists {
-		return nil, customErrors.NewNotFoundError("Session", id, nil)
+		return nil, customErrors.NewNotFoundError("sessions", id, nil)
 	}
 
 	return session, nil

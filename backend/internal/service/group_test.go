@@ -37,7 +37,7 @@ func (m *MockGroupRepository) GetByID(id int64) (*model.Group, error) {
 		}
 	}
 
-	return nil, customErrors.NewNotFoundError("Group", "groups.id", nil)
+	return nil, customErrors.NewNotFoundError("groups", "groups.id", nil)
 }
 
 func setUpDataTestGroup() *MockGroupRepository {
@@ -110,7 +110,7 @@ func TestGetGroupByID(t *testing.T) {
 			name:        "Non existing ID",
 			groupID:     int64(invalidGroupID),
 			expected:    nil,
-			expectedErr: customErrors.NewNotFoundError("Group", "groups.id", nil),
+			expectedErr: customErrors.NewNotFoundError("groups", "groups.id", nil),
 		},
 		{
 			name:        "Repository error",

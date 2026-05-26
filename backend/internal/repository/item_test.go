@@ -357,7 +357,7 @@ func TestGetItemById(t *testing.T) {
 			name:      "Get item by invalid ID",
 			id:        invalidItemId,
 			expected:  model.Item{},
-			expectErr: customErrors.NewNotFoundError("Item", "id", nil),
+			expectErr: customErrors.NewNotFoundError("items", "id", nil),
 		},
 	}
 
@@ -611,7 +611,7 @@ func TestUpdateItem(t *testing.T) {
 				ItemCategory: itemCategory1,
 			},
 			expectedItem: &model.Item{},
-			expectErr:    customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows),
+			expectErr:    customErrors.NewNotFoundError("items", "id", sql.ErrNoRows),
 		},
 		{
 			name: "Update item with invalid category ID",
@@ -678,7 +678,7 @@ func TestDeleteItem(t *testing.T) {
 		{
 			name:      "Delete non-existing item",
 			id:        invalidItemId,
-			expectErr: customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows),
+			expectErr: customErrors.NewNotFoundError("items", "id", sql.ErrNoRows),
 		},
 	}
 
@@ -704,7 +704,7 @@ func TestDeleteItem(t *testing.T) {
 
 			// Verify the item was deleted
 			_, err = repo.GetByID(tt.id)
-			if !utils.CompareErrors(err, customErrors.NewNotFoundError("Item", "id", sql.ErrNoRows)) {
+			if !utils.CompareErrors(err, customErrors.NewNotFoundError("items", "id", sql.ErrNoRows)) {
 				t.Errorf("expected item to be deleted, but it still exists")
 			}
 		})

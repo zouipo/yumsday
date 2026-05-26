@@ -28,7 +28,7 @@ var (
 	invalidId       = -1
 	invalidUsername = "_"
 
-	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("users", strconv.FormatInt(int64(invalidId), 10), nil)
 )
 
 // MockUserRepository is a mock implementation of UserRepository for testing
@@ -71,7 +71,7 @@ func (m *MockUserRepository) GetByID(id int64) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), nil)
+	return nil, customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), nil)
 }
 
 func (m *MockUserRepository) GetByUsername(username string) (*model.User, error) {
@@ -84,7 +84,7 @@ func (m *MockUserRepository) GetByUsername(username string) (*model.User, error)
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("User", username, nil)
+	return nil, customErrors.NewNotFoundError("users", username, nil)
 }
 
 func (m *MockUserRepository) Create(user *model.User) (int64, error) {
@@ -94,7 +94,7 @@ func (m *MockUserRepository) Create(user *model.User) (int64, error) {
 
 	for i := range m.users {
 		if m.users[i].Username == user.Username {
-			return 0, customErrors.NewConflictError("User", "already exists", nil)
+			return 0, customErrors.NewConflictError("users", "already exists", nil)
 		}
 	}
 
@@ -125,7 +125,7 @@ func (m *MockUserRepository) Update(user *model.User) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), nil)
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(user.ID, 10), nil)
 }
 
 func (m *MockUserRepository) UpdateAdminRole(userID int64, role bool) error {
@@ -139,7 +139,7 @@ func (m *MockUserRepository) UpdateAdminRole(userID int64, role bool) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(userID, 10), nil)
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(userID, 10), nil)
 }
 
 func (m *MockUserRepository) Delete(id int64) error {
@@ -155,7 +155,7 @@ func (m *MockUserRepository) Delete(id int64) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), nil)
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), nil)
 }
 
 /*** HELPER FUNCTIONS ***/
@@ -365,7 +365,7 @@ func TestGetByUsername_NotFound(t *testing.T) {
 		t.Error("GetByUsername() expected error , got non-nil user")
 	}
 
-	notFoundUsernameErr := customErrors.NewNotFoundError("User", invalidUsername, nil)
+	notFoundUsernameErr := customErrors.NewNotFoundError("users", invalidUsername, nil)
 	if !utils.CompareErrors(err, notFoundUsernameErr) {
 		t.Errorf("GetByUsername() error ='%v', got expected %v", err, notFoundUsernameErr)
 	}
@@ -439,7 +439,7 @@ func TestCreate_DuplicateUsername(t *testing.T) {
 		t.Errorf("Create() expected ID 0 for duplicate username, got %d", id)
 	}
 
-	errConflict := customErrors.NewConflictError("User", "already exists", nil)
+	errConflict := customErrors.NewConflictError("users", "already exists", nil)
 	if !utils.CompareErrors(err, errConflict) {
 		t.Error("Create() expected error for duplicate username, got nil")
 	}
@@ -635,7 +635,7 @@ func TestUpdateAdminRole_UserNotFound(t *testing.T) {
 
 	err := service.UpdateAdminRole(int64(invalidId), true)
 
-	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("users", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdateAdminRole() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
@@ -754,7 +754,7 @@ func TestUpdatePassword_UserNotFound(t *testing.T) {
 
 	err := service.UpdatePassword(int64(invalidId), user.Password, ValidPassword)
 
-	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("users", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("UpdatePassword() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}
@@ -799,7 +799,7 @@ func TestDelete_UserNotFound(t *testing.T) {
 
 	err := service.Delete(int64(invalidId))
 
-	notFoundIdErr = customErrors.NewNotFoundError("User", strconv.FormatInt(int64(invalidId), 10), nil)
+	notFoundIdErr = customErrors.NewNotFoundError("users", strconv.FormatInt(int64(invalidId), 10), nil)
 	if !utils.CompareErrors(err, notFoundIdErr) {
 		t.Errorf("Delete() expected error '%v' for non-existent user , got '%v'", notFoundIdErr, err)
 	}

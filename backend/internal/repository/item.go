@@ -59,7 +59,7 @@ func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
 	}
 
 	if len(items) == 0 {
-		return nil, customErrors.NewNotFoundError("Item", "id", nil)
+		return nil, customErrors.NewNotFoundError("items", "id", nil)
 	}
 
 	return &items[0], nil
@@ -131,7 +131,7 @@ func (r *ItemRepository) Update(item *model.Item) error {
 
 	// If no rows were updated, it means the item was not found.
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("Item", "id", err)
+		return customErrors.NewNotFoundError("items", "id", err)
 	}
 
 	return nil
@@ -151,7 +151,7 @@ func (r *ItemRepository) Delete(id int64) error {
 
 	// If no rows were deleted, it means the item was not found.
 	if deletedRow == 0 {
-		return customErrors.NewNotFoundError("Item", "id", err)
+		return customErrors.NewNotFoundError("items", "id", err)
 	}
 
 	return nil

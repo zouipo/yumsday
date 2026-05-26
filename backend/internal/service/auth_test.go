@@ -182,7 +182,7 @@ func TestAuthenticate_UserServiceError(t *testing.T) {
 
 func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
 	badUsername := "missing-user"
-	repoErr := customErrors.NewNotFoundError("User", badUsername, nil)
+	repoErr := customErrors.NewNotFoundError("users", badUsername, nil)
 	mockUserService := &MockUserService{getByUsernameErr: repoErr}
 	mockSessionService := &MockSessionService{}
 	service := NewAuthService(mockSessionService, mockUserService)
