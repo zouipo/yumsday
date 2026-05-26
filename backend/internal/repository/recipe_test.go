@@ -323,9 +323,10 @@ func TestGetByItemID(t *testing.T) {
 	repo := NewRecipeRepository(db)
 
 	tests := []struct {
-		name     string
-		itemID   int64
-		expected []model.Recipe
+		name       string
+		itemID     int64
+		descending bool
+		expected   []model.Recipe
 	}{
 		{
 			name:   "item in multiple recipes",
@@ -333,6 +334,15 @@ func TestGetByItemID(t *testing.T) {
 			expected: []model.Recipe{
 				testRecipes[0],
 				testRecipes[2],
+			},
+		},
+		{
+			name:       "item in multiple recipes descending",
+			itemID:     10,
+			descending: true,
+			expected: []model.Recipe{
+				testRecipes[2],
+				testRecipes[0],
 			},
 		},
 		{
@@ -354,9 +364,9 @@ func TestGetByItemID(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+		for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := repo.GetRecipeByItemID(tt.itemID)
+				actual, err := repo.GetRecipeByItemID(tt.itemID, tt.descending)
 			if err != nil {
 				t.Fatalf("didn't expected error, got %v", err)
 			}

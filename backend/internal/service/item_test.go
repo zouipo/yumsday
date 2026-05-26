@@ -209,7 +209,7 @@ type MockRecipeServiceForItem struct {
 }
 
 // Use by Delete to check if item is used by any recipe
-func (m *MockRecipeServiceForItem) GetRecipeByItemID(_ int64) ([]model.Recipe, error) {
+func (m *MockRecipeServiceForItem) GetRecipeByItemID(_ int64, _ bool) ([]model.Recipe, error) {
 	if m.getByItemErr != nil {
 		return nil, m.getByItemErr
 	}
@@ -635,6 +635,7 @@ func TestGetRecipes(t *testing.T) {
 	tests := []struct {
 		name            string
 		itemID          int64
+		descending      bool
 		expectedRecipes []model.Recipe
 		recipeErr       error
 		expectedErr     error
@@ -643,6 +644,12 @@ func TestGetRecipes(t *testing.T) {
 			name:            "Existing recipes",
 			itemID:          items[0].ID,
 			expectedRecipes: []model.Recipe{recipe1, recipe2},
+		},
+		{
+			name:            "Existing recipes descending",
+			itemID:          items[0].ID,
+			descending:      true,
+			expectedRecipes: []model.Recipe{recipe2, recipe1},
 		},
 		{
 			name:        "Repository error",
@@ -667,7 +674,7 @@ func TestGetRecipes(t *testing.T) {
 				&MockItemCategoryServiceForItem{},
 			)
 
-			actual, err := s.GetRecipes(tt.itemID)
+			actual, err := s.GetRecipes(tt.itemID, tt.descending)
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {

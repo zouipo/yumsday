@@ -13,7 +13,7 @@ type ItemServiceInterface interface {
 	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
 	GetByName(name string, descending bool) ([]model.Item, error)
-	GetRecipes(id int64) ([]model.Recipe, error)
+	GetRecipes(id int64, descending bool) ([]model.Recipe, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -67,8 +67,8 @@ func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, err
 }
 
 // GetRecipes returns the recipes in which the item is used.
-func (s *ItemService) GetRecipes(id int64) ([]model.Recipe, error) {
-	return s.recipeService.GetRecipeByItemID(id)
+func (s *ItemService) GetRecipes(id int64, descending bool) ([]model.Recipe, error) {
+	return s.recipeService.GetRecipeByItemID(id, descending)
 }
 
 /*** CREATE OPERATIONS ***/
@@ -126,7 +126,7 @@ func (s *ItemService) Update(item *model.Item) error {
 // Delete removes the item identified by id from the database.
 // It checks for any dependencies in recipes and groceries before deletion.
 func (s *ItemService) Delete(id int64) error {
-	r, err := s.recipeService.GetRecipeByItemID(id)
+	r, err := s.recipeService.GetRecipeByItemID(id, false)
 	if err != nil {
 		return err
 	}

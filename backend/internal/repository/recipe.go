@@ -16,7 +16,7 @@ import (
 type RecipeRepositoryInterface interface {
 	GetByID(id int64) (model.Recipe, error)
 	GetByGroupID(groupID int64) ([]model.Recipe, error)
-	GetRecipeByItemID(itemID int64) ([]model.Recipe, error)
+	GetRecipeByItemID(itemID int64, descending bool) ([]model.Recipe, error)
 	Create(recipe *model.Recipe) (int64, error)
 	Update(recipe *model.Recipe) error
 	Delete(id int64) error
@@ -73,10 +73,13 @@ func (r *RecipeRepository) GetByGroupID(groupID int64, descending bool) ([]model
 	return recipes, nil
 }
 
-func (r *RecipeRepository) GetRecipeByItemID(itemID int64) ([]model.Recipe, error) {
-	clause := "WHERE recipes.id IN (SELECT DISTINCT recipe_id FROM ingredients WHERE item_id = ?)"
+func (r *RecipeRepository) GetRecipeByItemID(itemID int64, descending bool) ([]model.Recipe, error) {
+	clauses := "WHERE recipes.id IN (SELECT DISTINCT recipe_id FROM ingredients WHERE item_id = ?) ORDER BY recipes.name"
+	if descending {
+		clauses += " DESC"
+	}
 
-	recipes, err := r.fetchRecipes(clause, itemID)
+	recipes, err := r.fetchRecipes(clauses, itemID)
 	if err != nil {
 		return nil, err
 	}

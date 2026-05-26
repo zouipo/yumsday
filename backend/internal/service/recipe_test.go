@@ -28,7 +28,7 @@ func (m *MockRecipeRepository) GetByGroupID(_ int64) ([]model.Recipe, error) {
 	return nil, nil
 }
 
-func (m *MockRecipeRepository) GetRecipeByItemID(itemID int64) ([]model.Recipe, error) {
+func (m *MockRecipeRepository) GetRecipeByItemID(itemID int64, _ bool) ([]model.Recipe, error) {
 	if m.getByItemErr != nil {
 		return nil, m.getByItemErr
 	}
@@ -64,10 +64,11 @@ func TestNewRecipeService(t *testing.T) {
 
 func TestGetByItemID(t *testing.T) {
 	tests := []struct {
-		name     string
-		itemID   int64
-		expected []model.Recipe
-		err      error
+		name       string
+		itemID     int64
+		descending bool
+		expected   []model.Recipe
+		err        error
 	}{
 		{
 			name:   "Multiple recipes",
@@ -75,6 +76,15 @@ func TestGetByItemID(t *testing.T) {
 			expected: []model.Recipe{
 				{ID: 1, Name: "Grilled Chicken", ImageURL: new("/static/recipes/chicken.jpg")},
 				{ID: 3, Name: "Tomato Soup", ImageURL: new("/static/recipes/soup.jpg")},
+			},
+		},
+		{
+			name:       "Multiple recipes descending",
+			itemID:     10,
+			descending: true,
+			expected: []model.Recipe{
+				{ID: 3, Name: "Tomato Soup", ImageURL: new("/static/recipes/soup.jpg")},
+				{ID: 1, Name: "Grilled Chicken", ImageURL: new("/static/recipes/chicken.jpg")},
 			},
 		},
 		{
@@ -98,7 +108,7 @@ func TestGetByItemID(t *testing.T) {
 			}
 
 			service := NewRecipeService(mockRepo)
-			actual, err := service.GetRecipeByItemID(tt.itemID)
+			actual, err := service.GetRecipeByItemID(tt.itemID, tt.descending)
 
 			if tt.err != nil {
 				if !utils.CompareErrors(err, tt.err) {
