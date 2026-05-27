@@ -30,7 +30,7 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 	}
 }
 
-// GetAllByGroupID fetches all items by group ID, ordered by a specified column.
+// GetByGroupID fetches all items by group ID, ordered by a specified column.
 func (r *ItemRepository) GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error) {
 	sortKey, err := r.mapSortKey(sort)
 	if err != nil {

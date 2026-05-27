@@ -10,7 +10,7 @@ import (
 )
 
 type ItemServiceInterface interface {
-	GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
+	GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
 	GetByName(name string, descending bool) ([]model.Item, error)
 	GetRecipes(id int64, descending bool) ([]model.Recipe, error)
