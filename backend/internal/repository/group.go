@@ -38,8 +38,8 @@ func (r *GroupRepository) GetByID(id int64) (*model.Group, error) {
 }
 
 func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Group, error) {
-	query := `SELECT 
-	groups.id, groups.name, groups.image_url, groups.created_at, 
+	query := `SELECT
+	groups.id, groups.name, groups.image_url, groups.created_at,
 	group_members.user_id, group_members.admin, group_members.joined_at
 	FROM groups
 	LEFT JOIN group_members ON groups.id = group_members.group_id ` + clauses

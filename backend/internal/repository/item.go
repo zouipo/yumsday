@@ -178,8 +178,8 @@ func (r *ItemRepository) mapSortKey(param string) (string, error) {
 
 // fetchItems is a helper method to retrieve multiple items based on filtering options.
 func (r *ItemRepository) fetchItems(clauses string, values ...any) ([]model.Item, error) {
-	query := `SELECT 
-	items.*, item_categories.name 
+	query := `SELECT
+	items.*, item_categories.name
 	FROM items
 	LEFT JOIN item_categories ON items.item_category_id = item_categories.id ` + clauses
 

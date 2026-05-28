@@ -419,7 +419,7 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 		deleteValues = append(deleteValues, id)
 	}
 
-	query = `DELETE FROM ingredients 
+	query = `DELETE FROM ingredients
 			WHERE recipe_id = ? AND id NOT IN (` +
 		strings.Join(slices.Repeat([]string{"?"}, len(recipe.Ingredients)), ", ") + ")"
 

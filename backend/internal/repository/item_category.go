@@ -55,7 +55,7 @@ func (r *ItemCategoryRepository) GetByNameAndGroupID(name string, groupID int64,
 
 // fetchItemCategories is a helper method to retrieve multiple item categories based on filtering options.
 func (r *ItemCategoryRepository) fetchItemCategories(clauses string, values ...any) ([]model.ItemCategory, error) {
-	query := `SELECT 
+	query := `SELECT
 	item_categories.*
 	FROM item_categories ` + clauses
 
