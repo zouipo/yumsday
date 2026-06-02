@@ -156,27 +156,18 @@ func (s *ItemService) validateItem(item *model.Item) error {
 		return err
 	}
 
-	// If the item is new (create route)
+	// If the item is new, we check if the group exists. The group is not updated for existing items.
 	if item.ID == 0 {
-		if _, err = s.groupService.GetByID(item.GroupID); err != nil {
-			if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-				return customErrors.NewConflictError("Group", "group must exists", nil)
-			}
+		if err = ensureEntityExists(s.groupService.GetByID, item.GroupID, "Group", "group must exists"); err != nil {
 			return err
 		}
 	}
 
-	itemCategory, err := s.itemCategoryService.GetByID(item.ItemCategory.ID)
-
-	// Checks if the item category exists
-	if err != nil {
-		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
-			return customErrors.NewConflictError("ItemCategory", "item category must exists", nil)
-		}
+	if err = ensureEntityExists(s.itemCategoryService.GetByID, item.ItemCategory.ID, "ItemCategory", "item category must exists"); err != nil {
 		return err
 	}
 
-	if itemCategory.GroupID != item.GroupID {
+	if item.ItemCategory.GroupID != item.GroupID {
 		return customErrors.NewConflictError("ItemCategory", "item category must belongs to the same group as the item", nil)
 	}
 
@@ -198,6 +189,20 @@ func checkSimpleFields(item *model.Item) error {
 
 	if len(e.Fields) > 0 {
 		return e
+	}
+
+	return nil
+}
+
+// ensureEntityExists is a generic helper function that checks if an entity exists in the database using the provided getByID function.
+func ensureEntityExists[T any](getByID func(id int64) (T, error), id int64, entityType, errorMessage string) error {
+	_, err := getByID(id)
+
+	if err != nil {
+		if _, isNotFoundError := errors.AsType[*customErrors.NotFoundError](err); isNotFoundError {
+			return customErrors.NewConflictError(entityType, errorMessage, nil)
+		}
+		return err
 	}
 
 	return nil
