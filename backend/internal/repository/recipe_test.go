@@ -625,7 +625,7 @@ func TestRecipeRepositoryDelete(t *testing.T) {
 }
 
 func TestRecipeRepositoryDeleteByColumnSuccess(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 	ctx := context.Background()
@@ -655,7 +655,7 @@ func TestRecipeRepositoryDeleteByColumnSuccess(t *testing.T) {
 }
 
 func TestRecipeRepositoryDeleteByColumnNotFound(t *testing.T) {
-	db := setupRecipeTestDB(t)
+	db := utils.SetUpTestDB(t)
 	defer db.Close()
 	repo := NewRecipeRepository(db)
 	ctx := context.Background()
