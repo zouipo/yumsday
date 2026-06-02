@@ -29,6 +29,11 @@ go.work.sum
 # env file
 .env
 
+# Editor/IDE
+# .idea/
+.vscode/*
+!.vscode/launch.json
+
 # Swagger
 docs
 
