@@ -96,7 +96,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	if err = json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(user)); err != nil {
-		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
 	}
 }
@@ -118,7 +118,7 @@ func (h *UserHandler) authMe(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	if err := json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(u)); err != nil {
-		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
 	}
 }
@@ -309,7 +309,7 @@ func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	err = json.NewEncoder(w).Encode(mapper.MapList(users, mapper.ToUserDtoNoPassword))
 	if err != nil {
-		http.Error(w, "Failed to serialize users", http.StatusInternalServerError)
+		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
 	}
 }
@@ -332,7 +332,7 @@ func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	err = json.NewEncoder(w).Encode(users)
 	if err != nil {
-		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
 	}
 }

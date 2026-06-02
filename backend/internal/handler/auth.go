@@ -70,7 +70,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	if err = json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(user)); err != nil {
-		http.Error(w, "Failed to serialize user", http.StatusInternalServerError)
+		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
 	}
 }

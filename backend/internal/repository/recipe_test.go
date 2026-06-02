@@ -623,3 +623,52 @@ func TestRecipeRepositoryDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestRecipeRepositoryDeleteByColumnSuccess(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+	ctx := context.Background()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got '%v'", err)
+	}
+	defer tx.Rollback()
+
+	if err := repo.deleteByColumn(ctx, tx, "recipes_categories_junction", "recipe_id", 1); err != nil {
+		t.Fatalf("expected no error, got '%v'", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("expected no error, got '%v'", err)
+	}
+
+	var count int
+	row := db.QueryRow("SELECT COUNT(*) FROM recipes_categories_junction WHERE recipe_id = ?", 1)
+	if err := row.Scan(&count); err != nil {
+		t.Fatalf("expected no error, got '%v'", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected 0 recipes_categories_junction rows, got %d", count)
+	}
+}
+
+func TestRecipeRepositoryDeleteByColumnNotFound(t *testing.T) {
+	db := setupRecipeTestDB(t)
+	defer db.Close()
+	repo := NewRecipeRepository(db)
+	ctx := context.Background()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got '%v'", err)
+	}
+	defer tx.Rollback()
+
+	err = repo.deleteByColumn(ctx, tx, "recipes_categories_junction", "recipe_id", -1)
+	expected := customErrors.NewNotFoundError("recipes_categories_junction", "recipe_id", nil)
+	if !utils.CompareErrors(err, expected) {
+		t.Fatalf("expected error '%v', got '%v'", expected, err)
+	}
+}

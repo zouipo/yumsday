@@ -203,53 +203,57 @@ func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
 	tx, _ := r.db.BeginTx(ctx, nil)
 	defer tx.Rollback()
 
-	deleteFunc := func(ctx context.Context, tx *sql.Tx, tableName string, columnName string, recipeID int64) error {
-		res, err := tx.ExecContext(
-			ctx,
-			fmt.Sprintf("DELETE FROM %s WHERE %s = ?", tableName, columnName),
-			recipeID,
-		)
-		if err != nil {
-			return customErrors.NewInternalError(
-				fmt.Sprintf("failed to delete %s by %s for recipe %d", tableName, columnName, recipeID),
-				err,
-			)
+	deleteFunc := func(tableName, columnName string) error {
+		err := r.deleteByColumn(ctx, tx, tableName, columnName, id)
+		// Ignore NotFound error
+		if _, ok := errors.AsType[*customErrors.NotFoundError](err); ok {
+			return nil
 		}
-
-		deletedRows, err := res.RowsAffected()
-		if err != nil {
-			return customErrors.NewInternalError(
-				fmt.Sprintf("failed to check if recipe's %s were deleted", tableName),
-				err,
-			)
-		}
-		if deletedRows == 0 {
-			return customErrors.NewNotFoundError(tableName, columnName, err)
-		}
-
-		return nil
+		return err
 	}
 
-	if err := deleteFunc(ctx, tx, "recipes_categories_junction", "recipe_id", id); err != nil {
-		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
-			return err
-		}
+	if err := deleteFunc("recipes_categories_junction", "recipe_id"); err != nil {
+		return err
 	}
-	if err := deleteFunc(ctx, tx, "recipes_dishes_junction", "recipe_id", id); err != nil {
-		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
-			return err
-		}
+	if err := deleteFunc("recipes_dishes_junction", "recipe_id"); err != nil {
+		return err
 	}
-	if err := deleteFunc(ctx, tx, "ingredients", "recipe_id", id); err != nil {
-		if _, ok := errors.AsType[*customErrors.NotFoundError](err); !ok {
-			return err
-		}
+	if err := deleteFunc("ingredients", "recipe_id"); err != nil {
+		return err
 	}
-	if err := deleteFunc(ctx, tx, "recipes", "id", id); err != nil {
+	if err := r.deleteByColumn(ctx, tx, "recipes", "id", id); err != nil {
 		return err
 	}
 
 	tx.Commit()
+	return nil
+}
+
+/*** HELPER FUNCTIONS ***/
+func (r *RecipeRepository) deleteByColumn(ctx context.Context, tx *sql.Tx, tableName, columnName string, id int64) error {
+	res, err := tx.ExecContext(
+		ctx,
+		fmt.Sprintf("DELETE FROM %s WHERE %s = ?", tableName, columnName),
+		id,
+	)
+	if err != nil {
+		return customErrors.NewInternalError(
+			fmt.Sprintf("failed to delete %s by %s for recipe %d", tableName, columnName, id),
+			err,
+		)
+	}
+
+	deletedRows, err := res.RowsAffected()
+	if err != nil {
+		return customErrors.NewInternalError(
+			fmt.Sprintf("failed to check if recipe's %s were deleted", tableName),
+			err,
+		)
+	}
+	if deletedRows == 0 {
+		return customErrors.NewNotFoundError(tableName, columnName, err)
+	}
+
 	return nil
 }
 
@@ -271,7 +275,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 
 	rows, err := r.db.Query(query, values...)
 	if err != nil {
-		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+		return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 	}
 
 	ret := []model.Recipe{}
@@ -318,7 +322,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 		)
 
 		if err != nil {
-			return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+			return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 		}
 
 		id := tmpRecipe.ID
@@ -345,7 +349,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, customErrors.NewInternalError("failed to fetch recipes", err)
+		return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 	}
 
 	return ret, nil
