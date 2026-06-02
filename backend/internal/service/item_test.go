@@ -209,7 +209,7 @@ type MockRecipeServiceForItem struct {
 }
 
 // Use by Delete to check if item is used by any recipe
-func (m *MockRecipeServiceForItem) GetRecipeByItemID(_ int64, _ bool) ([]model.Recipe, error) {
+func (m *MockRecipeServiceForItem) GetByItemID(_ int64, _ bool) ([]model.Recipe, error) {
 	if m.getByItemErr != nil {
 		return nil, m.getByItemErr
 	}
@@ -674,24 +674,24 @@ func TestGetRecipes(t *testing.T) {
 				&MockItemCategoryServiceForItem{},
 			)
 
-			actual, err := s.GetRecipes(tt.itemID, tt.descending)
+			actual, err := s.GetRecipesByID(tt.itemID, tt.descending)
 
 			if tt.expectedErr != nil {
 				if !utils.CompareErrors(err, tt.expectedErr) {
-					t.Errorf("GetRecipes() error = %v, want %v", err, tt.expectedErr)
+					t.Errorf("GetRecipesByID() error = %v, want %v", err, tt.expectedErr)
 				}
 				if actual != nil {
-					t.Errorf("GetRecipes() expected nil recipes on error, got %v", actual)
+					t.Errorf("GetRecipesByID() expected nil recipes on error, got %v", actual)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Fatalf("GetRecipes() unexpected error = %v", err)
+				t.Fatalf("GetRecipesByID() unexpected error = %v", err)
 			}
 
 			if !reflect.DeepEqual(actual, tt.expectedRecipes) {
-				t.Errorf("GetRecipes() recipes mismatch: got %v, want %v", actual, tt.expectedRecipes)
+				t.Errorf("GetRecipesByID() recipes mismatch: got %v, want %v", actual, tt.expectedRecipes)
 			}
 		})
 	}

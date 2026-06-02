@@ -364,9 +364,9 @@ func TestGetByItemID(t *testing.T) {
 		},
 	}
 
-		for _, tt := range tests {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-				actual, err := repo.GetRecipeByItemID(tt.itemID, tt.descending)
+			actual, err := repo.GetByItemID(tt.itemID, tt.descending)
 			if err != nil {
 				t.Fatalf("didn't expected error, got %v", err)
 			}
