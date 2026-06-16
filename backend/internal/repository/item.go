@@ -2,8 +2,8 @@ package repository
 
 import (
 	"database/sql"
-	"errors"
-	"strconv"
+	"log/slog"
+	"strings"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 
@@ -11,9 +11,9 @@ import (
 )
 
 type ItemRepositoryInterface interface {
-	GetAllByGroupID(groupID int64, sort string) ([]model.Item, error)
+	GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string) (*model.Item, error)
+	GetByName(name string, desc bool) ([]model.Item, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -30,51 +30,22 @@ func NewItemRepository(db *sql.DB) *ItemRepository {
 	}
 }
 
-// GetAllByGroupID fetches all items by group ID, ordered by a specified column.
-func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	items := []model.Item{}
-
-	if descending {
-		sort += " DESC"
-	}
-
-	rows, err := r.db.Query(`
-	SELECT i.*, ic.name
-	FROM items i
-	JOIN item_categories ic ON i.item_category_id = ic.id
-	WHERE i.group_id = ?
-	ORDER BY `+sort, groupID)
-
+// GetByGroupID fetches all items by group ID, ordered by a specified column.
+func (r *ItemRepository) GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error) {
+	sortKey, err := r.mapSortKey(sort)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return items, nil // Return empty slice if no items found for the group ID
-		}
-		return nil, customErrors.NewInternalError("Failed to fetch items", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var item model.Item
-		err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Description,
-			&item.AverageMarketPrice,
-			&item.UnitType,
-			&item.GroupID,
-			&item.ItemCategory.ID,
-			&item.ItemCategory.Name,
-		)
-
-		if err != nil {
-			return nil, customErrors.NewInternalError("Failed to scan item", err)
-		}
-
-		items = append(items, item)
+		return nil, err
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, customErrors.NewInternalError("Failed to iterate rows", err)
+	clauses := "WHERE items.group_id = ? ORDER by " + sortKey
+
+	if desc {
+		clauses += " DESC"
+	}
+
+	items, err := r.fetchItems(clauses, groupID, sortKey)
+	if err != nil {
+		return nil, err
 	}
 
 	return items, nil
@@ -82,30 +53,32 @@ func (r *ItemRepository) GetAllByGroupID(groupID int64, sort string, descending 
 
 // GetByID retrieves an item from the database by its ID.
 func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
-	item, err := r.fetchItem("id", id)
-
+	items, err := r.fetchItems("WHERE items.id = ?", id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Item", strconv.FormatInt(id, 10), err)
-		}
-		return nil, customErrors.NewInternalError("Failed to fetch item", err)
+		return nil, err
 	}
 
-	return item, nil
+	if len(items) == 0 {
+		return nil, customErrors.NewNotFoundError("items", "id", nil)
+	}
+
+	return &items[0], nil
 }
 
 // GetByName retrieves an item from the database by its name.
-func (r *ItemRepository) GetByName(name string) (*model.Item, error) {
-	item, err := r.fetchItem("name", name)
+func (r *ItemRepository) GetByName(name string, desc bool) ([]model.Item, error) {
+	clauses := "WHERE items.name LIKE concat('%', ?, '%') ORDER BY items.name"
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("Item", name, err)
-		}
-		return nil, customErrors.NewInternalError("Failed to fetch item", err)
+	if desc {
+		clauses += " DESC"
 	}
 
-	return item, nil
+	items, err := r.fetchItems(clauses, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 // Create inserts a new item into the database and returns the inserted ID.
@@ -122,12 +95,12 @@ func (r *ItemRepository) Create(item *model.Item) (int64, error) {
 	)
 
 	if err != nil {
-		return 0, customErrors.NewInternalError("Failed to create item", err)
+		return 0, customErrors.NewInternalError("failed to create item", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, customErrors.NewInternalError("Failed to retrieve last insert ID", err)
+		return 0, customErrors.NewInternalError("failed to retrieve last insert ID", err)
 	}
 
 	return id, nil
@@ -148,17 +121,17 @@ func (r *ItemRepository) Update(item *model.Item) error {
 	)
 
 	if err != nil {
-		return customErrors.NewInternalError("Failed to update item", err)
+		return customErrors.NewInternalError("failed to update item", err)
 	}
 
 	updatedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalError("Failed to retrieve updated item", err)
+		return customErrors.NewInternalError("failed to retrieve updated item", err)
 	}
 
 	// If no rows were updated, it means the item was not found.
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("Item", strconv.FormatInt(item.ID, 10), err)
+		return customErrors.NewNotFoundError("items", "id", err)
 	}
 
 	return nil
@@ -168,48 +141,80 @@ func (r *ItemRepository) Update(item *model.Item) error {
 func (r *ItemRepository) Delete(id int64) error {
 	result, err := r.db.Exec("DELETE FROM items WHERE id = ?", id)
 	if err != nil {
-		return customErrors.NewInternalError("Failed to delete item", err)
+		return customErrors.NewInternalError("failed to delete item", err)
 	}
 
 	deletedRow, err := result.RowsAffected()
 	if err != nil {
-		return customErrors.NewInternalError("Failed to retrieve deleted item", err)
+		return customErrors.NewInternalError("failed to retrieve deleted item", err)
 	}
 
 	// If no rows were deleted, it means the item was not found.
 	if deletedRow == 0 {
-		return customErrors.NewNotFoundError("Item", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("items", "id", err)
 	}
 
 	return nil
 }
 
-// fetchItem is a helper method to retrieve an item based on a specific column and value.
-func (r *ItemRepository) fetchItem(column string, value any) (*model.Item, error) {
-	item := &model.Item{}
+/*** HELPER FUNCTIONS ***/
+// mapSortKey maps the sort parameter to the corresponding database column.
+func (r *ItemRepository) mapSortKey(param string) (string, error) {
+	param = strings.ToLower(param)
 
-	query := `
-	SELECT i.*, ic.name
-	FROM items i
-	JOIN item_categories ic ON i.item_category_id = ic.id
-	WHERE i.` + column + ` = ?`
+	switch param {
+	case "name", "":
+		return "items.name", nil
+	case "average_market_price":
+		return "items.average_market_price", nil
+	case "unit_type":
+		return "items.unit_type", nil
+	case "category":
+		return "item_categories.name", nil
+	default:
+		return "", customErrors.NewInvalidParamsError([]string{param}, nil)
+	}
+}
 
-	row := r.db.QueryRow(query, value)
+// fetchItems is a helper method to retrieve multiple items based on filtering options.
+func (r *ItemRepository) fetchItems(clauses string, values ...any) ([]model.Item, error) {
+	query := `SELECT
+	items.*, item_categories.name
+	FROM items
+	LEFT JOIN item_categories ON items.item_category_id = item_categories.id ` + clauses
 
-	err := row.Scan(
-		&item.ID,
-		&item.Name,
-		&item.Description,
-		&item.AverageMarketPrice,
-		&item.UnitType,
-		&item.GroupID,
-		&item.ItemCategory.ID,
-		&item.ItemCategory.Name,
-	)
+	slog.Debug("fetching items", "query", query)
 
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
-		return nil, err
+		return nil, customErrors.NewInternalError("failed to fetch items", err)
 	}
 
-	return item, nil
+	items := []model.Item{}
+
+	for rows.Next() {
+		var item model.Item
+		err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.Description,
+			&item.AverageMarketPrice,
+			&item.UnitType,
+			&item.GroupID,
+			&item.ItemCategory.ID,
+			&item.ItemCategory.Name,
+		)
+
+		if err != nil {
+			return nil, customErrors.NewInternalError("failed to fetch items", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, customErrors.NewInternalError("failed to iterate rows", err)
+	}
+
+	return items, nil
 }

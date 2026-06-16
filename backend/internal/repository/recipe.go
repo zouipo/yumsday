@@ -16,6 +16,7 @@ import (
 type RecipeRepositoryInterface interface {
 	GetByID(id int64) (model.Recipe, error)
 	GetByGroupID(groupID int64) ([]model.Recipe, error)
+	GetByItemID(itemID int64, descending bool) ([]model.Recipe, error)
 	Create(recipe *model.Recipe) (int64, error)
 	Update(recipe *model.Recipe) error
 	Delete(id int64) error
@@ -65,6 +66,20 @@ func (r *RecipeRepository) GetByGroupID(groupID int64, descending bool) ([]model
 	}
 
 	recipes, err := r.fetchRecipes(clauses, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	return recipes, nil
+}
+
+func (r *RecipeRepository) GetByItemID(itemID int64, descending bool) ([]model.Recipe, error) {
+	clauses := "WHERE recipes.id IN (SELECT DISTINCT recipe_id FROM ingredients WHERE item_id = ?) ORDER BY recipes.name"
+	if descending {
+		clauses += " DESC"
+	}
+
+	recipes, err := r.fetchRecipes(clauses, itemID)
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +423,7 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 		deleteValues = append(deleteValues, id)
 	}
 
-	query = `DELETE FROM ingredients 
+	query = `DELETE FROM ingredients
 			WHERE recipe_id = ? AND id NOT IN (` +
 		strings.Join(slices.Repeat([]string{"?"}, len(recipe.Ingredients)), ", ") + ")"
 

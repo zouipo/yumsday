@@ -78,7 +78,7 @@ func compareSessions(actual, expected *model.Session) error {
 	return nil
 }
 
-// setupTestDB initializes an in-memory SQLite database with test data for testing.
+// setupSessionTestDB initializes an in-memory SQLite database with test data for testing.
 func setupSessionTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
 	if err != nil {
@@ -191,7 +191,7 @@ func TestGetBySessionID(t *testing.T) {
 		{
 			name:      "non-existing session",
 			sessionID: invalidSession,
-			wantErr:   customErrors.NewNotFoundError("Session", invalidSession, sql.ErrNoRows),
+			wantErr:   customErrors.NewNotFoundError("sessions", invalidSession, sql.ErrNoRows),
 			expected:  nil,
 		},
 	}
@@ -355,7 +355,7 @@ func TestCleanUp(t *testing.T) {
 			cutoffTime := now.Add(-tt.expiration)
 			for _, session := range expectedSessions {
 				retrievedSession, err := testRepo.GetByID(session.ID)
-				notFoundErr := customErrors.NewNotFoundError("Session", session.ID, sql.ErrNoRows)
+				notFoundErr := customErrors.NewNotFoundError("sessions", session.ID, sql.ErrNoRows)
 				if err != nil && !utils.CompareErrors(err, notFoundErr) {
 					t.Errorf("Unexpected error while retrieving user session: %v", err)
 				}

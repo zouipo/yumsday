@@ -12,9 +12,5 @@ type Group struct {
 	Recipes    []Recipe         `json:"recipes"`
 	Items      []Item           `json:"items"`
 	Dishes     []Dish           `json:"dishes"`
-	Users      []struct {
-		UserID   int64     `json:"user_id"`
-		Admin    bool      `json:"admin"`
-		JoinedAt time.Time `json:"joined_at"`
-	} `json:"users"`
+	Members    []GroupMember    `json:"members"`
 }

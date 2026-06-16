@@ -81,7 +81,7 @@ func (m *MockUserService) GetByID(id int64) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
@@ -94,7 +94,7 @@ func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("User", username, errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("users", username, errors.New(notFoundErr))
 }
 
 func (m *MockUserService) Create(user *model.User) (int64, error) {
@@ -118,7 +118,7 @@ func (m *MockUserService) Update(user *model.User) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(user.ID, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) Delete(id int64) error {
@@ -131,7 +131,7 @@ func (m *MockUserService) Delete(id int64) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
@@ -144,7 +144,7 @@ func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword string) error {
@@ -157,7 +157,7 @@ func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword stri
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
 }
 
 /*** HELPER FUNCTIONS ***/

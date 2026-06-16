@@ -31,7 +31,8 @@ go.work.sum
 
 # Editor/IDE
 # .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
 
 # Swagger
 docs

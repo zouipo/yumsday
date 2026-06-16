@@ -50,7 +50,7 @@ func (r *UserRepository) GetByID(id int64) (*model.User, error) {
 	user, err := r.fetchUser("id", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
+			return nil, customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), err)
 		}
 		return nil, customErrors.NewInternalError("Failed to fetch user by ID", err)
 	}
@@ -64,7 +64,7 @@ func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
 	user, err := r.fetchUser("username", username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, customErrors.NewNotFoundError("User", username, err)
+			return nil, customErrors.NewNotFoundError("users", username, err)
 		}
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (r *UserRepository) Update(user *model.User) error {
 
 	// If no row was updated (because the resource was not found), returns an AppError of type EntityNotFoundError
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("User", strconv.FormatInt(user.ID, 10), err)
+		return customErrors.NewNotFoundError("users", strconv.FormatInt(user.ID, 10), err)
 	}
 
 	return nil
@@ -158,7 +158,7 @@ func (r *UserRepository) UpdateAdminRole(id int64, role bool) error {
 	}
 
 	if updatedRow == 0 {
-		return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil
@@ -178,7 +178,7 @@ func (r *UserRepository) Delete(id int64) error {
 	}
 
 	if deletedRow == 0 {
-		return customErrors.NewNotFoundError("User", strconv.FormatInt(id, 10), err)
+		return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), err)
 	}
 
 	return nil
