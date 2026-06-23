@@ -220,7 +220,7 @@ func TestGetByID(t *testing.T) {
 					t.Fatalf("failed to decode response: %v", err)
 				}
 
-				if reflect.DeepEqual(actual, tt.expected) {
+				if tt.expected == nil || !reflect.DeepEqual(actual, *tt.expected) {
 					t.Errorf("Actual item %v mismatched expected item %v", actual, tt.expected)
 				}
 			}
