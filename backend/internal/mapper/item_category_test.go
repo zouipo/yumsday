@@ -35,54 +35,30 @@ var (
 			},
 		},
 	}
-
-	ItemCategory1Light = &model.ItemCategory{
-		ID:      1,
-		Name:    "GRAINS AND PASTA",
-		GroupID: 1,
-	}
-
-	ItemCategory2 = &model.ItemCategory{
-		ID:      2,
-		Name:    "VEGETABLES",
-		GroupID: 2,
-	}
-
-	ItemCategoryDto1 = &dto.ItemCategoryDto{
-		ID:      1,
-		Name:    "GRAINS AND PASTA",
-		GroupID: 1,
-	}
-
-	ItemCategoryDto2 = &dto.ItemCategoryDto{
-		ID:      2,
-		Name:    "VEGETABLES",
-		GroupID: 2,
-	}
 )
 
 /*** TESTS ***/
 func TestToItemCategoryDto(t *testing.T) {
 	tests := []struct {
-		name        string
-		item        *model.ItemCategory
-		expectedDto *dto.ItemCategoryDto
+		name         string
+		itemCategory *model.ItemCategory
+		expectedDto  *dto.ItemCategoryDto
 	}{
 		{
-			name:        "ItemCategory 1",
-			item:        ItemCategory1Complete,
-			expectedDto: ItemCategoryDto1,
+			name:         "ItemCategory 1",
+			itemCategory: ItemCategory1Complete,
+			expectedDto:  itemCategoryDto1,
 		},
 		{
-			name:        "ItemCategory 2",
-			item:        ItemCategory2,
-			expectedDto: ItemCategoryDto2,
+			name:         "ItemCategory 2",
+			itemCategory: itemCategory2,
+			expectedDto:  itemCategoryDto2,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualDto := ToItemCategoryDto(tt.item)
+			actualDto := ToItemCategoryDto(tt.itemCategory)
 
 			if !reflect.DeepEqual(actualDto, tt.expectedDto) {
 				t.Errorf("Actual DTO %v mismatched the expected dto %v", actualDto, tt.expectedDto)
@@ -99,13 +75,13 @@ func TestToItemCategory(t *testing.T) {
 	}{
 		{
 			name:     "ItemCategory 1",
-			dto:      ItemCategoryDto1,
-			expected: ItemCategory1Light,
+			dto:      itemCategoryDto1,
+			expected: itemCategory1,
 		},
 		{
 			name:     "ItemCategory 2",
-			dto:      ItemCategoryDto2,
-			expected: ItemCategory2,
+			dto:      itemCategoryDto2,
+			expected: itemCategory2,
 		},
 	}
 
