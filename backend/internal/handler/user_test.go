@@ -29,13 +29,13 @@ var (
 	testUser2 = createTestUser(2, "user2", "password456")
 	testUser3 = createTestUser(3, "user3", "password789")
 
-	notFoundErr = "No row found"
-	conflictErr = "Conflict with entity 'User': already exists"
+	userNotFoundErr = "No row found"
+	userConflictErr = "Conflict with entity 'User': already exists"
 
 	validUsername = "validuser"
 	validPassword = "ValidPass123"
 
-	invalidId       = -1
+	invalidUserId   = -1
 	invalidUsername = "_"
 	invalidPassword = "a"
 )
@@ -81,7 +81,7 @@ func (m *MockUserService) GetByID(id int64) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(userNotFoundErr))
 }
 
 func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
@@ -94,7 +94,7 @@ func (m *MockUserService) GetByUsername(username string) (*model.User, error) {
 			return &m.users[i], nil
 		}
 	}
-	return nil, customErrors.NewNotFoundError("users", username, errors.New(notFoundErr))
+	return nil, customErrors.NewNotFoundError("users", username, errors.New(userNotFoundErr))
 }
 
 func (m *MockUserService) Create(user *model.User) (int64, error) {
@@ -118,7 +118,7 @@ func (m *MockUserService) Update(user *model.User) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("users", strconv.FormatInt(user.ID, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(user.ID, 10), errors.New(userNotFoundErr))
 }
 
 func (m *MockUserService) Delete(id int64) error {
@@ -131,7 +131,7 @@ func (m *MockUserService) Delete(id int64) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(userNotFoundErr))
 }
 
 func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
@@ -144,7 +144,7 @@ func (m *MockUserService) UpdateAdminRole(id int64, isAdmin bool) error {
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(userNotFoundErr))
 }
 
 func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword string) error {
@@ -157,7 +157,7 @@ func (m *MockUserService) UpdatePassword(id int64, oldPassword, newPassword stri
 			return nil
 		}
 	}
-	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(notFoundErr))
+	return customErrors.NewNotFoundError("users", strconv.FormatInt(id, 10), errors.New(userNotFoundErr))
 }
 
 /*** HELPER FUNCTIONS ***/
@@ -182,9 +182,9 @@ func createTestUser(id int64, username, password string) *model.User {
 	}
 }
 
-// setupTestData creates a fresh mock repository with predefined test users for test independence.
+// setupUserTestData creates a fresh mock repository with predefined test users for test independence.
 // It is run at the start of each test to ensure a consistent state and avoid test interference.
-func setupTestData() *MockUserService {
+func setupUserTestData() *MockUserService {
 	mockService := NewMockUserService()
 
 	// users
@@ -278,7 +278,7 @@ func TestNewUserHandler(t *testing.T) {
 /*** READ OPERATIONS TESTS ***/
 
 func TestGetUsersAll_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -331,7 +331,7 @@ func TestGetUsersAll_RepoError(t *testing.T) {
 }
 
 func TestGetUsersByUsername_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -397,7 +397,7 @@ func TestGetUsersByUsername_EmptyUsername(t *testing.T) {
 
 // TestGetUsers_MultipleQueryParams tests the getUsers handler with multiple username query parameters
 func TestGetUsers_MultipleQueryParams(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	user1 := mockService.users[0]
@@ -421,7 +421,7 @@ func TestGetUsers_MultipleQueryParams(t *testing.T) {
 
 // TestGetUsers_InvalidQueryParams tests the getUsers handler with invalid query parameters
 func TestGetUsers_InvalidQueryParams(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	// Multiple username parameters
@@ -442,7 +442,7 @@ func TestGetUsers_InvalidQueryParams(t *testing.T) {
 }
 
 func TestGetUserByID_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -482,8 +482,8 @@ func TestGetUserByID_NotFound(t *testing.T) {
 
 	handler := NewUserHandler(mockService)
 
-	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(int64(invalidId), 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(invalidId))
+	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -579,7 +579,7 @@ func TestAuthMe_InvalidUserTypeInContext(t *testing.T) {
 /*** CREATE OPERATIONS TESTS ***/
 
 func TestCreateUser_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -638,7 +638,7 @@ func TestCreateUser_Success(t *testing.T) {
 }
 
 func TestCreateUser_Success_AvatarNil(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -696,7 +696,7 @@ func TestCreateUser_Success_AvatarNil(t *testing.T) {
 }
 
 func TestCreateUser_InvalidBody(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	usersNb := len(mockService.users)
@@ -721,7 +721,7 @@ func TestCreateUser_InvalidBody(t *testing.T) {
 }
 
 func TestCreateUser_ValidationError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	mockService.createErr = customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
@@ -761,7 +761,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 }
 
 func TestCreateUser_ConflictError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	mockService.createErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
 
 	handler := NewUserHandler(mockService)
@@ -790,8 +790,8 @@ func TestCreateUser_ConflictError(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
 
-	if !strings.Contains(w.Body.String(), conflictErr) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", conflictErr, w.Body.String())
+	if !strings.Contains(w.Body.String(), userConflictErr) {
+		t.Errorf("expected error message containing '%s' instead of '%s'", userConflictErr, w.Body.String())
 	}
 
 	if usersNb != len(mockService.users) {
@@ -800,7 +800,7 @@ func TestCreateUser_ConflictError(t *testing.T) {
 }
 
 func TestCreateUser_RepoError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	errMessage := "Failed to create user"
 	mockService.createErr = customErrors.NewInternalError(errMessage, nil)
 
@@ -842,7 +842,7 @@ func TestCreateUser_RepoError(t *testing.T) {
 /*** UPDATE OPERATIONS TESTS ***/
 
 func TestUpdateUser_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -880,7 +880,7 @@ func TestUpdateUser_Success(t *testing.T) {
 }
 
 func TestUpdateUser_InvalidBody(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader([]byte("invalid json")))
@@ -899,7 +899,7 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 }
 
 func TestUpdateUser_ConflictError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	mockService.updateErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
 
 	handler := NewUserHandler(mockService)
@@ -919,8 +919,8 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", statusCode, w.Code)
 	}
 
-	if !strings.Contains(w.Body.String(), conflictErr) {
-		t.Errorf("expected error message containing '%s' instead of '%s'", conflictErr, w.Body.String())
+	if !strings.Contains(w.Body.String(), userConflictErr) {
+		t.Errorf("expected error message containing '%s' instead of '%s'", userConflictErr, w.Body.String())
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -934,7 +934,7 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 }
 
 func TestUpdateUser_ValidationError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	mockService.updateErr = customErrors.NewValidationError("username", customErrors.USERNAME_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
@@ -970,7 +970,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 }
 
 func TestUpdateUser_RepoError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	errMessage := "Failed to update user"
 	mockService.updateErr = customErrors.NewInternalError(errMessage, nil)
 
@@ -1010,7 +1010,7 @@ func TestUpdateUser_RepoError(t *testing.T) {
 }
 
 func TestUpdateUserAdminRole_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -1048,7 +1048,7 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 }
 
 func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	user := mockService.users[0]
@@ -1080,7 +1080,7 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 }
 
 func TestUpdateUserAdminRole_RepoError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	errMessage := "Failed to update user admin role"
 	mockService.updateRoleErr = customErrors.NewInternalError(errMessage, nil)
 
@@ -1120,7 +1120,7 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 }
 
 func TestUpdateUserPassword_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -1160,7 +1160,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 }
 
 func TestUpdateUserPassword_InvalidBody(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	handler := NewUserHandler(mockService)
 
 	user := mockService.users[0]
@@ -1192,7 +1192,7 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 }
 
 func TestUpdateUserPassword_ValidationError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	mockService.updatePassErr = customErrors.NewValidationError("password", customErrors.PASSWORD_FIELD_ERROR, nil)
 
 	handler := NewUserHandler(mockService)
@@ -1234,7 +1234,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 }
 
 func TestUpdateUserPassword_RepoError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	errMessage := "Failed to update user"
 	mockService.updatePassErr = customErrors.NewInternalError(errMessage, nil)
 
@@ -1278,7 +1278,7 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 /*** DELETE OPERATIONS TESTS ***/
 
 func TestDeleteUser_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
@@ -1311,14 +1311,14 @@ func TestDeleteUser_Success(t *testing.T) {
 }
 
 func TestDeleteUser_NotFound(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 
 	usersNb := len(mockService.users)
 
-	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(int64(invalidId), 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(invalidId))
+	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
+	ctx := context.WithValue(r.Context(), "id", int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1334,7 +1334,7 @@ func TestDeleteUser_NotFound(t *testing.T) {
 }
 
 func TestDeleteUser_RepoError(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 	errMessage := "Failed to delete user"
 	mockService.deleteErr = customErrors.NewInternalError(errMessage, nil)
 
@@ -1370,7 +1370,7 @@ func TestDeleteUser_RepoError(t *testing.T) {
 
 // TestRegisterRoutes tests the RegisterRoutes method
 func TestRegisterRoutes_Success(t *testing.T) {
-	mockService := setupTestData()
+	mockService := setupUserTestData()
 
 	handler := NewUserHandler(mockService)
 	mux := http.NewServeMux()
