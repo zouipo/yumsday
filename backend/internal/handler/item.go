@@ -96,3 +96,37 @@ func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, `{"id": %d}`, id)
 }
+
+// updateItem updates an existing item
+// @Summary Update item details
+// @Description Update the details of an existing item
+// @Tags item
+// @Accept json
+// @Produce json
+// @Param item body dto.ItemDto true "Item data to update"
+// @Success 204 {string} string "No Content"
+// @Failure 400 {string} string "Bad request"
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 404 {string} string "Item not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/item [put]
+func (h *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
+	var itemDto dto.ItemDto
+	if err := json.NewDecoder(r.Body).Decode(&itemDto); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	item := mapper.ToItem(&itemDto)
+	if err := h.itemService.Update(item); err != nil {
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.WriteHeader(http.StatusNoContent)
+}
