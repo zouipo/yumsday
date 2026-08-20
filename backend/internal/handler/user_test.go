@@ -182,7 +182,7 @@ func createTestUser(id int64, username, password string) *model.User {
 	}
 }
 
-// setupUserTestData creates a fresh mock repository with predefined test users for test independence.
+// setupUserTestData creates a fresh mock service with predefined test users for test independence.
 // It is run at the start of each test to ensure a consistent state and avoid test interference.
 func setupUserTestData() *MockUserService {
 	mockService := NewMockUserService()
