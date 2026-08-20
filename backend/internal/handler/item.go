@@ -130,3 +130,31 @@ func (h *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// DeleteItem delete an item
+// @Summary Delete an item
+// @Description Delete the item with the specified ID
+// @Tags item
+// @Accept json
+// @Produce json
+// @Param id path int true "Item ID"
+// @Success 204 {string} string "No Content"
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 404 {string} string "Item not found"
+// @Failure 500 {string} string "Internal server error"
+// @Router /api/item/{id} [delete]
+func (h *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
+	err := h.itemService.Delete(r.Context().Value("id").(int64))
+
+	if err != nil {
+		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
+			http.Error(w, err.Error(), appErr.HTTPStatus())
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.WriteHeader(http.StatusNoContent)
+}
