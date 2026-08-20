@@ -103,7 +103,7 @@ func (m *MockItemService) GetByID(id int64) (*model.Item, error) {
 	return nil, customErrors.NewNotFoundError("items", strconv.FormatInt(id, 10), errors.New(userNotFoundErr))
 }
 
-func (s *MockItemService) GetByName(name string, descending bool) ([]model.Item, error) {
+func (s *MockItemService) GetByName(groupID int64, name string, descending bool) ([]model.Item, error) {
 	return make([]model.Item, 0), nil
 }
 
