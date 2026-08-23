@@ -16,7 +16,6 @@ func TestUnitType_String(t *testing.T) {
 		{"Weight", Weight, "WEIGHT"},
 		{"Numeric", Numeric, "NUMERIC"},
 		{"Piece", Piece, "PIECE"},
-		{"Bag", Bag, "BAG"},
 		{"Undefined", Undefined, "UNDEFINED"},
 	}
 
@@ -40,7 +39,6 @@ func TestUnitType_UnmarshalJSON(t *testing.T) {
 		{"Valid Weight", `"WEIGHT"`, Weight, false},
 		{"Valid Numeric", `"NUMERIC"`, Numeric, false},
 		{"Valid Piece", `"PIECE"`, Piece, false},
-		{"Valid Bag", `"BAG"`, Bag, false},
 		{"Valid Undefined", `"UNDEFINED"`, Undefined, false},
 		{"Invalid value", `"INVALID"`, UnitType{}, true},
 		{"Invalid JSON", `invalid`, UnitType{}, true},
@@ -74,7 +72,6 @@ func TestUnitType_MarshalJSON(t *testing.T) {
 		{"Weight", Weight, `"WEIGHT"`},
 		{"Numeric", Numeric, `"NUMERIC"`},
 		{"Piece", Piece, `"PIECE"`},
-		{"Bag", Bag, `"BAG"`},
 		{"Undefined", Undefined, `"UNDEFINED"`},
 	}
 
@@ -132,7 +129,6 @@ func TestUnitType_Value(t *testing.T) {
 		{"Weight", Weight, "WEIGHT"},
 		{"Numeric", Numeric, "NUMERIC"},
 		{"Piece", Piece, "PIECE"},
-		{"Bag", Bag, "BAG"},
 		{"Undefined", Undefined, "UNDEFINED"},
 	}
 

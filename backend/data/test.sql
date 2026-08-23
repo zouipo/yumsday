@@ -41,7 +41,6 @@ INSERT INTO units (name, factor, unit_type) VALUES
     ('Tablespoon', 15.0, 'VOLUME'),
     ('Teaspoon', 5.0, 'VOLUME'),
     ('Piece', 1.0, 'PIECE'),
-    ('Bag', 1.0, 'BAG'),
     ('Count', 1.0, 'NUMERIC'),
     ('Undefined', 1.0, 'UNDEFINED');
 
@@ -70,7 +69,7 @@ INSERT INTO items (name, description, average_market_price, unit_type, item_cate
     ('Water', NULL, NULL, 'VOLUME', (SELECT id FROM item_categories WHERE name = 'BEVERAGE'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Pepper', NULL, 1.20, 'WEIGHT', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
     ('Olive Oil', 'Extra virgin olive oil', NULL, 'VOLUME', (SELECT id FROM item_categories WHERE name = 'SPICES AND CONDIMENTS'), (SELECT id FROM groups WHERE name = 'Family')),
-    ('Potato Chips', 'Salted potato chips', 2.99, 'BAG', (SELECT id FROM item_categories WHERE name = 'SNACKS'), (SELECT id FROM groups WHERE name = 'Friends')),
+    ('Potato Chips', 'Salted potato chips', 2.99, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'SNACKS'), (SELECT id FROM groups WHERE name = 'Friends')),
     ('Canned Beans', 'Black beans', 1.50, 'NUMERIC', (SELECT id FROM item_categories WHERE name = 'CANNED GOODS'), (SELECT id FROM groups WHERE name = 'Family'));
 
 INSERT INTO recipes (name, description, image_url, original_link, preparation_time_min, cooking_time_min, servings, instructions, created_at, public, comment, group_id) VALUES

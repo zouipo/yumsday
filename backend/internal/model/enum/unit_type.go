@@ -15,7 +15,6 @@ var (
 	Weight    = UnitType{"WEIGHT"}
 	Numeric   = UnitType{"NUMERIC"}
 	Piece     = UnitType{"PIECE"}
-	Bag       = UnitType{"BAG"}
 	Undefined = UnitType{"UNDEFINED"}
 )
 
@@ -39,8 +38,6 @@ func (u *UnitType) UnmarshalJSON(data []byte) error {
 		*u = Numeric
 	case Piece.value:
 		*u = Piece
-	case Bag.value:
-		*u = Bag
 	case Undefined.value:
 		*u = Undefined
 	default:

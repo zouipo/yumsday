@@ -156,7 +156,7 @@ var (
 			Name:               "Potato Chips",
 			Description:        new("Salted potato chips"),
 			AverageMarketPrice: new(2.99),
-			UnitType:           enum.Bag,
+			UnitType:           enum.Numeric,
 			GroupID:            groupID2,
 			ItemCategory:       itemCategory7,
 		},
