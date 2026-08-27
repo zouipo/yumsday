@@ -5,7 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 # The --parents flag preserves the hierarchy of the given directory
-COPY --parents backend front internal main.go Makefile ./
+COPY --parents . ./
 
 
 FROM base AS build
@@ -15,7 +15,7 @@ RUN make
 FROM alpine:3.22 AS runtime
 ENV USER="yumsday"
 RUN addgroup -g 1000 -S $USER && \
-    adduser -D -H -u 1000 -g 1000 -S -G $USER $USER
+    adduser -D -H -u 1000 -S -G $USER $USER
 WORKDIR /app
 COPY --from=build /app/bin/yumsday .
 USER $USER
