@@ -1,0 +1,186 @@
+@startuml
+skinparam linetype ortho
+
+entity units {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar(100)
+    * abbreviation: varchar(50)
+    * factor: float
+    * unit_type: varchar(50)
+    --
+    * <i>system_id</i>: integer <<FK>>
+}
+
+entity unit_systems {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+}
+
+entity units_systems_junction {
+    * **<i>unit_id</i>**: integer <<FK>>
+    * **<i>system_id</i>**: integer <<FK>>
+}
+
+entity items {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+    description: varchar
+    average_market_price: float
+    * unit_type: varchar(50)
+    --
+    * <i>item_category_id</i>: integer <<FK>>
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity item_categories {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+    --
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity recipes {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+    description: varchar
+    image_url: varchar
+    original_link: varchar
+    preparation_time_min: integer
+    cooking_time_min: integer
+    * servings: integer
+    instructions: varchar
+    * created_at: timestamp
+    * public: bit
+    comment: varchar
+    --
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity recipes_categories {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+    --
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity recipes_categories_junction {
+    * **<i>recipe_id</i>**: integer <<FK>>
+    * **<i>category_id</i>**: integer <<FK>>
+}
+
+entity ingredients {
+    * **id**: integer <<generated>>
+    --
+    quantity: float
+    --
+    * <i>recipe_id</i>: integer <<FK>>
+    * <i>item_id</i>: integer <<FK>>
+    * <i>unit_id</i> : integer <<FK>>
+}
+
+entity dishes {
+    * **id**: integer <<generated>>
+    --
+    * portion: integer
+    * bought: bit
+    * datetime: timestamp
+    --
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity recipes_dishes_junction {
+    * **<i>recipe_id</i>**: integer <<FK>>
+    * **<i>dish_id</i>**: integer <<FK>>
+}
+
+entity groceries {
+    * **id**: integer <<generated>>
+    --
+    * quantity_bought: float
+    * user_quantity: float
+    --
+    * <i>item_id</i>: integer <<FK>>
+    * <i>unit_id</i> : integer <<FK>>
+    * <i>group_id</i>: integer <<FK>>
+}
+
+entity users {
+    * **id**: integer <<generated>>
+    --
+    * <u>username</u>: varchar
+    * password: varchar
+    * app_admin: bit
+    * created_at: timestamp
+    * avatar: varchar
+    * language: varchar
+    * app_them: varchar
+    --
+    * <i>last_visited_group_id</i>: integer <<FK>>
+}
+
+entity sessions {
+    * **id**: varchar
+    --
+    * created_at: timestamp
+    * last_activity: timestamp
+    ip_adress: varchar
+    user_agent: varchar
+    --
+    <i>user_id</i>: integer
+}
+
+entity groups {
+    * **id**: integer <<generated>>
+    --
+    * name: varchar
+    image_url: varchar
+    * created_at: timestamp
+}
+
+entity group_members {
+    * **<i>user_id</i>**: integer <<FK>>
+    * **<i>group_id</i>**: integer <<FK>>
+    --
+    * admin: bit
+    * joined_at: timestamp
+}
+
+' Relationships
+
+units ||--|{ units_systems_junction
+unit_systems ||--|{ units_systems_junction
+units ||..o{ ingredients
+
+groceries }o..|| units
+groceries |o..|| items
+
+items }o..|| item_categories
+items ||..o{ ingredients
+
+recipes ||--|{ ingredients
+recipes ||--o{ recipes_categories_junction
+recipes ||--o{ recipes_dishes_junction
+
+recipes_categories ||--o{ recipes_categories_junction
+
+dishes ||--o{ recipes_dishes_junction
+
+users |o..o{ sessions
+users ||--o{ group_members
+
+groups ||--|{ group_members
+groups |o..o{ users
+groups ||..o{ items
+groups ||..|{ item_categories
+groups ||..o{ recipes
+groups ||..o{ recipes_categories
+groups ||..o{ groceries
+groups ||..o{ dishes
+
+@endum
