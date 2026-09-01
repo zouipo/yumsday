@@ -5,7 +5,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 # The --parents flag preserves the hierarchy of the given directory
-COPY --parents . ./
+COPY --parents . .
 
 
 FROM base AS build
