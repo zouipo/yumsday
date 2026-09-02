@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zouipo/yumsday/backend/internal/constant"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/http_header"
 	"github.com/zouipo/yumsday/backend/internal/mapper"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
@@ -253,9 +253,9 @@ func TestGetByID(t *testing.T) {
 
 			// If success
 			if tt.err == nil {
-				contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-				if contentType != constant.CONTENT_TYPE_VALUE {
-					t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+				contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+				if contentType != http_header.APPLICATION_JSON {
+					t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 				}
 
 				var actual dto.ItemDto
@@ -343,7 +343,7 @@ func TestCreateItem(t *testing.T) {
 
 			body, _ := json.Marshal(tt.itemDto)
 			r := httptest.NewRequest(http.MethodPost, "/item", bytes.NewReader(body))
-			r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+			r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 			w := httptest.NewRecorder()
 
 			handler.createItem(w, r)
@@ -354,9 +354,9 @@ func TestCreateItem(t *testing.T) {
 
 			// If success
 			if tt.err == nil {
-				contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-				if contentType != constant.CONTENT_TYPE_VALUE {
-					t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+				contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+				if contentType != http_header.APPLICATION_JSON {
+					t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 				}
 
 				var result map[string]int
@@ -531,7 +531,7 @@ func TestUpdateItem(t *testing.T) {
 
 			body, _ := json.Marshal(tt.itemDto)
 			r := httptest.NewRequest(http.MethodPut, "/item", bytes.NewReader(body))
-			r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+			r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 			w := httptest.NewRecorder()
 
 			handler.updateItem(w, r)

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/zouipo/yumsday/backend/internal/constant"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/http_header"
 	"github.com/zouipo/yumsday/backend/internal/mapper"
 	"github.com/zouipo/yumsday/backend/internal/middleware"
 	"github.com/zouipo/yumsday/backend/internal/service"
@@ -54,7 +54,7 @@ func (h *ItemHandler) getItemById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	if err = json.NewEncoder(w).Encode(mapper.ToItemDto(item)); err != nil {
 		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
@@ -92,7 +92,7 @@ func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, `{"id": %d}`, id)
 }
@@ -127,7 +127,7 @@ func (h *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -155,6 +155,6 @@ func (h *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
