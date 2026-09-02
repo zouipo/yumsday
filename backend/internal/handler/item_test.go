@@ -426,7 +426,7 @@ func TestCreateItem_DecodeErrors(t *testing.T) {
 			name: "non-string unit_type",
 			body: `{"id": 1, "name": "Test Item", "group_id": 1, "unit_type": 42}`,
 			code: http.StatusBadRequest,
-			err:  "json: cannot unmarshal number into Go struct field ItemDto.unit_type of type string",
+			err:  "unit_type: json: cannot unmarshal number into Go value of type string",
 		},
 		{
 			name: "empty string unit_type",
@@ -601,7 +601,7 @@ func TestUpdateItem_DecodeErrors(t *testing.T) {
 			name: "non-string unit_type",
 			body: `{"id": 1, "name": "Test Item", "group_id": 1, "unit_type": 42}`,
 			code: http.StatusBadRequest,
-			err:  "json: cannot unmarshal number into Go struct field ItemDto.unit_type of type string",
+			err:  "unit_type: json: cannot unmarshal number into Go value of type string",
 		},
 		{
 			name: "empty string unit_type",
