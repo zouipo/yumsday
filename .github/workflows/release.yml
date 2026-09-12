@@ -12,8 +12,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  setup:
+  release:
     runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.release.outputs.release_created }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+      patch: ${{ steps.release.outputs.patch }}
     steps:
       - uses: actions/create-github-app-token@v3
         id: app-token
@@ -24,15 +29,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-  release:
-    needs: setup
-    runs-on: ubuntu-latest
-    outputs:
-      release: ${{ steps.release.outputs.release_created }}
-      major: ${{ steps.release.outputs.major }}
-      minor: ${{ steps.release.outputs.minor }}
-      patch: ${{ steps.release.outputs.patch }}
-    steps:
       - name: Create release PR
         id: release
         uses: googleapis/release-please-action@v4
