@@ -27,6 +27,11 @@ jobs:
   release:
     needs: setup
     runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.release.outputs.release_created }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+      patch: ${{ steps.release.outputs.patch }}
     steps:
       - name: Create release PR
         id: release
@@ -43,10 +48,6 @@ jobs:
           MINOR: ${{ steps.release.outputs.minor }}
           PATCH: ${{ steps.release.outputs.patch }}
           TOKEN: ${{ steps.app-token.outputs.token }}
-        outputs:
-          major: ${{ env.MAJOR }}
-          minor: ${{ env.MINOR }}
-          patch: ${{ env.PATCH }}
         run: |
           git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
           release_commit=$(git rev-parse "${RELEASE_TAG}^{commit}")
@@ -59,7 +60,7 @@ jobs:
   docker:
     needs: release
     runs-on: ubuntu-latest
-    if: steps.release.outputs.release_created == 'true'
+    if: needs.release.outputs.released == 'true'
     steps:
       - uses: docker/login-action@v4
         with:
