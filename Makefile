@@ -27,6 +27,7 @@ image:
 compose-up:
 	@mkdir -p test/data
 	@docker compose -f test/compose.yaml up
+	@make compose-down
 
 .PHONY: compose-down
 compose-down:
