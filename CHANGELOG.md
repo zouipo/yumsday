@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/zouipo/yumsday/compare/v0.2.0...v0.2.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* typo in release workflow ([d47712e](https://github.com/zouipo/yumsday/commit/d47712e093bde50721a28320e0649689a540bbb2))
+
 ## [0.2.0](https://github.com/zouipo/yumsday/compare/v0.1.0...v0.2.0) (2026-09-12)
 
 
