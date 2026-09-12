@@ -1,4 +1,4 @@
-name: Tests
+name: tests
 
 on:
   push:
@@ -9,11 +9,9 @@ on:
 
 jobs:
   test:
-    name: Run tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build test image
         run: docker build --target base --tag yumsday:base .
@@ -27,8 +25,7 @@ jobs:
           make test-cicd
 
       - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: |
