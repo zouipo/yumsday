@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/zouipo/yumsday/compare/v0.2.1...v0.2.2) (2026-09-12)
+
+
+### Bug Fixes
+
+* build runtime docker target ([6abf012](https://github.com/zouipo/yumsday/commit/6abf012fa54fd07769aca1ba6cbbc35d08b4ea50))
+* don't run tests for branch pushes ([3f2ef9f](https://github.com/zouipo/yumsday/commit/3f2ef9ff43d163cbb209f0e445ce23ed9f6bebb5))
+* use vars for non-secret stuff ([283144f](https://github.com/zouipo/yumsday/commit/283144f1557c4c79fc915687fa19faaed1a4d00d))
+
 ## [0.2.1](https://github.com/zouipo/yumsday/compare/v0.2.0...v0.2.1) (2026-09-12)
 
 
