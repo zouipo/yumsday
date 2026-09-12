@@ -1,0 +1,43 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_ZOUIPO }}
+
+      - name: Create release and version aliases
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_ZOUIPO }}
+          release-type: go
+
+      - name: Push major and minor tags
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+          MAJOR: ${{ steps.release.outputs.major }}
+          MINOR: ${{ steps.release.outputs.minor }}
+          TOKEN: ${{ secrets.RELEASE_PLEASE_ZOUIPO }}
+        run: |
+          git fetch origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          release_commit=$(git rev-parse "${RELEASE_TAG}^{commit}")
+
+          git tag -f "v${MAJOR}" "${release_commit}"
+          git tag -f "v${MAJOR}.${MINOR}" "${release_commit}"
+          git push "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "refs/tags/v${MAJOR}" "refs/tags/v${MAJOR}.${MINOR}" --force
