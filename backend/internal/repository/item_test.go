@@ -401,30 +401,34 @@ func TestGetItemByName(t *testing.T) {
 		name       string
 		groupID    int64
 		itemName   string
+		sort       string
 		descending bool
 		expected   []model.Item
 		expectErr  error
 	}{
 		{
-			name:       "Get item by valid name ascending",
+			name:       "Get item by valid name sorted by name ascending",
 			itemName:   "Butter",
 			groupID:    expectedItems[5].GroupID,
+			sort:       "name",
 			descending: false,
 			expected:   []model.Item{expectedItems[5]},
 			expectErr:  nil,
 		},
 		{
-			name:       "Get item by valid name ignore case ascending",
+			name:       "Get item by valid name ignore case sorted by name ascending",
 			itemName:   "BUTTER",
 			groupID:    expectedItems[5].GroupID,
+			sort:       "name",
 			descending: false,
 			expected:   []model.Item{expectedItems[5]},
 			expectErr:  nil,
 		},
 		{
-			name:       "Get item by valid name descending",
+			name:       "Get item by valid name sorted by name descending",
 			itemName:   "butter",
 			groupID:    expectedItems[5].GroupID,
+			sort:       "name",
 			descending: true,
 			expected:   []model.Item{expectedItems[5]},
 			expectErr:  nil,
@@ -433,30 +437,34 @@ func TestGetItemByName(t *testing.T) {
 			name:       "Get item by valid name but incorrect group returns empty slice",
 			itemName:   "Butter",
 			groupID:    expectedItems[5].GroupID + 1,
+			sort:       "name",
 			descending: true,
 			expected:   []model.Item{},
 			expectErr:  nil,
 		},
 		{
-			name:       "Get items by partial name ascending - group 2",
+			name:       "Get items by partial name sorted by name ascending - group 2",
 			itemName:   "s",
 			groupID:    expectedItems[1].GroupID,
+			sort:       "name",
 			descending: false,
 			expected:   utils.SortSliceByFieldName([]model.Item{expectedItems[1], expectedItems[2], expectedItems[3], expectedItems[14]}, "Name", false),
 			expectErr:  nil,
 		},
 		{
-			name:       "Get items by partial name ascending - group 1",
+			name:       "Get items by partial name sorted by name ascending - group 1",
 			itemName:   "s",
 			groupID:    expectedItems[13].GroupID,
+			sort:       "name",
 			descending: false,
 			expected:   utils.SortSliceByFieldName([]model.Item{expectedItems[6], expectedItems[7], expectedItems[8], expectedItems[13]}, "Name", false),
 			expectErr:  nil,
 		},
 		{
-			name:       "Get items by partial name descending",
+			name:       "Get items by partial name sorted by name descending",
 			itemName:   "at",
 			groupID:    expectedItems[7].GroupID,
+			sort:       "name",
 			descending: true,
 			expected:   utils.SortSliceByFieldName([]model.Item{expectedItems[7], expectedItems[10], expectedItems[13]}, "Name", true),
 			expectErr:  nil,
@@ -465,6 +473,7 @@ func TestGetItemByName(t *testing.T) {
 			name:       "Get item by invalid name returns empty slice ascending",
 			itemName:   invalidName,
 			groupID:    groupID1,
+			sort:       "name",
 			descending: false,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -473,6 +482,7 @@ func TestGetItemByName(t *testing.T) {
 			name:       "Get item by invalid name returns empty slice descending",
 			itemName:   invalidName,
 			groupID:    groupID1,
+			sort:       "name",
 			descending: true,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -481,6 +491,7 @@ func TestGetItemByName(t *testing.T) {
 			name:       "Get item by non existing group returns empty slice",
 			itemName:   "at",
 			groupID:    0,
+			sort:       "name",
 			descending: true,
 			expected:   []model.Item{},
 			expectErr:  nil,
@@ -489,7 +500,7 @@ func TestGetItemByName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			items, err := repo.GetByName(tt.groupID, tt.itemName, tt.descending)
+			items, err := repo.GetByName(tt.groupID, tt.itemName, tt.sort, tt.descending)
 
 			if tt.expectErr != nil {
 				if !utils.CompareErrors(err, tt.expectErr) {

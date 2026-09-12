@@ -54,8 +54,8 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName returns the item that matches the provided name or an error.
-func (s *ItemService) GetByName(groupID int64, name string, descending bool) ([]model.Item, error) {
-	return s.repo.GetByName(groupID, name, descending)
+func (s *ItemService) GetByName(groupID int64, name, sort string, descending bool) ([]model.Item, error) {
+	return s.repo.GetByName(groupID, name, sort, descending)
 }
 
 // GetRecipesByID returns the recipes in which the item is used.

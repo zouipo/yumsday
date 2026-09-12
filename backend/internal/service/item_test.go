@@ -140,7 +140,7 @@ func (m *MockItemRepository) GetByID(id int64) (*model.Item, error) {
 	return nil, customErrors.NewNotFoundError("items", "id", nil)
 }
 
-func (m *MockItemRepository) GetByName(groupID int64, name string, desc bool) ([]model.Item, error) {
+func (m *MockItemRepository) GetByName(groupID int64, name, sort string, desc bool) ([]model.Item, error) {
 	if m.getByNameErr != nil {
 		return nil, m.getByNameErr
 	}
