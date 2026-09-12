@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/zouipo/yumsday/compare/v0.1.0...v0.2.0) (2026-09-12)
+
+
+### Features
+
+* push docker image and tags ([546cb86](https://github.com/zouipo/yumsday/commit/546cb8681ef9fc59b1ce73780e64788d0ee24b2a))
+
+
+### Bug Fixes
+
+* app token access ([af8922d](https://github.com/zouipo/yumsday/commit/af8922d35a23a96bb0afe3f85fd11a1ed117f833))
+* fix release workflow ([4e856fa](https://github.com/zouipo/yumsday/commit/4e856fa4988e8418e1501193004f70cd9d8daf80))
+* run test workflow for pushes on main branch ([81f584e](https://github.com/zouipo/yumsday/commit/81f584e568d8e3fb67c88d4f981fc3f80b91d58d))
+* simplify test workflow ([1ecb8b9](https://github.com/zouipo/yumsday/commit/1ecb8b952f82c056d1ac8fa16a9402aae1df921c))
+
 ## [0.1.0](https://github.com/zouipo/yumsday/compare/v0.0.2...v0.1.0) (2026-09-12)
 
 
