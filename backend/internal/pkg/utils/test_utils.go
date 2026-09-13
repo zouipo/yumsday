@@ -72,6 +72,11 @@ func SortSliceByFieldName[T any](s []T, sortBy string, descending bool) []T {
 	return sorted
 }
 
+// compareFieldsByName compare t1 and t2 based on the values of the fields
+// designated by sortWords' content.
+// sortWords can contain multiple words to compare fields deep in the struct nesting.
+// compareFieldsByName tries to reproduce the database ordering.
+// See https://sqlite.org/datatype3.html#sortorder
 func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool) bool {
 	a := reflect.ValueOf(t1).FieldByName(sortWords[0])
 	b := reflect.ValueOf(t2).FieldByName(sortWords[0])
@@ -80,15 +85,26 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	// Dereference pointers recursively (handles **int, ***int, etc.)
 	for a.Kind() == reflect.Pointer {
 		if a.IsNil() {
-			return true
+			// nil is always "smaller" than anything else, including another nil
+			// So if a is nil then it's smaller, even if b is also nil
+			// a is the first argument so ascending => true; descending => false
+			return !descending
 		}
 		a = a.Elem()
 	}
 	for b.Kind() == reflect.Pointer {
 		if b.IsNil() {
-			return false
+			// if b is nil it is considered smaller
+			// b is the second argument so we apply the opposite logic from a
+			// i.e. ascending => false; descending => true
+			return descending
 		}
 		b = b.Elem()
+	}
+
+	if a.Kind() != b.Kind() {
+		panic(errors.New("cannot compare values of different kind. " +
+			"check that sortWords leads to a field of the same kind in both values."))
 	}
 
 	switch a.Kind() {
@@ -101,6 +117,9 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	case reflect.Float32, reflect.Float64:
 		res = cmp.Less(a.Float(), b.Float())
 	case reflect.Struct:
+		if len(sortWords) == 1 {
+			panic(fmt.Errorf("cannot compare structs '%s'. sortWords must lead to a comparable value", sortWords[0]))
+		}
 		return compareFieldsByName(a.Interface(), b.Interface(), sortWords[1:], descending)
 	default:
 		panic(fmt.Errorf("unhandled kind %v", a.Kind()))
