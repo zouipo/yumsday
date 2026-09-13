@@ -16,20 +16,20 @@ type parent struct {
 	I     int
 	U     uint
 	F     float32
-	A     any
 	Child *child
 }
 
+type otherKind struct {
+	I uint
+}
+
 var (
-	swS                          = []string{"S"}
-	swI                          = []string{"I"}
-	swU                          = []string{"U"}
-	swF                          = []string{"F"}
-	swA                          = []string{"A"}
-	swChild                      = []string{"Child"}
-	swChildGrandChild            = []string{"Child", "GrandChild"}
-	swChildGrandChildI           = []string{"Child", "GrandChild", "I"}
-	swChildGrandChildPossiblyNil = []string{"Child", "GrandChild", "PossiblyNil"}
+	swS                = []string{"S"}
+	swI                = []string{"I"}
+	swU                = []string{"U"}
+	swF                = []string{"F"}
+	swChild            = []string{"Child"}
+	swChildGrandChildI = []string{"Child", "GrandChild", "I"}
 
 	a = parent{S: "a"}
 	b = parent{S: "b"}
@@ -59,6 +59,8 @@ var (
 	}
 
 	nilPointer = parent{Child: nil}
+
+	oneOtherKind = otherKind{I: 1}
 )
 
 func TestCompareFieldsByName(t *testing.T) {
@@ -128,4 +130,26 @@ func TestCompareFieldsByName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompareFieldsByName_DifferentKinds(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic, got none")
+		}
+	}()
+
+	// need to convert to any here because the compiler
+	// won't let us pass two values of different types
+	compareFieldsByName(any(one), any(oneOtherKind), swI, false)
+}
+
+func TestCompareFieldsByName_CannotCompareStructs(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic, got none")
+		}
+	}()
+
+	compareFieldsByName(nestedOne, nestedTwo, swChild, false)
 }
