@@ -51,7 +51,8 @@ benchmark:
 
 .PHONY: coverage
 coverage: test
-	@go tool cover -html=$(COVERAGE_FILE)
+	@go tool cover -html=$(COVERAGE_FILE) -o=coverage.html
+	@xdg-open coverage.html
 
 .PHONY: clean
 clean:
