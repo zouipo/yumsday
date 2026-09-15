@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/zouipo/yumsday/compare/v0.2.2...v0.2.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* `comparefieldsbyname` ([#124](https://github.com/zouipo/yumsday/issues/124)) ([#125](https://github.com/zouipo/yumsday/issues/125)) ([89006ba](https://github.com/zouipo/yumsday/commit/89006bac3a98ce5c5fff7fa76b294adfb201afb9))
+
 ## [0.2.2](https://github.com/zouipo/yumsday/compare/v0.2.1...v0.2.2) (2026-09-12)
 
 
