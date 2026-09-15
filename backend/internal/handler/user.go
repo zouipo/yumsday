@@ -8,9 +8,9 @@ import (
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/http_header"
 	"github.com/zouipo/yumsday/backend/internal/model"
 
-	"github.com/zouipo/yumsday/backend/internal/constant"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	"github.com/zouipo/yumsday/backend/internal/mapper"
 	"github.com/zouipo/yumsday/backend/internal/middleware"
@@ -94,7 +94,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	if err = json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(user)); err != nil {
 		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
@@ -116,7 +116,7 @@ func (h *UserHandler) authMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	if err := json.NewEncoder(w).Encode(mapper.ToUserDtoNoPassword(u)); err != nil {
 		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
 		return
@@ -155,7 +155,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, `{"id": %d}`, id)
 }
@@ -191,7 +191,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -225,7 +225,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -260,7 +260,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -288,7 +288,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -306,7 +306,7 @@ func (h *UserHandler) getAllUsers(w http.ResponseWriter) {
 		return
 	}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	err = json.NewEncoder(w).Encode(mapper.MapList(users, mapper.ToUserDtoNoPassword))
 	if err != nil {
 		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)
@@ -329,7 +329,7 @@ func (h *UserHandler) getByUsername(w http.ResponseWriter, username string) {
 	// Return as an array with one user to match the array response of the original handler getUsers.
 	users := []*dto.UserDto{mapper.ToUserDtoNoPassword(user)}
 
-	w.Header().Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	err = json.NewEncoder(w).Encode(users)
 	if err != nil {
 		http.Error(w, customErrors.SERIALIZE_USER_ERROR, http.StatusInternalServerError)

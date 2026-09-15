@@ -12,7 +12,7 @@ import (
 type ItemServiceInterface interface {
 	GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string, descending bool) ([]model.Item, error)
+	GetByName(groupID int64, name string, descending bool) ([]model.Item, error)
 	GetRecipesByID(id int64, descending bool) ([]model.Recipe, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
@@ -45,10 +45,6 @@ func NewItemService(itemRepo repository.ItemRepositoryInterface,
 /*** READ OPERATIONS ***/
 // GetByGroupID returns all items for a given group ID, sorted by the specified key and order.
 func (s *ItemService) GetByGroupID(groupID int64, sort string, descending bool) ([]model.Item, error) {
-	if _, err := s.groupService.GetByID(groupID); err != nil {
-		return nil, err
-	}
-
 	return s.repo.GetByGroupID(groupID, sort, descending)
 }
 
@@ -58,12 +54,8 @@ func (s *ItemService) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName returns the item that matches the provided name or an error.
-func (s *ItemService) GetByName(name string, descending bool) ([]model.Item, error) {
-	if name == "" {
-		return nil, customErrors.NewNotFoundError("items", "name", nil)
-	}
-
-	return s.repo.GetByName(name, descending)
+func (s *ItemService) GetByName(groupID int64, name, sort string, descending bool) ([]model.Item, error) {
+	return s.repo.GetByName(groupID, name, sort, descending)
 }
 
 // GetRecipesByID returns the recipes in which the item is used.
