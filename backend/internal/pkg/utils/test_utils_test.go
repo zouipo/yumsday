@@ -132,6 +132,19 @@ func TestCompareFieldsByName(t *testing.T) {
 	}
 }
 
+func TestCompareFieldsByName_TwoNils(t *testing.T) {
+	actualAscending := compareFieldsByName(nilPointer, nilPointer, swChildGrandChildI, false)
+	actualDescending := compareFieldsByName(nilPointer, nilPointer, swChildGrandChildI, true)
+
+	if !actualAscending {
+		t.Error("comparison of two nil pointers in ascending order should always return true")
+	}
+
+	if actualDescending {
+		t.Error("comparison of two nil pointers in descending order should always return false")
+	}
+}
+
 func TestCompareFieldsByName_DifferentKinds(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
