@@ -3,6 +3,7 @@ services:
     build:
       context: ..
       target: runtime
+    pull_policy: build
     container_name: yumsday
     image: yumsday:latest
     ports:

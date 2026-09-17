@@ -19,7 +19,7 @@ swagger:
 
 .PHONY: build
 build: swagger front
-	@go build -trimpath -ldflags="-s -w" -o $(OUT) $(MAIN)
+	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(OUT) $(MAIN)
 
 .PHONY: image
 image:

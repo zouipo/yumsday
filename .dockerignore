@@ -2,7 +2,6 @@
 !backend
 !front
 !internal
-!test
 !go.mod
 !go.sum
 !main.go
