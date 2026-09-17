@@ -6,6 +6,7 @@ services:
     pull_policy: build
     container_name: yumsday
     image: yumsday:latest
+    user: 1000:1000
     ports:
       - 8080:8080
     volumes:
