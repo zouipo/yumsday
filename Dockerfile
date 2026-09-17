@@ -1,9 +1,9 @@
 FROM golang:1.27.1-alpine AS base
 
 WORKDIR /app
-COPY go.mod go.sum* ./
 RUN apk add --no-cache gcc make musl-dev npm && \
     go install github.com/swaggo/swag/cmd/swag@latest
+COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
 
