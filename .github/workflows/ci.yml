@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    tags-ignore:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build test image
+        run: docker build --target base --tag ${{ github.repository }}:base .
+
+      - name: Run tests
+        run: >-
+          docker run --rm
+          --volume "${{ github.workspace }}:/app"
+          --workdir /app
+          ${{ github.repository }}:base
+          make test-cicd

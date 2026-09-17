@@ -1,23 +1,19 @@
-FROM golang:1.26.1-alpine AS base
+FROM golang:1.27.1-alpine AS base
+
+WORKDIR /app
+COPY go.mod go.sum* ./
 RUN apk add --no-cache gcc make musl-dev npm && \
     go install github.com/swaggo/swag/cmd/swag@latest
-WORKDIR /app
-COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-
 
 FROM base AS build
 RUN make
 
+FROM gcr.io/distroless/static-debian13:nonroot AS runtime
 
-FROM alpine:3.22 AS runtime
-ENV USER="yumsday"
-RUN addgroup -g 1000 -S $USER && \
-    adduser -D -H -u 1000 -S -G $USER $USER
-WORKDIR /app
-COPY --from=build /app/bin/yumsday .
-USER $USER
+COPY --from=build /app/bin/yumsday /yumsday
 WORKDIR /data
-VOLUME /data
-ENTRYPOINT ["/app/yumsday"]
+VOLUME ["/data"]
+
+ENTRYPOINT ["/yumsday"]

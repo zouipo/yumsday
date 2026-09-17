@@ -4,7 +4,7 @@ services:
       context: ..
       target: runtime
     container_name: yumsday
-    image: zouipo/yumsday:latest
+    image: yumsday:latest
     ports:
       - 8080:8080
     volumes:
