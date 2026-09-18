@@ -48,10 +48,10 @@ test: swagger
 	@mkdir -p test
 	@go test -tags dev -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
-.PHONY: test-cicd
-test-cicd: swagger
+.PHONY: test-ci
+test-ci:
 	@mkdir -p test
-	@CGO_ENABLED=1 go test -tags dev -v -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
+	@CGO_ENABLED=1 go test -tags dev -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: benchmark
 benchmark:

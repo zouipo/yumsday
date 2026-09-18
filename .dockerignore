@@ -3,6 +3,8 @@
 .github
 .vscode
 config
+docker
+!docker/install-build-dependencies.sh
 test
 uml
 CHANGELOG.md

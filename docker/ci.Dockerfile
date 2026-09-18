@@ -11,5 +11,3 @@ RUN go mod download
 COPY . .
 
 RUN make swagger && make front
-
-ENTRYPOINT ["golangci-lint", "run"]
