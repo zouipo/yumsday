@@ -49,8 +49,15 @@ test: swagger
 	@go test -tags dev -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: test-ci
-test-ci:
+test-ci: swagger
 	@mkdir -p test
+
+	@# lint fails if there is compile error
+	@# and there is a compile error if front/dist does not exist or is empty
+	@# because it is embedded with //go:embed
+	@mkdir -p front/dist
+	@touch front/dist/placeholder
+
 	@CGO_ENABLED=1 go test -tags dev -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: benchmark
@@ -63,7 +70,7 @@ coverage: test
 	@xdg-open $(COVERAGE_REPORT_HTML)
 
 .PHONY: lint
-lint:
+lint: swagger
 	@golangci-lint run
 
 .PHONY: clean
