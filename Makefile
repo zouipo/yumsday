@@ -23,7 +23,11 @@ build: swagger front
 
 .PHONY: image
 image:
-	@docker build --target runtime -t $(NAME):latest .
+	@docker build --file docker/Dockerfile --target runtime --tag $(NAME):latest .
+
+.PHONY: image-ci
+image-ci:
+	@docker build --file docker/ci.Dockerfile --tag $(NAME)-ci:latest .
 
 .PHONY: compose-up
 compose-up:

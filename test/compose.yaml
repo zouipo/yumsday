@@ -2,6 +2,7 @@ services:
   yumsday:
     build:
       context: ..
+      dockerfile: docker/Dockerfile
       target: runtime
     pull_policy: build
     container_name: yumsday
