@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    tags-ignore:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOCKERFILE: docker/ci.Dockerfile
+  IMAGE: ci-image
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build CI image
+        run: docker build --file ${{ env.DOCKERFILE }} --tag ${{ env.IMAGE }} .
+
+      - name: Run linter
+        run: docker run --rm ${{ env.IMAGE }} make lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build CI image
+        run: docker build --file ${{ env.DOCKERFILE }} --tag ${{ env.IMAGE }} .
+
+      - name: Run tests
+        run: docker run --rm ${{ env.IMAGE }} make test-ci

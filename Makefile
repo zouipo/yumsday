@@ -1,6 +1,8 @@
-OUT=bin/yumsday
-COVERAGE_FILE=test/coverage.out
-TEST_REPORT=test/test-report.json
+NAME=yumsday
+MAIN=main.go
+OUT=bin/$(NAME)
+COVERAGE_REPORT=test/coverage.out
+COVERAGE_REPORT_HTML=test/coverage.html
 
 .PHONY: all
 all: build
@@ -17,11 +19,15 @@ swagger:
 
 .PHONY: build
 build: swagger front
-	@go build -ldflags="-s -w" -o $(OUT) main.go
+	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(OUT) $(MAIN)
 
 .PHONY: image
 image:
-	@docker build --target runtime -t zouipo/yumsday:latest .
+	@docker build --file docker/Dockerfile --target runtime --tag $(NAME):latest .
+
+.PHONY: image-ci
+image-ci:
+	@docker build --file docker/ci.Dockerfile --tag $(NAME)-ci:latest .
 
 .PHONY: compose-up
 compose-up:
@@ -35,15 +41,18 @@ compose-down:
 
 .PHONY: run
 run: swagger
-	@go run -tags dev .
+	@go run -tags dev $(MAIN)
 
 .PHONY: test
 test: swagger
-	@go test -tags dev -cover -coverprofile=$(COVERAGE_FILE) ./...
+	@mkdir -p test
+	@go test -tags dev -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
-.PHONY: test-cicd
-test-cicd: swagger
-	@go test -tags dev -v -race -cover -coverprofile=$(COVERAGE_FILE) -json ./... > $(TEST_REPORT)
+.PHONY: test-ci
+test-ci: swagger
+	@mkdir -p test
+
+	@CGO_ENABLED=1 go test -tags dev -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: benchmark
 benchmark:
@@ -51,9 +60,23 @@ benchmark:
 
 .PHONY: coverage
 coverage: test
-	@go tool cover -html=$(COVERAGE_FILE) -o=coverage.html
-	@xdg-open coverage.html
+	@go tool cover -html=$(COVERAGE_REPORT) -o=$(COVERAGE_REPORT_HTML)
+	@xdg-open $(COVERAGE_REPORT_HTML)
+
+.PHONY: lint
+lint: swagger
+	@# lint fails if there is compile error
+	@# and there is a compile error if front/dist does not exist or is empty
+	@# because it is embedded with //go:embed
+	@mkdir -p front/dist
+	@touch front/dist/placeholder
+
+	@golangci-lint run
 
 .PHONY: clean
 clean:
+	@rm -r bin
+
+.PHONY: gitclean
+gitclean:
 	@git clean -xdf
