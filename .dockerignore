@@ -2,9 +2,12 @@
 .gitignore
 .github
 .vscode
+bin
 config
 docker
 !docker/install-build-dependencies.sh
+front/dist
+front/node_modules
 test
 uml
 CHANGELOG.md
