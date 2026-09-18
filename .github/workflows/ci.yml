@@ -23,7 +23,7 @@ jobs:
       - name: Build CI image
         run: docker build --file ${{ env.DOCKERFILE }} --tag ${{ env.IMAGE }} .
 
-      - name: Run tests
+      - name: Run linter
         run: docker run --rm ${{ env.IMAGE }} make lint
 
   test:
