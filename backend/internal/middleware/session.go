@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -53,7 +54,11 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 
 			if !strings.HasPrefix(r.URL.Path, "/auth") {
 				// Save session in dedicated goroutine to reduce response latency.
-				wg.Go(func() { sessionService.Save(s) })
+				wg.Go(func() {
+					if err := sessionService.Save(s); err != nil {
+						slog.Error("failed to persist session", "error", err, "session id", s.ID, "user id", s.UserID)
+					}
+				})
 			}
 		})
 	}

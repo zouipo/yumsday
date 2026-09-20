@@ -101,8 +101,11 @@ func (r *RecipeRepository) GetRecipeGroupID(id int64) (int64, error) {
 }
 
 func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, testHook func()) (int64, error) {
-	tx, _ := r.db.BeginTx(ctx, nil)
-	defer tx.Rollback()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, customErrors.NewInternalError("failed to create recipe", err)
+	}
+	defer RollbackTx(tx, "create recipe")
 
 	res, err := tx.ExecContext(ctx,
 		`INSERT INTO recipes(
@@ -150,15 +153,21 @@ func (r *RecipeRepository) Create(ctx context.Context, recipe *model.Recipe, tes
 		return 0, err
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return 0, customErrors.NewInternalError("failed to create recipe", err)
+	}
+
 	return recipe.ID, nil
 }
 
 func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) error {
-	tx, _ := r.db.BeginTx(ctx, nil)
-	defer tx.Rollback()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return customErrors.NewInternalError("failed to update recipe", err)
+	}
+	defer RollbackTx(tx, "update recipe")
 
-	tx.ExecContext(
+	_, err = tx.ExecContext(
 		ctx,
 		`UPDATE recipes
 		SET
@@ -188,6 +197,10 @@ func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) err
 		recipe.ID,
 	)
 
+	if err != nil {
+		return customErrors.NewInternalError("failed to update recipe", err)
+	}
+
 	if err := r.updateRecipesCategoriesJunction(ctx, tx, recipe); err != nil {
 		return err
 	}
@@ -195,13 +208,19 @@ func (r *RecipeRepository) Update(ctx context.Context, recipe *model.Recipe) err
 		return err
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return customErrors.NewInternalError("failed to update recipe", err)
+	}
+
 	return nil
 }
 
 func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
-	tx, _ := r.db.BeginTx(ctx, nil)
-	defer tx.Rollback()
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return customErrors.NewInternalError("failed to delete recipe", err)
+	}
+	defer RollbackTx(tx, "delete recipe")
 
 	deleteFunc := func(tableName, columnName string) error {
 		err := r.deleteByColumn(ctx, tx, tableName, columnName, id)
@@ -225,7 +244,10 @@ func (r *RecipeRepository) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return customErrors.NewInternalError("failed to delete recipe", err)
+	}
+
 	return nil
 }
 
@@ -277,6 +299,7 @@ func (r *RecipeRepository) fetchRecipes(clauses string, values ...any) ([]model.
 	if err != nil {
 		return nil, customErrors.NewInternalError(customErrors.FETCH_RECIPES_ERROR, err)
 	}
+	defer CloseRows(rows)
 
 	ret := []model.Recipe{}
 
@@ -421,6 +444,10 @@ func (r *RecipeRepository) updateIngredients(ctx context.Context, tx *sql.Tx, re
 			return customErrors.NewInternalError("failed to update ingredients", err)
 		}
 		deleteValues = append(deleteValues, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return customErrors.NewInternalError("failed to update ingredients", err)
 	}
 
 	query = `DELETE FROM ingredients

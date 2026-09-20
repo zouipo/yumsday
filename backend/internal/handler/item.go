@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/zouipo/yumsday/backend/internal/dto"
@@ -94,7 +95,10 @@ func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, `{"id": %d}`, id)
+
+	if _, err := fmt.Fprintf(w, `{"id": %d}`, id); err != nil {
+		slog.Error("failed to sent http response", "error", err, "url", r.URL)
+	}
 }
 
 // updateItem updates an existing item

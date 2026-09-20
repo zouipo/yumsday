@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/zouipo/yumsday/backend/internal/ctx"
@@ -157,7 +158,9 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, `{"id": %d}`, id)
+	if _, err := fmt.Fprintf(w, `{"id": %d}`, id); err != nil {
+		slog.Error("failed to sent http response", "error", err, "url", r.URL)
+	}
 }
 
 // UpdateUser godoc

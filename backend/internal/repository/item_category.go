@@ -65,6 +65,7 @@ func (r *ItemCategoryRepository) fetchItemCategories(clauses string, values ...a
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch item categories", err)
 	}
+	defer CloseRows(rows)
 
 	itemCategories := []model.ItemCategory{}
 
