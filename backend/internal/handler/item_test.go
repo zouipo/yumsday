@@ -69,14 +69,12 @@ var (
 
 /*** MOCK SERVICE ***/
 type MockItemService struct {
-	items             []model.Item
-	nextID            int64
-	getByIDErr        error
-	getByNameErr      error
-	getRecipesByIDErr error
-	createErr         error
-	updateErr         error
-	deleteErr         error
+	items      []model.Item
+	nextID     int64
+	getByIDErr error
+	createErr  error
+	updateErr  error
+	deleteErr  error
 }
 
 func NewMockItemService() *MockItemService {
