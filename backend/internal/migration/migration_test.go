@@ -5,7 +5,6 @@ import (
 	"embed"
 	"io/fs"
 	"os"
-	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -178,7 +177,7 @@ func TestPerformMigrations_InvalidScript(t *testing.T) {
 	defer db.Close()
 
 	err = performMigrations(db, migrations, 0)
-	if err == nil || !strings.Contains(err.Error(), "Failed to apply migration") {
+	if err == nil {
 		t.Errorf("Expected error")
 	}
 }

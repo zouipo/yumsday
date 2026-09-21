@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 )
 
 // mockHandler is a simple handler that writes the value from context
@@ -75,7 +77,7 @@ func runPathValueTests(
 					t.Fatal("expected request to be captured in mock handler")
 				}
 				for _, valueName := range tt.valueNames {
-					value := mockNext.request.Context().Value(valueName)
+					value := mockNext.request.Context().Value(ctxkey.FromString(valueName))
 					if value == nil {
 						t.Errorf("expected value for %s to be in context", valueName)
 						continue
@@ -288,9 +290,9 @@ func TestStringPathValues(t *testing.T) {
 		{
 			name: "string with special characters",
 			pathValues: map[string]string{
-				"slug": "hello-world-2024",
+				"username": "hello-world-2024",
 			},
-			valueNames:     []string{"slug"},
+			valueNames:     []string{"username"},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},

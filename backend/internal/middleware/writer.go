@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 )
 
 // Custom response writer to intercept calls to WriterHeader
@@ -44,7 +46,7 @@ func ResponseWriter(next http.Handler) http.Handler {
 			status:         http.StatusOK,
 		}
 		// Store a pointer to the status so the logger can read the updated value
-		r = r.WithContext(context.WithValue(r.Context(), "status", &writer.status))
+		r = r.WithContext(context.WithValue(r.Context(), ctxkey.StatusCtxKey{}, &writer.status))
 		next.ServeHTTP(writer, r)
 	})
 }

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/http_header"
@@ -239,7 +240,7 @@ func TestGetByID(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodGet, "/item/"+strconv.FormatInt(tt.itemID, 10), nil)
 			// Add the ID to the context as the middleware would do
-			ctx := context.WithValue(r.Context(), "id", tt.itemID)
+			ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, tt.itemID)
 			r = r.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -677,7 +678,7 @@ func TestDeleteItem(t *testing.T) {
 			itemsNb := len(mockService.items)
 
 			r := httptest.NewRequest(http.MethodDelete, "/item/"+strconv.FormatInt(tt.id, 10), nil)
-			ctx := context.WithValue(r.Context(), "id", int64(tt.id))
+			ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(tt.id))
 			r = r.WithContext(ctx)
 			w := httptest.NewRecorder()
 

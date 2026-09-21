@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
 
@@ -19,7 +19,7 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 			// http.Request context is immutable, so we need to create a new context with the session and assign it back to the request.
 			r = r.WithContext(context.WithValue(
 				r.Context(),
-				ctx.SessionCtxKey{},
+				ctxkey.SessionCtxKey{},
 				s,
 			))
 

@@ -54,7 +54,7 @@ func NewAPIServer(db *sql.DB, migrationsFs fs.FS, tasksWG *sync.WaitGroup) http.
 
 	// ServeMux = HTTP request multiplexer, a router.
 	// It matches the URL of each incoming request against a list of registered patterns
-	// and calls the handler for the pattern tha most closely matches the URL.
+	// and calls the handler for the pattern that most closely matches the URL.
 	mux := http.NewServeMux()
 	backMux := http.NewServeMux()
 

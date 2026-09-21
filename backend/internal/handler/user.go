@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/http_header"
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -85,7 +85,7 @@ func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 // @Router /api/user/{id} [get]
 func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the request context (set by the middleware).
-	user, err := h.userService.GetByID(r.Context().Value("id").(int64))
+	user, err := h.userService.GetByID(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
 			http.Error(w, err.Error(), appErr.HTTPStatus())
@@ -111,7 +111,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/me [get]
 func (h *UserHandler) authMe(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(ctx.UserCtxKey{}).(*model.User)
+	u, ok := r.Context().Value(ctxkey.UserCtxKey{}).(*model.User)
 	if !ok || u == nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -211,7 +211,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id}/admin [patch]
 func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(int64)
+	userID := r.Context().Value(ctxkey.IdCtxKey{}).(int64)
 
 	var payload dto.AdminRolePayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -246,7 +246,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id}/password [patch]
 func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("id").(int64)
+	userID := r.Context().Value(ctxkey.IdCtxKey{}).(int64)
 
 	var payload dto.PasswordPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -280,7 +280,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	err := h.userService.Delete(r.Context().Value("id").(int64))
+	err := h.userService.Delete(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
 
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {

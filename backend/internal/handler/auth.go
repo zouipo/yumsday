@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/http_header"
@@ -53,7 +53,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctxkey.SessionCtxKey{}).(*model.Session)
 	if !ok || session == nil {
 		http.Error(w, "session not available", http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /auth/logout [post]
 func (h *AuthHandler) postLogout(w http.ResponseWriter, r *http.Request) {
-	session, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctxkey.SessionCtxKey{}).(*model.Session)
 	if !ok || session == nil {
 		http.Error(w, "session not available", http.StatusInternalServerError)
 		return

@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 )
 
 // IntPathValues is a middleware that parses integer values from the URL path
@@ -117,7 +119,7 @@ func parsePathValue(
 		}
 
 		// Store the parsed value in the request context for final handler use.
-		r = r.WithContext(context.WithValue(r.Context(), valueName, value))
+		r = r.WithContext(context.WithValue(r.Context(), ctxkey.FromString(valueName), value))
 		slog.Debug(
 			fmt.Sprintf("Parsed %s from URL", valueName),
 			valueName,
