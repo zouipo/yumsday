@@ -1,11 +1,13 @@
 name: CI
 
 on:
-  push:
-    tags-ignore:
-      - '**'
   pull_request:
   workflow_dispatch:
+
+# cancel ongoing pipeline when a new push happens
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
