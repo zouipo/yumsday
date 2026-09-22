@@ -30,11 +30,11 @@ func (l *logHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func (l *logHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return l.WithAttrs(attrs)
+	return l
 }
 
 func (l *logHandler) WithGroup(name string) slog.Handler {
-	return l.WithGroup(name)
+	return l
 }
 
 type logReqHandler struct{}
