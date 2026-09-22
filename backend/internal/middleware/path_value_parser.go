@@ -78,7 +78,6 @@ func parsePathValue(
 	parseFunc pathValueParser,
 	keys ...ctxkey.Key,
 ) *http.Request {
-	// Loop through every value name to parse from the URL path.
 	for _, key := range keys {
 		valueStr := r.PathValue(key.String())
 		if valueStr == "" {
@@ -90,7 +89,6 @@ func parsePathValue(
 			return nil
 		}
 
-		// Parse the value from string to its expected type, using the provided parse function.
 		value, err := parseFunc(key, valueStr)
 		if err != nil {
 			http.Error(
@@ -101,7 +99,6 @@ func parsePathValue(
 			return nil
 		}
 
-		// Store the parsed value in the request context for final handler use.
 		r = r.WithContext(context.WithValue(r.Context(), key, value))
 		slog.Debug(
 			fmt.Sprintf("Parsed %s from URL", key),
