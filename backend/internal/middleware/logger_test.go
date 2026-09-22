@@ -37,9 +37,7 @@ func (l *logHandler) WithGroup(name string) slog.Handler {
 	return l
 }
 
-type logReqHandler struct{}
-
-func (h *logReqHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func logReqHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -49,7 +47,7 @@ func TestLogger(t *testing.T) {
 	slog.SetDefault(logger)
 
 	mwStack := Stack(ResponseWriter, Logger)
-	handler := mwStack(&logReqHandler{})
+	handler := mwStack(http.HandlerFunc(logReqHandler))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
