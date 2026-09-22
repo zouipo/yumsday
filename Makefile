@@ -12,17 +12,17 @@ FRONT_OUT=front/dist/index.html
 SWAGGER_OUT=docs/docs.go
 
 .PHONY: all
-all: ${BACKEND_OUT}
+all: $(BACKEND_OUT)
 
-${BACKEND_OUT}: ${BACKEND_SOURCES} ${FRONT_OUT} ${SWAGGER_OUT}
+$(BACKEND_OUT): $(BACKEND_SOURCES) $(FRONT_OUT) $(SWAGGER_OUT)
 	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(BACKEND_OUT) $(MAIN)
 
-${FRONT_OUT}: ${FRONT_SOURCES}
+$(FRONT_OUT): $(FRONT_SOURCES)
 	@cd front && \
 		npm install && \
 		npm run build
 
-${SWAGGER_OUT}: ${SWAGGER_SOURCES}
+$(SWAGGER_OUT): $(SWAGGER_SOURCES)
 	@swag init
 
 .PHONY: image
@@ -44,16 +44,20 @@ compose-down:
 	@docker compose -f test/compose.yaml down
 
 .PHONY: run
-run: ${SWAGGER_OUT}
+run: $(SWAGGER_OUT)
+	@go run $(MAIN)
+
+.PHONY: dev
+dev: $(SWAGGER_OUT)
 	@go run -tags dev $(MAIN)
 
 .PHONY: test
-test: ${SWAGGER_OUT}
+test: $(SWAGGER_OUT)
 	@mkdir -p test
 	@go test -tags dev -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: test-ci
-test-ci: ${SWAGGER_OUT}
+test-ci: $(SWAGGER_OUT)
 	@mkdir -p test
 	@CGO_ENABLED=1 go test -tags dev -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
@@ -67,7 +71,7 @@ coverage: test
 	@xdg-open $(COVERAGE_REPORT_HTML)
 
 .PHONY: lint
-lint: ${SWAGGER_OUT}
+lint: $(SWAGGER_OUT)
 	@# lint fails if there is compile error
 	@# and there is a compile error if front/dist does not exist or is empty
 	@# because it is embedded with //go:embed
