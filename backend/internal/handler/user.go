@@ -34,12 +34,12 @@ func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.HandleFunc("GET "+prefix, h.getUsers)
 	mux.HandleFunc("GET "+prefix+"/me", h.authMe)
-	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.getUserByID)))
+	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IdPathValue()(http.HandlerFunc(h.getUserByID)))
 	mux.HandleFunc("POST "+prefix, h.createUser)
 	mux.HandleFunc("PUT "+prefix, h.updateUser)
-	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/admin", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.updateUserAdminRole)))
-	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/password", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.updateUserPassword)))
-	mux.Handle("DELETE "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.deleteUser)))
+	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/admin", middleware.IdPathValue()(http.HandlerFunc(h.updateUserAdminRole)))
+	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/password", middleware.IdPathValue()(http.HandlerFunc(h.updateUserPassword)))
+	mux.Handle("DELETE "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IdPathValue()(http.HandlerFunc(h.deleteUser)))
 }
 
 // GetUsers godoc

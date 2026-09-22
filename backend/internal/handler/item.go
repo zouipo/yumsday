@@ -29,7 +29,7 @@ func NewItemHandler(itemService service.ItemServiceInterface) *ItemHandler {
 }
 
 func (h *ItemHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
-	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.getItemById)))
+	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IdPathValue()(http.HandlerFunc(h.getItemById)))
 	mux.HandleFunc("POST "+prefix, h.createItem)
 }
 

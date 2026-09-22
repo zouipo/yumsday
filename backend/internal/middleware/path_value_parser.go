@@ -13,78 +13,61 @@ import (
 // IntPathValues is a middleware that parses integer values from the URL path
 // and stores them in the request context.
 func IntPathValues(keys ...ctxkey.Key) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = parsePathValue(
-				w,
-				r,
-				func(key ctxkey.Key, valueStr string) (any, error) {
-					value, err := strconv.ParseInt(valueStr, 10, 64)
-					if err != nil {
-						return nil, fmt.Errorf("%s must be a valid integer", key)
-					}
-					return value, nil
-				},
-				keys...,
-			)
-			if r == nil {
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
+	return newParserMiddleWare(intParser, keys...)
 }
 
 // FloatPathValues is a middleware that parses float values from the URL path
 // and stores them in the request context.
 func FloatPathValues(keys ...ctxkey.Key) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = parsePathValue(
-				w,
-				r,
-				func(key ctxkey.Key, valueStr string) (any, error) {
-					value, err := strconv.ParseFloat(valueStr, 64)
-					if err != nil {
-						return nil, fmt.Errorf("%s must be a valid floating point number", key)
-					}
-					return value, nil
-				},
-				keys...,
-			)
-			if r == nil {
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
+	return newParserMiddleWare(floatParser, keys...)
 }
 
 // StringPathValues is a middleware that parses string values from the URL path
 // and stores them in the request context.
 func StringPathValues(keys ...ctxkey.Key) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = parsePathValue(
-				w,
-				r,
-				func(key ctxkey.Key, valueStr string) (any, error) {
-					return valueStr, nil
-				},
-				keys...,
-			)
-			if r == nil {
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
+	return newParserMiddleWare(stringParser, keys...)
+}
+
+func IdPathValue() Middleware {
+	return newParserMiddleWare(intParser, ctxkey.Id{})
 }
 
 /*** PRIVATE HELPERS ***/
 
 // pathValueParser defines a function type for parsing path values from strings to their expected types.
 type pathValueParser func(key ctxkey.Key, valueStr string) (any, error)
+
+func intParser(key ctxkey.Key, valueStr string) (any, error) {
+	value, err := strconv.ParseInt(valueStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a valid integer", key)
+	}
+	return value, nil
+}
+
+func floatParser(key ctxkey.Key, valueStr string) (any, error) {
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a valid floating point number", key)
+	}
+	return value, nil
+}
+
+func stringParser(key ctxkey.Key, valueStr string) (any, error) {
+	return valueStr, nil
+}
+
+func newParserMiddleWare(parser pathValueParser, keys ...ctxkey.Key) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r = parsePathValue(w, r, parser, keys...)
+			if r == nil {
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // parsePathValue extracts and parses values from the URL path of an HTTP request.
 // It uses the provided parseFunc to convert string values to their expected types (int, float, string).
