@@ -10,7 +10,6 @@ import (
 
 type logHandler struct {
 	logged bool
-	record slog.Record
 }
 
 func newLogHandler() *logHandler {
@@ -25,7 +24,6 @@ func (l *logHandler) Enabled(ctx context.Context, level slog.Level) bool {
 
 func (l *logHandler) Handle(ctx context.Context, r slog.Record) error {
 	l.logged = true
-	l.record = r
 	return nil
 }
 

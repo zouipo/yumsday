@@ -29,7 +29,7 @@ func StringPathValues(keys ...ctxkey.Key) Middleware {
 }
 
 func IdPathValue() Middleware {
-	return newParserMiddleWare(intParser, ctxkey.Id{})
+	return IntPathValues(ctxkey.Id{})
 }
 
 /*** PRIVATE HELPERS ***/

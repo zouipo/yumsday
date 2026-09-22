@@ -614,7 +614,6 @@ func TestCreateUser_Success(t *testing.T) {
 	}
 
 	var result map[string]int
-	fmt.Print(w.Body.String())
 	err := json.NewDecoder(w.Body).Decode(&result)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)

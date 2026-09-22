@@ -53,8 +53,6 @@ func (k Weight) String() string   { return weightStr }
 
 func FromString(str string) Key {
 	switch strings.ToLower(str) {
-
-	// "standard" key names from const block
 	case categoryStr:
 		return &Category{}
 	case codeStr:
