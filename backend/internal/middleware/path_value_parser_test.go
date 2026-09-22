@@ -299,9 +299,9 @@ func TestStringPathValues(t *testing.T) {
 		{
 			name: "numeric string",
 			pathValues: map[string]string{
-				"code": "12345",
+				"id": "12345",
 			},
-			keys:           []ctxkey.Key{ctxkey.Code{}},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},

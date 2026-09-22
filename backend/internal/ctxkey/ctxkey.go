@@ -11,7 +11,6 @@ import (
 
 const (
 	categoryStr = "category"
-	codeStr     = "code"
 	idStr       = "id"
 	nameStr     = "name"
 	priceStr    = "price"
@@ -28,7 +27,6 @@ type Key interface {
 }
 
 type Category struct{}
-type Code struct{}
 type Id struct{}
 type Name struct{}
 type Price struct{}
@@ -41,7 +39,6 @@ type Weight struct{}
 // Implementation of Stringer interface for each key type
 
 func (k Category) String() string { return categoryStr }
-func (k Code) String() string     { return codeStr }
 func (k Id) String() string       { return idStr }
 func (k Name) String() string     { return nameStr }
 func (k Price) String() string    { return priceStr }
@@ -55,8 +52,6 @@ func FromString(str string) Key {
 	switch strings.ToLower(str) {
 	case categoryStr:
 		return &Category{}
-	case codeStr:
-		return &Code{}
 	case idStr:
 		return &Id{}
 	case nameStr:
