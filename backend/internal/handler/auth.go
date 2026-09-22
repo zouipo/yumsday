@@ -53,7 +53,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, ok := r.Context().Value(ctxkey.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctxkey.Session{}).(*model.Session)
 	if !ok || session == nil {
 		http.Error(w, "session not available", http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (h *AuthHandler) postLogin(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /auth/logout [post]
 func (h *AuthHandler) postLogout(w http.ResponseWriter, r *http.Request) {
-	session, ok := r.Context().Value(ctxkey.SessionCtxKey{}).(*model.Session)
+	session, ok := r.Context().Value(ctxkey.Session{}).(*model.Session)
 	if !ok || session == nil {
 		http.Error(w, "session not available", http.StatusInternalServerError)
 		return

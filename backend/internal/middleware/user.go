@@ -18,7 +18,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 				return
 			}
 
-			s, ok := r.Context().Value(ctxkey.SessionCtxKey{}).(*model.Session)
+			s, ok := r.Context().Value(ctxkey.Session{}).(*model.Session)
 			if !ok || s == nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
@@ -42,7 +42,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 
 			r = r.WithContext(context.WithValue(
 				r.Context(),
-				ctxkey.UserCtxKey{},
+				ctxkey.User{},
 				user,
 			))
 

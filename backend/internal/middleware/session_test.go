@@ -146,7 +146,7 @@ func TestSessionInjector_InjectsNewSessionIntoContext(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	val := next.request.Context().Value(ctxkey.SessionCtxKey{})
+	val := next.request.Context().Value(ctxkey.Session{})
 	if val == nil {
 		t.Fatal("expected session in context, got nil")
 	}
@@ -185,7 +185,7 @@ func TestSessionInjector_UsesExistingSession(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	val := next.request.Context().Value(ctxkey.SessionCtxKey{})
+	val := next.request.Context().Value(ctxkey.Session{})
 	if val == nil {
 		t.Fatal("expected session in context, got nil")
 	}
@@ -243,7 +243,7 @@ func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	sessionFromCtx := next.request.Context().Value(ctxkey.SessionCtxKey{})
+	sessionFromCtx := next.request.Context().Value(ctxkey.Session{})
 	if sessionFromCtx == nil {
 		t.Fatal("expected session in context, got nil")
 	}

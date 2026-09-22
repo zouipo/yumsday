@@ -29,7 +29,7 @@ func NewItemHandler(itemService service.ItemServiceInterface) *ItemHandler {
 }
 
 func (h *ItemHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
-	mux.Handle("GET "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.getItemById)))
+	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.getItemById)))
 	mux.HandleFunc("POST "+prefix, h.createItem)
 }
 
@@ -46,7 +46,7 @@ func (h *ItemHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/item/{id} [get]
 func (h *ItemHandler) getItemById(w http.ResponseWriter, r *http.Request) {
-	item, err := h.itemService.GetByID(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
+	item, err := h.itemService.GetByID(r.Context().Value(ctxkey.Id{}).(int64))
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
 			http.Error(w, err.Error(), appErr.HTTPStatus())
@@ -149,7 +149,7 @@ func (h *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/item/{id} [delete]
 func (h *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
-	err := h.itemService.Delete(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
+	err := h.itemService.Delete(r.Context().Value(ctxkey.Id{}).(int64))
 
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {

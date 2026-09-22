@@ -10,75 +10,71 @@ import (
 // or any other built-in type to avoid collisions between packages using context."
 
 const (
-	categoryKeyStr = "category"
-	codeKeyStr     = "code"
-	idKeyStr       = "id"
-	nameKeyStr     = "name"
-	priceKeyStr    = "price"
-	sessionKeyStr  = "session"
-	statusKeyStr   = "status"
-	userKeyStr     = "user"
-	usernameKeyStr = "username"
-	weightKeyStr   = "weight"
+	categoryStr = "category"
+	codeStr     = "code"
+	idStr       = "id"
+	nameStr     = "name"
+	priceStr    = "price"
+	sessionStr  = "session"
+	statusStr   = "status"
+	userStr     = "user"
+	usernameStr = "username"
+	weightStr   = "weight"
 )
 
-type CtxKey interface {
+// Same as fmt.Stringer
+type Key interface {
 	fmt.Stringer
 }
 
-type CategoryCtxKey struct{}
-type CodeCtxKey struct{}
-type IdCtxKey struct{}
-type NameCtxKey struct{}
-type PriceCtxKey struct{}
-type SessionCtxKey struct{}
-type StatusCtxKey struct{}
-type UserCtxKey struct{}
-type UsernameCtxKey struct{}
-type WeightCtxKey struct{}
+type Category struct{}
+type Code struct{}
+type Id struct{}
+type Name struct{}
+type Price struct{}
+type Session struct{}
+type Status struct{}
+type User struct{}
+type Username struct{}
+type Weight struct{}
 
 // Implementation of Stringer interface for each key type
 
-func (k CategoryCtxKey) String() string { return categoryKeyStr }
-func (k CodeCtxKey) String() string     { return codeKeyStr }
-func (k IdCtxKey) String() string       { return idKeyStr }
-func (k NameCtxKey) String() string     { return nameKeyStr }
-func (k PriceCtxKey) String() string    { return priceKeyStr }
-func (k SessionCtxKey) String() string  { return sessionKeyStr }
-func (k StatusCtxKey) String() string   { return statusKeyStr }
-func (k UserCtxKey) String() string     { return userKeyStr }
-func (k UsernameCtxKey) String() string { return usernameKeyStr }
-func (k WeightCtxKey) String() string   { return weightKeyStr }
+func (k Category) String() string { return categoryStr }
+func (k Code) String() string     { return codeStr }
+func (k Id) String() string       { return idStr }
+func (k Name) String() string     { return nameStr }
+func (k Price) String() string    { return priceStr }
+func (k Session) String() string  { return sessionStr }
+func (k Status) String() string   { return statusStr }
+func (k User) String() string     { return userStr }
+func (k Username) String() string { return usernameStr }
+func (k Weight) String() string   { return weightStr }
 
-func FromString(str string) CtxKey {
+func FromString(str string) Key {
 	switch strings.ToLower(str) {
 
 	// "standard" key names from const block
-	case categoryKeyStr:
-		return &CategoryCtxKey{}
-	case codeKeyStr:
-		return &CodeCtxKey{}
-	case idKeyStr:
-		return &IdCtxKey{}
-	case nameKeyStr:
-		return &NameCtxKey{}
-	case priceKeyStr:
-		return &PriceCtxKey{}
-	case sessionKeyStr:
-		return &SessionCtxKey{}
-	case statusKeyStr:
-		return &StatusCtxKey{}
-	case userKeyStr:
-		return &UserCtxKey{}
-	case usernameKeyStr:
-		return &UsernameCtxKey{}
-	case weightKeyStr:
-		return &WeightCtxKey{}
-
-	// additional key that are not covered by Stringer implementations
-	case "userid":
-		return &IdCtxKey{}
-
+	case categoryStr:
+		return &Category{}
+	case codeStr:
+		return &Code{}
+	case idStr:
+		return &Id{}
+	case nameStr:
+		return &Name{}
+	case priceStr:
+		return &Price{}
+	case sessionStr:
+		return &Session{}
+	case statusStr:
+		return &Status{}
+	case userStr:
+		return &User{}
+	case usernameStr:
+		return &Username{}
+	case weightStr:
+		return &Weight{}
 	default:
 		panic(fmt.Errorf("unhandled context key: %v", str))
 	}

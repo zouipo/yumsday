@@ -19,7 +19,7 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 			// http.Request context is immutable, so we need to create a new context with the session and assign it back to the request.
 			r = r.WithContext(context.WithValue(
 				r.Context(),
-				ctxkey.SessionCtxKey{},
+				ctxkey.Session{},
 				s,
 			))
 

@@ -34,12 +34,12 @@ func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux, prefix string) {
 	mux.HandleFunc("GET "+prefix, h.getUsers)
 	mux.HandleFunc("GET "+prefix+"/me", h.authMe)
-	mux.Handle("GET "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.getUserByID)))
+	mux.Handle("GET "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.getUserByID)))
 	mux.HandleFunc("POST "+prefix, h.createUser)
 	mux.HandleFunc("PUT "+prefix, h.updateUser)
-	mux.Handle("PATCH "+prefix+"/{id}/admin", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserAdminRole)))
-	mux.Handle("PATCH "+prefix+"/{id}/password", middleware.IntPathValues("id")(http.HandlerFunc(h.updateUserPassword)))
-	mux.Handle("DELETE "+prefix+"/{id}", middleware.IntPathValues("id")(http.HandlerFunc(h.deleteUser)))
+	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/admin", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.updateUserAdminRole)))
+	mux.Handle("PATCH "+prefix+"/{"+ctxkey.Id{}.String()+"}/password", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.updateUserPassword)))
+	mux.Handle("DELETE "+prefix+"/{"+ctxkey.Id{}.String()+"}", middleware.IntPathValues(ctxkey.Id{})(http.HandlerFunc(h.deleteUser)))
 }
 
 // GetUsers godoc
@@ -85,7 +85,7 @@ func (h *UserHandler) getUsers(w http.ResponseWriter, r *http.Request) {
 // @Router /api/user/{id} [get]
 func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 	// Get the id from the request context (set by the middleware).
-	user, err := h.userService.GetByID(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
+	user, err := h.userService.GetByID(r.Context().Value(ctxkey.Id{}).(int64))
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {
 			http.Error(w, err.Error(), appErr.HTTPStatus())
@@ -111,7 +111,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/me [get]
 func (h *UserHandler) authMe(w http.ResponseWriter, r *http.Request) {
-	u, ok := r.Context().Value(ctxkey.UserCtxKey{}).(*model.User)
+	u, ok := r.Context().Value(ctxkey.User{}).(*model.User)
 	if !ok || u == nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -158,7 +158,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w.WriteHeader(http.StatusCreated)
-	if _, err := fmt.Fprintf(w, `{"id": %d}`, id); err != nil {
+	if _, err := fmt.Fprintf(w, `{"%s": %d}`, ctxkey.Id{}.String(), id); err != nil {
 		slog.Error("failed to sent http response", "error", err, "url", r.URL)
 	}
 }
@@ -211,7 +211,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id}/admin [patch]
 func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(ctxkey.IdCtxKey{}).(int64)
+	userID := r.Context().Value(ctxkey.Id{}).(int64)
 
 	var payload dto.AdminRolePayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -246,7 +246,7 @@ func (h *UserHandler) updateUserAdminRole(w http.ResponseWriter, r *http.Request
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id}/password [patch]
 func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(ctxkey.IdCtxKey{}).(int64)
+	userID := r.Context().Value(ctxkey.Id{}).(int64)
 
 	var payload dto.PasswordPayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -280,7 +280,7 @@ func (h *UserHandler) updateUserPassword(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/{id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	err := h.userService.Delete(r.Context().Value(ctxkey.IdCtxKey{}).(int64))
+	err := h.userService.Delete(r.Context().Value(ctxkey.Id{}).(int64))
 
 	if err != nil {
 		if appErr, ok := errors.AsType[customErrors.AppError](err); ok {

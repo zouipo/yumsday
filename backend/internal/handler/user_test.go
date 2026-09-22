@@ -450,7 +450,7 @@ func TestGetUserByID_Success(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(expected.ID, 10), nil)
 	// Add the ID to the context as the middleware would do
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, expected.ID)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, expected.ID)
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -483,7 +483,7 @@ func TestGetUserByID_NotFound(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(invalidUserId))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -511,7 +511,7 @@ func TestAuthMe_Success(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.UserCtxKey{}, authenticatedUser))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.User{}, authenticatedUser))
 	w := httptest.NewRecorder()
 
 	handler.authMe(w, r)
@@ -562,7 +562,7 @@ func TestAuthMe_InvalidUserTypeInContext(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.UserCtxKey{}, "not-a-user"))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.User{}, "not-a-user"))
 	w := httptest.NewRecorder()
 
 	handler.authMe(w, r)
@@ -614,6 +614,7 @@ func TestCreateUser_Success(t *testing.T) {
 	}
 
 	var result map[string]int
+	fmt.Print(w.Body.String())
 	err := json.NewDecoder(w.Body).Decode(&result)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
@@ -1022,7 +1023,7 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1055,7 +1056,7 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader([]byte("invalid json")))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1094,7 +1095,7 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1134,7 +1135,7 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1167,7 +1168,7 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader([]byte("invalid json")))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1207,7 +1208,7 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1250,7 +1251,7 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
 	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1286,7 +1287,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1318,7 +1319,7 @@ func TestDeleteUser_NotFound(t *testing.T) {
 	usersNb := len(mockService.users)
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(invalidUserId))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1344,7 +1345,7 @@ func TestDeleteUser_RepoError(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
-	ctx := context.WithValue(r.Context(), ctxkey.IdCtxKey{}, int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 

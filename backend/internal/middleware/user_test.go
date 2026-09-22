@@ -66,7 +66,7 @@ func TestUserInjector_unauthenticated_nonLogin(t *testing.T) {
 	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	mw(next).ServeHTTP(w, r)
@@ -96,7 +96,7 @@ func TestUserInjector_authLoginBypassesAuthentication(t *testing.T) {
 	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	mw(next).ServeHTTP(w, r)
@@ -120,7 +120,7 @@ func TestUserInjector_authenticated_nonLogin(t *testing.T) {
 
 	var userInCtx *model.User
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userInCtx = r.Context().Value(ctxkey.UserCtxKey{}).(*model.User)
+		userInCtx = r.Context().Value(ctxkey.User{}).(*model.User)
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -128,7 +128,7 @@ func TestUserInjector_authenticated_nonLogin(t *testing.T) {
 	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	mw(next).ServeHTTP(w, r)
@@ -163,7 +163,7 @@ func TestUserInjector_authenticated_getByIDError(t *testing.T) {
 	session.UserID = new(int64(1))
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctxkey.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	defer func() {
