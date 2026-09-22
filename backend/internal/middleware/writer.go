@@ -31,7 +31,7 @@ func (w *responseWriter) WriteHeader(status int) {
 }
 
 // Write intercepts the call to Write (for example by json.Encode) to ensure WriteHeader is called first.
-// http.Error explicitely calls our WriteHeader (check http.Error) sources,
+// http.Error explicitely calls our WriteHeader (check http.Error sources),
 // so it's not bypassed in that case.
 func (w *responseWriter) Write(data []byte) (int, error) {
 	w.WriteHeader(http.StatusOK)
