@@ -6,6 +6,7 @@ bin
 config
 docker
 !docker/install-build-dependencies.sh
+docs
 front/dist
 front/node_modules
 test
