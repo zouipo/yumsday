@@ -5,7 +5,7 @@ COVERAGE_REPORT_HTML=test/coverage.html
 
 BACKEND_SOURCES=$(shell find -type f -name "*.go" -not -path "./docs/*" -not -path "./front/node_modules/*")
 FRONT_SOURCES=$(shell find -type f -path "./front/*" -not -path "./front/node_modules/*" -not -path "./front/dist/*" -not -name "*.go")
-SWAGGER_SOURCES=$(shell find -type f -name "*.go" -path "./backend/internal/handler/*" -not -name "*_test.go")
+SWAGGER_SOURCES=$(shell grep -lr "// @" --exclude-dir=node_modules)
 
 BACKEND_OUT=bin/$(NAME)
 FRONT_OUT=front/dist/index.html
