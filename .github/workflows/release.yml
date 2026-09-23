@@ -6,28 +6,29 @@ on:
       - main
   workflow_dispatch:
 
-permissions:
-  contents: write
-  issues: write
-  packages: write
-  pull-requests: write
-
 jobs:
   release:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag: ${{ steps.release.outputs.tag_name }}
+      token: ${{ steps.app-token.outputs.token }}
       major: ${{ steps.release.outputs.major }}
       minor: ${{ steps.release.outputs.minor }}
       patch: ${{ steps.release.outputs.patch }}
     steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
 
       - id: release
         uses: googleapis/release-please-action@v5
         with:
-          token: ${{ secrets.CICD_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           release-type: go
 
   docker:
@@ -58,7 +59,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ needs.release.outputs.token }}
 
       - uses: docker/setup-buildx-action@v4
 

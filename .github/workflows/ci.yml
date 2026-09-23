@@ -9,9 +9,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-
 env:
   DOCKERFILE: docker/ci.Dockerfile
   IMAGE: ci-image
