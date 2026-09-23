@@ -83,11 +83,3 @@ lint: $(SWAGGER_OUT)
 .PHONY: fmt
 fmt:
 	@golangci-lint fmt
-
-.PHONY: clean
-clean:
-	@rm -r bin
-
-.PHONY: gitclean
-gitclean:
-	@git clean -xdf
