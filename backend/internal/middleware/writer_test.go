@@ -24,7 +24,7 @@ func writerReqHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, statusStr)
 }
 
-// middleware object used to extact the http status code
+// middleware object used to extract the http status code
 // from the request context
 type statusExtractor struct {
 	status int
