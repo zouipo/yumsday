@@ -44,7 +44,7 @@ compose-down:
 	@docker compose -f test/compose.yaml down
 
 .PHONY: run
-run: $(SWAGGER_OUT)
+run: $(FRONT_OUT) $(SWAGGER_OUT)
 	@go run $(MAIN)
 
 .PHONY: dev
