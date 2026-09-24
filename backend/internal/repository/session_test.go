@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
+	"github.com/zouipo/yumsday/internal/dbutils"
 )
 
 var (
@@ -80,7 +80,7 @@ func compareSessions(actual, expected *model.Session) error {
 
 // setupSessionTestDB initializes an in-memory SQLite database with test data for testing.
 func setupSessionTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}

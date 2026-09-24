@@ -15,7 +15,7 @@ SWAGGER_OUT=docs/docs.go
 all: $(BACKEND_OUT)
 
 $(BACKEND_OUT): $(BACKEND_SOURCES) $(FRONT_OUT) $(SWAGGER_OUT)
-	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(BACKEND_OUT) $(MAIN)
+	@go build -trimpath -ldflags="-s -w" -o $(BACKEND_OUT) $(MAIN)
 
 $(FRONT_OUT): $(FRONT_SOURCES)
 	@cd front && \

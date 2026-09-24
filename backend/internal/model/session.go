@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 )
 
 type Session struct {

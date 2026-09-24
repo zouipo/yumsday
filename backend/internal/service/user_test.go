@@ -1,14 +1,14 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
@@ -115,7 +115,7 @@ func (m *MockUserRepository) Update(user *model.User) error {
 	// Check if another user already has this username
 	for _, existingUser := range m.users {
 		if existingUser.Username == user.Username && existingUser.ID != user.ID {
-			return customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+			return customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 		}
 	}
 
@@ -590,7 +590,7 @@ func TestUpdate_DuplicateUsername(t *testing.T) {
 
 	updatedUser := createTestUser(firstUser.ID, secondUser.Username, ValidPassword)
 
-	conflictErr := customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+	conflictErr := customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 	err := service.Update(updatedUser)
 	if !utils.CompareErrors(err, conflictErr) {
 		t.Errorf("Update() expected error '%v' for duplicate username , got '%v'", conflictErr, err)

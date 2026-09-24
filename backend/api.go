@@ -13,7 +13,6 @@ import (
 	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/repository"
 	"github.com/zouipo/yumsday/backend/internal/service"
-	_ "github.com/zouipo/yumsday/docs"
 	"github.com/zouipo/yumsday/front"
 )
 

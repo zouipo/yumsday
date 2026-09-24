@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 )
 
 func TestNewGroceryRepository(t *testing.T) {

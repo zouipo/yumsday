@@ -9,8 +9,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 	"github.com/zouipo/yumsday/backend/internal/repository"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 )
 
 // UserServiceInterface defines the contract for user service operations

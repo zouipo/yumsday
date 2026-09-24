@@ -13,8 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
 	"github.com/zouipo/yumsday/backend/internal/migration"
+	"github.com/zouipo/yumsday/internal/dbutils"
+	"modernc.org/sqlite"
 )
 
 // TimesApproximatelyEqual checks if two time values are approximately equal within a specified tolerance.
@@ -40,22 +41,11 @@ func CompareErrors(actual, expected error) bool {
 	}
 
 	// Compare sqlite extended codes when both wrapped errors are sqlite3.Error.
-	actualSQLErr, actualIsSQLErr := errors.AsType[sqlite3.Error](actual)
-	expectedSQLErr, expectedIsSQLErr := errors.AsType[sqlite3.Error](expected)
+	actualSQLErr, actualIsSQLErr := errors.AsType[*sqlite.Error](actual)
+	expectedSQLErr, expectedIsSQLErr := errors.AsType[*sqlite.Error](expected)
 
 	if actualIsSQLErr && expectedIsSQLErr {
-		return actualSQLErr.ExtendedCode == expectedSQLErr.ExtendedCode
-	}
-
-	// If actual is sqlite3.Error but expected is an error code constant (ErrNoExtended or ErrNo),
-	// compare the actual error's ExtendedCode with the expected constant
-	if actualIsSQLErr {
-		if errNoExt, ok := errors.AsType[sqlite3.ErrNoExtended](expected); ok {
-			return actualSQLErr.ExtendedCode == errNoExt
-		}
-		if errNo, ok := errors.AsType[sqlite3.ErrNo](expected); ok {
-			return actualSQLErr.ExtendedCode == sqlite3.ErrNoExtended(errNo)
-		}
+		return actualSQLErr.Code() == expectedSQLErr.Code()
 	}
 
 	return true
@@ -129,7 +119,7 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 }
 
 func SetUpTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
