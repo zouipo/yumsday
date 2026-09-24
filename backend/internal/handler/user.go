@@ -106,7 +106,7 @@ func (h *UserHandler) getUserByID(w http.ResponseWriter, r *http.Request) {
 // @Description Get authenticated user
 // @Tags user
 // @Produce json
-// @Success 200 {string} string "Login successful"
+// @Success 200 {object} dto.UserDto
 // @Failure 401 {string} string "Invalid credentials"
 // @Failure 500 {string} string "Internal server error"
 // @Router /api/user/me [get]
