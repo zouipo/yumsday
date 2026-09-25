@@ -4,14 +4,20 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 )
 
 // Custom response writer to intercept calls to WriterHeader
 // and Writter to do additional processing, e.g get the status code.
 type responseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
+	ogResponseWriter http.ResponseWriter
+	status           int
+	wroteHeader      bool
+}
+
+func (w *responseWriter) Header() http.Header {
+	return w.ogResponseWriter.Header()
 }
 
 // WriteHeader intercepts the call to WriteHeader to capture the status code.
@@ -24,27 +30,27 @@ func (w *responseWriter) WriteHeader(status int) {
 
 	w.wroteHeader = true
 	w.status = status
-	w.ResponseWriter.WriteHeader(status)
+	w.ogResponseWriter.WriteHeader(status)
 	slog.Debug("WriteHeader", "status", status)
 }
 
 // Write intercepts the call to Write (for example by json.Encode) to ensure WriteHeader is called first.
-// http.Error explicitely calls our WriteHeader (check http.Error) sources,
+// http.Error explicitely calls our WriteHeader (check http.Error sources),
 // so it's not bypassed in that case.
 func (w *responseWriter) Write(data []byte) (int, error) {
 	w.WriteHeader(http.StatusOK)
-	return w.ResponseWriter.Write(data)
+	return w.ogResponseWriter.Write(data)
 }
 
 // ResponseWriter is a middleware that wraps the ResponseWriter struct to capture status codes.
 func ResponseWriter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writer := &responseWriter{
-			ResponseWriter: w,
-			status:         http.StatusOK,
+			ogResponseWriter: w,
+			status:           http.StatusOK,
 		}
 		// Store a pointer to the status so the logger can read the updated value
-		r = r.WithContext(context.WithValue(r.Context(), "status", &writer.status))
+		r = r.WithContext(context.WithValue(r.Context(), ctxkey.Status{}, &writer.status))
 		next.ServeHTTP(writer, r)
 	})
 }

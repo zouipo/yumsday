@@ -194,6 +194,7 @@ func (r *ItemRepository) fetchItems(clauses string, values ...any) ([]model.Item
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch items", err)
 	}
+	defer CloseRows(rows)
 
 	items := []model.Item{}
 

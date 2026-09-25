@@ -299,7 +299,7 @@ func TestGetByUsername(t *testing.T) {
 		{
 			name:     "non-existing user",
 			username: invalidUsername,
-			wantErr:  customErrors.NewNotFoundError("users", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
+			wantErr:  customErrors.NewNotFoundError("users", invalidUsername, sql.ErrNoRows),
 		},
 	}
 

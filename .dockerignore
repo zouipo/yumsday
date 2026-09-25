@@ -1,0 +1,16 @@
+.git
+.gitignore
+.github
+.vscode
+bin
+config
+docker
+!docker/install-build-dependencies.sh
+docs
+front/dist
+front/node_modules
+test
+uml
+CHANGELOG.md
+LICENSE
+README.md

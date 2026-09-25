@@ -103,8 +103,8 @@ func compareFieldsByName[T any](t1 T, t2 T, sortWords []string, descending bool)
 	}
 
 	if a.Kind() != b.Kind() {
-		panic(errors.New("cannot compare values of different kind. " +
-			"check that sortWords leads to a field of the same kind in both values."))
+		panic(errors.New("cannot compare values of different kind, " +
+			"check that sortWords leads to a field of the same kind in both values"))
 	}
 
 	switch a.Kind() {

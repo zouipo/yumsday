@@ -36,23 +36,23 @@ func Migrate(db *sql.DB, migrationsFs fs.FS) error {
 
 	migrations, err := loadMigrations(migrationsFs)
 	if err != nil {
-		return fmt.Errorf("Failed to load migrations: %w", err)
+		return fmt.Errorf("failed to load migrations: %w", err)
 	}
 
 	err = initializeMigrationVersion(db)
 	if err != nil {
-		return fmt.Errorf("Failed to initialize migration version: %w", err)
+		return fmt.Errorf("failed to initialize migration version: %w", err)
 	}
 
 	currentVersion, err := getMigrationVersion(db)
 	if err != nil {
-		return fmt.Errorf("Failed to get current migration version: %w", err)
+		return fmt.Errorf("failed to get current migration version: %w", err)
 	}
 	slog.Info("Current database migration version", "version", currentVersion)
 
 	err = performMigrations(db, migrations, currentVersion)
 	if err != nil {
-		return fmt.Errorf("Failed to perform migrations: %w", err)
+		return fmt.Errorf("failed to perform migrations: %w", err)
 	}
 
 	slog.Info("Database migration completed successfully")
@@ -79,7 +79,7 @@ func loadMigrations(scriptsFs fs.FS) ([]migration, error) {
 		matches := re.FindStringSubmatch(file.Name())
 
 		if len(matches) != 3 {
-			return nil, fmt.Errorf("Cannot parse migration version and name from filename %s", file.Name())
+			return nil, fmt.Errorf("cannot parse migration version and name from filename %s", file.Name())
 		}
 
 		var version int
@@ -116,12 +116,12 @@ func performMigrations(db *sql.DB, migrations []migration, currentVersion int) e
 		slog.Info("Applying migration", "version", m.version, "name", m.name)
 		_, err := db.Exec(m.script)
 		if err != nil {
-			return fmt.Errorf("Failed to apply migration %d_%s: %w", m.version, m.name, err)
+			return fmt.Errorf("failed to apply migration %d_%s: %w", m.version, m.name, err)
 		}
 
 		_, err = db.Exec(`UPDATE _migration_version SET version = ?;`, m.version)
 		if err != nil {
-			return fmt.Errorf("Failed to update migration version to %d: %w", m.version, err)
+			return fmt.Errorf("failed to update migration version to %d: %w", m.version, err)
 		}
 		slog.Info("Successfully applied migration", "version", m.version, "name", m.name)
 	}
@@ -140,12 +140,12 @@ func initializeMigrationVersion(db *sql.DB) error {
 	_, err = db.Exec(`CREATE TABLE _migration_version
 	(version INTEGER NOT NULL UNIQUE PRIMARY KEY);`)
 	if err != nil {
-		return fmt.Errorf("Failed to create migration version table: %w", err)
+		return fmt.Errorf("failed to create migration version table: %w", err)
 	}
 
 	_, err = db.Exec(`INSERT INTO _migration_version VALUES (-1);`)
 	if err != nil {
-		return fmt.Errorf("Failed to initialize migration version: %w", err)
+		return fmt.Errorf("failed to initialize migration version: %w", err)
 	}
 
 	return nil
@@ -155,7 +155,7 @@ func getMigrationVersion(db *sql.DB) (int, error) {
 	var version int
 	err := db.QueryRow(`SELECT version FROM _migration_version LIMIT 1;`).Scan(&version)
 	if err != nil {
-		return 0, fmt.Errorf("Failed to get current migration version: %w", err)
+		return 0, fmt.Errorf("failed to get current migration version: %w", err)
 	}
 	return version, nil
 }

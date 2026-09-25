@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
@@ -92,7 +92,7 @@ func TestPostLogin_Success(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogin(w, r)
@@ -171,7 +171,7 @@ func TestPostLogin_AppError(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogin(w, r)
@@ -200,7 +200,7 @@ func TestPostLogin_GenericError(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodPost, loginRoute, bytes.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogin(w, r)
@@ -222,7 +222,7 @@ func TestPostLogout_Success(t *testing.T) {
 	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogout(w, r)
@@ -246,7 +246,7 @@ func TestPostLogout_Error(t *testing.T) {
 	session := model.NewSession("", "")
 
 	r := httptest.NewRequest(http.MethodPost, logoutRoute, nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctx.SessionCtxKey{}, session))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.Session{}, session))
 	w := httptest.NewRecorder()
 
 	handler.postLogout(w, r)

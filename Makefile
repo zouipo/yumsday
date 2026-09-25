@@ -1,27 +1,37 @@
-OUT=bin/yumsday
-COVERAGE_FILE=test/coverage.out
-TEST_REPORT=test/test-report.json
+NAME=yumsday
+MAIN=main.go
+COVERAGE_REPORT=test/coverage.out
+COVERAGE_REPORT_HTML=test/coverage.html
+
+BACKEND_SOURCES=$(shell find -type f -name "*.go" -not -path "./docs/*" -not -path "./front/node_modules/*")
+FRONT_SOURCES=$(shell find -type f -path "./front/*" -not -path "./front/node_modules/*" -not -path "./front/dist/*" -not -name "*.go")
+SWAGGER_SOURCES=$(shell find -type f -name "*.go" -path "./backend/internal/handler/*" -not -name "*_test.go")
+
+BACKEND_OUT=bin/$(NAME)
+FRONT_OUT=front/dist/index.html
+SWAGGER_OUT=docs/docs.go
 
 .PHONY: all
-all: build
+all: $(BACKEND_OUT)
 
-.PHONY: front
-front:
+$(BACKEND_OUT): $(BACKEND_SOURCES) $(FRONT_OUT) $(SWAGGER_OUT)
+	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(BACKEND_OUT) $(MAIN)
+
+$(FRONT_OUT): $(FRONT_SOURCES)
 	@cd front && \
 		npm install && \
 		npm run build
 
-.PHONY: swagger
-swagger:
+$(SWAGGER_OUT): $(SWAGGER_SOURCES)
 	@swag init
-
-.PHONY: build
-build: swagger front
-	@go build -ldflags="-s -w" -o $(OUT) main.go
 
 .PHONY: image
 image:
-	@docker build --target runtime -t zouipo/yumsday:latest .
+	@docker build --file docker/Dockerfile --target runtime --tag $(NAME):latest .
+
+.PHONY: image-ci
+image-ci:
+	@docker build --file docker/ci.Dockerfile --tag $(NAME)-ci:latest .
 
 .PHONY: compose-up
 compose-up:
@@ -34,16 +44,22 @@ compose-down:
 	@docker compose -f test/compose.yaml down
 
 .PHONY: run
-run: swagger
-	@go run -tags dev .
+run: $(FRONT_OUT) $(SWAGGER_OUT)
+	@go run $(MAIN)
+
+.PHONY: dev
+dev: $(SWAGGER_OUT)
+	@go run -tags dev $(MAIN)
 
 .PHONY: test
-test: swagger
-	@go test -tags dev -cover -coverprofile=$(COVERAGE_FILE) ./...
+test: $(SWAGGER_OUT)
+	@mkdir -p test
+	@go test -tags dev -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
-.PHONY: test-cicd
-test-cicd: swagger
-	@go test -tags dev -v -race -cover -coverprofile=$(COVERAGE_FILE) -json ./... > $(TEST_REPORT)
+.PHONY: test-ci
+test-ci: $(SWAGGER_OUT)
+	@mkdir -p test
+	@CGO_ENABLED=1 go test -tags dev -race -cover -coverprofile=$(COVERAGE_REPORT) ./...
 
 .PHONY: benchmark
 benchmark:
@@ -51,9 +67,19 @@ benchmark:
 
 .PHONY: coverage
 coverage: test
-	@go tool cover -html=$(COVERAGE_FILE) -o=coverage.html
-	@xdg-open coverage.html
+	@go tool cover -html=$(COVERAGE_REPORT) -o=$(COVERAGE_REPORT_HTML)
+	@xdg-open $(COVERAGE_REPORT_HTML)
 
-.PHONY: clean
-clean:
-	@git clean -xdf
+.PHONY: lint
+lint: $(SWAGGER_OUT)
+	@# lint fails if there is compile error
+	@# and there is a compile error if front/dist does not exist or is empty
+	@# because it is embedded with //go:embed
+	@mkdir -p front/dist
+	@touch front/dist/placeholder
+
+	@golangci-lint run
+
+.PHONY: fmt
+fmt:
+	@golangci-lint fmt

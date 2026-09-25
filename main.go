@@ -45,10 +45,10 @@ func init() {
 	cmd.PersistentFlags().String("log-level", "info", "Log level")
 
 	// Bind cli flags to viper values
-	viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
-	viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
-	viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
-	viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
+	_ = viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
+	_ = viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
+	_ = viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
+	_ = viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -146,5 +146,7 @@ func run(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		slog.Error("failed to execute main command", "error", err)
+	}
 }

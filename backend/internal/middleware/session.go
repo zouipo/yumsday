@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
 
@@ -18,7 +19,7 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 			// http.Request context is immutable, so we need to create a new context with the session and assign it back to the request.
 			r = r.WithContext(context.WithValue(
 				r.Context(),
-				ctx.SessionCtxKey{},
+				ctxkey.Session{},
 				s,
 			))
 
@@ -53,7 +54,11 @@ func SessionInjector(sessionService service.SessionServiceInterface, wg *sync.Wa
 
 			if !strings.HasPrefix(r.URL.Path, "/auth") {
 				// Save session in dedicated goroutine to reduce response latency.
-				wg.Go(func() { sessionService.Save(s) })
+				wg.Go(func() {
+					if err := sessionService.Save(s); err != nil {
+						slog.Error("failed to persist session", "error", err, "session id", s.ID, "user id", s.UserID)
+					}
+				})
 			}
 		})
 	}

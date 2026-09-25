@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
 )
@@ -146,7 +146,7 @@ func TestSessionInjector_InjectsNewSessionIntoContext(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	val := next.request.Context().Value(ctx.SessionCtxKey{})
+	val := next.request.Context().Value(ctxkey.Session{})
 	if val == nil {
 		t.Fatal("expected session in context, got nil")
 	}
@@ -185,7 +185,7 @@ func TestSessionInjector_UsesExistingSession(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	val := next.request.Context().Value(ctx.SessionCtxKey{})
+	val := next.request.Context().Value(ctxkey.Session{})
 	if val == nil {
 		t.Fatal("expected session in context, got nil")
 	}
@@ -243,7 +243,7 @@ func TestSessionInjector_CookieValueMatchesSessionID(t *testing.T) {
 		t.Fatal("expected request to be captured by next handler")
 	}
 
-	sessionFromCtx := next.request.Context().Value(ctx.SessionCtxKey{})
+	sessionFromCtx := next.request.Context().Value(ctxkey.Session{})
 	if sessionFromCtx == nil {
 		t.Fatal("expected session in context, got nil")
 	}

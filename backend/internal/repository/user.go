@@ -190,10 +190,10 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 	users := []model.User{}
 
 	rows, err := r.db.Query("SELECT * FROM users")
-
 	if err != nil {
 		return nil, err
 	}
+	defer CloseRows(rows)
 
 	for rows.Next() {
 		var user model.User
@@ -211,8 +211,6 @@ func (r *UserRepository) fetchUsers() ([]model.User, error) {
 		)
 
 		if err != nil {
-			// Close rows before returning to prevent resource leaks.
-			rows.Close()
 			return nil, err
 		}
 		users = append(users, user)

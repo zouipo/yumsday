@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# cancel ongoing pipeline when a new push happens
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKERFILE: docker/ci.Dockerfile
+  IMAGE: ci-image
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build CI image
+        run: docker build --file ${{ env.DOCKERFILE }} --tag ${{ env.IMAGE }} .
+
+      - name: Run linter
+        run: docker run --rm ${{ env.IMAGE }} make lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build CI image
+        run: docker build --file ${{ env.DOCKERFILE }} --tag ${{ env.IMAGE }} .
+
+      - name: Run tests
+        run: docker run --rm ${{ env.IMAGE }} make test-ci

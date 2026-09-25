@@ -26,7 +26,6 @@ var (
 	itemCategoryUncategorized = model.ItemCategory{ID: 4, Name: "UNCATEGORIZED", GroupID: group1.ID}
 
 	recipe1 = model.Recipe{ID: 1, Name: "Grilled Chicken"}
-	recipe2 = model.Recipe{ID: 2, Name: "Tomato Soup"}
 
 	items = []model.Item{
 		{
@@ -329,32 +328,6 @@ func newItemServiceForTest(
 	itemCategoryService *MockItemCategoryServiceForItem,
 ) *ItemService {
 	return NewItemService(repo, recipeService, groceryService, groupService, itemCategoryService)
-}
-
-// getByGroupID returns a slice of items by groupID, sorted by ID
-func getByGroupID(id int64, sortKey string, desc bool) []model.Item {
-	result := make([]model.Item, 0)
-	for _, item := range items {
-		if item.GroupID == id {
-			result = append(result, item)
-		}
-	}
-
-	return utils.SortSliceByFieldName(result, sortKey, desc)
-}
-
-func compareSlicesItems(s1, s2 []model.Item) bool {
-	if len(s1) != len(s2) {
-		return false
-	}
-
-	for i := range s1 {
-		if !reflect.DeepEqual(s1[i], s2[i]) {
-			return false
-		}
-	}
-
-	return true
 }
 
 /*** CONSTRUCTOR TEST ***/

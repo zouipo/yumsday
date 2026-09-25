@@ -24,12 +24,12 @@ type otherKind struct {
 }
 
 var (
-	swS                = []string{"S"}
-	swI                = []string{"I"}
-	swU                = []string{"U"}
-	swF                = []string{"F"}
-	swChild            = []string{"Child"}
-	swChildGrandChildI = []string{"Child", "GrandChild", "I"}
+	sortWordsS                = []string{"S"}
+	sortWordsI                = []string{"I"}
+	sortWordsU                = []string{"U"}
+	sortWordsF                = []string{"F"}
+	sortWordsChild            = []string{"Child"}
+	sortWordsChildGrandChildI = []string{"Child", "GrandChild", "I"}
 
 	a = parent{S: "a"}
 	b = parent{S: "b"}
@@ -74,37 +74,37 @@ func TestCompareFieldsByName(t *testing.T) {
 			name:      "compare_string",
 			smallest:  a,
 			greatest:  b,
-			sortWords: swS,
+			sortWords: sortWordsS,
 		},
 		{
 			name:      "compare_int",
 			smallest:  minusTwo,
 			greatest:  minusOne,
-			sortWords: swI,
+			sortWords: sortWordsI,
 		},
 		{
 			name:      "compare_uint",
 			smallest:  one,
 			greatest:  two,
-			sortWords: swU,
+			sortWords: sortWordsU,
 		},
 		{
 			name:      "compare_float",
 			smallest:  minusHalf,
 			greatest:  half,
-			sortWords: swF,
+			sortWords: sortWordsF,
 		},
 		{
 			name:      "compare_struct",
 			smallest:  nestedOne,
 			greatest:  nestedTwo,
-			sortWords: swChildGrandChildI,
+			sortWords: sortWordsChildGrandChildI,
 		},
 		{
 			name:      "compare_nil",
 			smallest:  nilPointer,
 			greatest:  nestedTwo,
-			sortWords: swChildGrandChildI,
+			sortWords: sortWordsChildGrandChildI,
 		},
 	}
 
@@ -133,8 +133,8 @@ func TestCompareFieldsByName(t *testing.T) {
 }
 
 func TestCompareFieldsByName_TwoNils(t *testing.T) {
-	actualAscending := compareFieldsByName(nilPointer, nilPointer, swChildGrandChildI, false)
-	actualDescending := compareFieldsByName(nilPointer, nilPointer, swChildGrandChildI, true)
+	actualAscending := compareFieldsByName(nilPointer, nilPointer, sortWordsChildGrandChildI, false)
+	actualDescending := compareFieldsByName(nilPointer, nilPointer, sortWordsChildGrandChildI, true)
 
 	if !actualAscending {
 		t.Error("comparison of two nil pointers in ascending order should always return true")
@@ -154,7 +154,7 @@ func TestCompareFieldsByName_DifferentKinds(t *testing.T) {
 
 	// need to convert to any here because the compiler
 	// won't let us pass two values of different types
-	compareFieldsByName(any(one), any(oneOtherKind), swI, false)
+	compareFieldsByName(any(one), any(oneOtherKind), sortWordsI, false)
 }
 
 func TestCompareFieldsByName_CannotCompareStructs(t *testing.T) {
@@ -164,5 +164,5 @@ func TestCompareFieldsByName_CannotCompareStructs(t *testing.T) {
 		}
 	}()
 
-	compareFieldsByName(nestedOne, nestedTwo, swChild, false)
+	compareFieldsByName(nestedOne, nestedTwo, sortWordsChild, false)
 }
