@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/mattn/go-sqlite3"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"modernc.org/sqlite"
+	sqllib "modernc.org/sqlite/lib"
 
 	"github.com/zouipo/yumsday/backend/internal/model"
 )
@@ -86,8 +87,8 @@ func (r *UserRepository) Create(user *model.User) (int64, error) {
 		user.AppTheme,
 	)
 	if err != nil {
-		if sqlerr, ok := errors.AsType[sqlite3.Error](err); ok {
-			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		if sqlerr, ok := errors.AsType[*sqlite.Error](err); ok {
+			if sqlerr.Code() == sqllib.SQLITE_CONSTRAINT_UNIQUE {
 				return 0, customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
 		}
@@ -119,8 +120,8 @@ func (r *UserRepository) Update(user *model.User) error {
 		user.ID,
 	)
 	if err != nil {
-		if sqlerr, ok := errors.AsType[sqlite3.Error](err); ok {
-			if sqlerr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		if sqlerr, ok := errors.AsType[*sqlite.Error](err); ok {
+			if sqlerr.Code() == sqllib.SQLITE_CONSTRAINT_UNIQUE {
 				return customErrors.NewConflictError("User", "already exists", sqlerr)
 			}
 			return customErrors.NewInternalError("Failed to update user", err)

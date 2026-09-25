@@ -9,7 +9,7 @@ import (
 
 	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 )
 
 var (

@@ -15,7 +15,7 @@ SWAGGER_OUT=docs/docs.go
 all: $(BACKEND_OUT)
 
 $(BACKEND_OUT): $(BACKEND_SOURCES) $(FRONT_OUT) $(SWAGGER_OUT)
-	@go build -trimpath -ldflags="-s -w -extldflags='-static'" -tags "sqlite_omit_load_extension" -o $(BACKEND_OUT) $(MAIN)
+	@go build -trimpath -ldflags="-s -w" -o $(BACKEND_OUT) $(MAIN)
 
 $(FRONT_OUT): $(FRONT_SOURCES)
 	@cd front && \
@@ -49,7 +49,14 @@ run: $(FRONT_OUT) $(SWAGGER_OUT)
 
 .PHONY: dev
 dev: $(SWAGGER_OUT)
-	@go run -tags dev $(MAIN)
+	@air --build.cmd "go build -tags dev -o $(BACKEND_OUT) $(MAIN)" \
+		--build.entrypoint $(BACKEND_OUT) \
+		--build.exclude_dir "front/node_modules"
+
+.PHONY: front-dev
+front-dev: $(SWAGGER_OUT)
+	@cd front && \
+		npm run dev
 
 .PHONY: test
 test: $(SWAGGER_OUT)

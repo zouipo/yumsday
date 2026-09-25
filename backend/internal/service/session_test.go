@@ -283,7 +283,7 @@ func TestGetSession_ValidCookie_ReturnsExistingSession(t *testing.T) {
 	}
 
 	if session.UserID != existingSession.UserID {
-		t.Errorf("GetSession() session UserID = %d, want %d", session.UserID, existingSession.UserID)
+		t.Errorf("GetSession() session UserID = %d, want %d", *session.UserID, *existingSession.UserID)
 	}
 
 	if session.LastActivity != existingSession.LastActivity {

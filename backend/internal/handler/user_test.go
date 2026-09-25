@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
 	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/http_header"
@@ -762,7 +761,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 func TestCreateUser_ConflictError(t *testing.T) {
 	mockService := setupUserTestData()
-	mockService.createErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+	mockService.createErr = customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 
 	handler := NewUserHandler(mockService)
 
@@ -900,7 +899,7 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 
 func TestUpdateUser_ConflictError(t *testing.T) {
 	mockService := setupUserTestData()
-	mockService.updateErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+	mockService.updateErr = customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 
 	handler := NewUserHandler(mockService)
 
