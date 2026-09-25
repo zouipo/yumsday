@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/zouipo/yumsday/compare/v0.2.2...v0.3.0) (2026-09-25)
+
+
+### Features
+
+* switch to `modernc.org/sqlite` ([#131](https://github.com/zouipo/yumsday/issues/131)) ([1833609](https://github.com/zouipo/yumsday/commit/18336092163f26d0f5852aada3be570089f54614))
+
+
+### Bug Fixes
+
+* `comparefieldsbyname` ([#124](https://github.com/zouipo/yumsday/issues/124)) ([#125](https://github.com/zouipo/yumsday/issues/125)) ([89006ba](https://github.com/zouipo/yumsday/commit/89006bac3a98ce5c5fff7fa76b294adfb201afb9))
+* redeclare docs for swaggerUI ([#132](https://github.com/zouipo/yumsday/issues/132)) ([d1b92f0](https://github.com/zouipo/yumsday/commit/d1b92f0d165e669baebcc5133e7135366ed363ae))
+
 ## [0.2.2](https://github.com/zouipo/yumsday/compare/v0.2.1...v0.2.2) (2026-09-12)
 
 
