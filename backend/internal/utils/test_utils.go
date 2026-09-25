@@ -40,7 +40,6 @@ func CompareErrors(actual, expected error) bool {
 		return false
 	}
 
-	// Compare sqlite extended codes when both wrapped errors are sqlite3.Error.
 	actualSQLErr, actualIsSQLErr := errors.AsType[*sqlite.Error](actual)
 	expectedSQLErr, expectedIsSQLErr := errors.AsType[*sqlite.Error](expected)
 
