@@ -72,7 +72,7 @@ func compareSessions(actual, expected *model.Session) error {
 	}
 
 	if *actual.UserID != *expected.UserID {
-		return fmt.Errorf("UserID = %d instead of %d", actual.UserID, expected.UserID)
+		return fmt.Errorf("UserID = %d instead of %d", *actual.UserID, *expected.UserID)
 	}
 
 	return nil
