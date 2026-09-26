@@ -104,7 +104,7 @@ entity groceries {
     * user_quantity: float
     --
     * <i>item_id</i>: integer <<FK>>
-    * <i>unit_id</i> : integer <<FK>>
+    <i>unit_id</i> : integer <<FK>>
     * <i>group_id</i>: integer <<FK>>
 }
 
