@@ -5,35 +5,52 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 
-	"github.com/goccy/go-yaml"
+	"go.yaml.in/yaml/v4"
 )
 
 const (
-	configPathEnvVar = "YUMSDAY_CONFIG_PATH"
+	envVarPrefix     = "YUMSDAY_"
+	configPathEnvVar = envVarPrefix + "CONFIG_PATH"
+	logLevelEnvVar   = envVarPrefix + "LOG_LEVEL"
+	hostEnvVar       = envVarPrefix + "HOST"
+	portEnvVar       = envVarPrefix + "PORT"
+	dbPathEnvVar     = envVarPrefix + "DB_PATH"
+)
+
+var (
+	// create a logger just to get the same formatting as the rest of the program
+	// when logging that we parse the yaml config in readConfigFile()
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 )
 
 type Config struct {
-	Host     string     `yaml:"host"`
-	Port     int        `yaml:"port"`
-	DBPath   string     `yaml:"db_path"`
 	LogLevel slog.Level `yaml:"log_level"`
+	Host     string     `yaml:"host"`
+	Port     uint       `yaml:"port"`
+	DBPath   string     `yaml:"db_path"`
 }
 
 func newConfig() Config {
 	return Config{
+		LogLevel: slog.LevelInfo,
 		Host:     "[::0]",
 		Port:     8080,
 		DBPath:   "yumsday.db",
-		LogLevel: slog.LevelInfo,
 	}
 }
 
 func LoadConfig() (Config, error) {
 	yamlPath := configPath()
 
-	cfg, err := readConfigFile(yamlPath)
-	if err != nil {
+	cfg := newConfig()
+
+	if err := readConfigFile(&cfg, yamlPath); err != nil {
+		return cfg, err
+	}
+
+	if err := readEnvVars(&cfg); err != nil {
 		return cfg, err
 	}
 
@@ -52,21 +69,46 @@ func configPath() string {
 
 // readConfigFile parses the yaml config file and overwrite the default configuration with its content.
 // If the config file doesn't exist, then the default config is returned.
-func readConfigFile(yamlPath string) (Config, error) {
-	cfg := newConfig()
-
+func readConfigFile(cfg *Config, yamlPath string) error {
 	buf, err := os.ReadFile(yamlPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, nil
+			return nil
 		} else {
-			return cfg, fmt.Errorf("failed to read config file: %w", err)
+			return fmt.Errorf("failed to read config file: %w", err)
 		}
 	}
 
+	logger.Info("loading yaml configuration", "path", yamlPath)
+
 	if err := yaml.Unmarshal(buf, &cfg); err != nil {
-		return cfg, fmt.Errorf("failed to parse yaml config: %w", err)
+		return fmt.Errorf("failed to parse yaml config: %w", err)
 	}
 
-	return cfg, nil
+	return nil
+}
+
+func readEnvVars(cfg *Config) error {
+	if logLevel := os.Getenv(logLevelEnvVar); logLevel != "" {
+		cfg.LogLevel.UnmarshalText([]byte(logLevel))
+	}
+
+	if host := os.Getenv(hostEnvVar); host != "" {
+		cfg.Host = host
+	}
+
+	if portStr := os.Getenv(portEnvVar); portStr != "" {
+		port, err := strconv.ParseUint(portStr, 10, 16)
+		if err != nil {
+			return fmt.Errorf("failed to parse port '%s' from environment variable: %w", portStr, err)
+		}
+
+		cfg.Port = uint(port)
+	}
+
+	if dbPath := os.Getenv(dbPathEnvVar); dbPath != "" {
+		cfg.DBPath = dbPath
+	}
+
+	return nil
 }

@@ -3,9 +3,9 @@ module github.com/zouipo/yumsday
 go 1.27.1
 
 require (
-	github.com/goccy/go-yaml v1.19.2
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/crypto v0.54.0
 	modernc.org/sqlite v1.59.0
 )
