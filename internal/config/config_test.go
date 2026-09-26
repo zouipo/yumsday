@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -113,5 +114,62 @@ func TestEnvVars(t *testing.T) {
 
 	if cfg.DBPath != dbPath {
 		t.Errorf("expected db path %s, got %s", dbPath, cfg.DBPath)
+	}
+}
+
+func TestReadConfigFile_ReadError(t *testing.T) {
+	yamlContent := "log_level: info"
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0111); err != nil {
+		t.Fatalf("unexpected error while writing yaml: %s", err)
+	}
+	defer func() {
+		if err := os.Remove(yamlPath); err != nil {
+			panic(fmt.Errorf("unexpected error when removing file: %w", err))
+		}
+	}()
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Errorf("expected error, got none")
+	}
+	if !errors.Is(err, os.ErrPermission) {
+		t.Errorf("expected permission error, got %s", err)
+	}
+}
+
+func TestReadConfigFile_UnmarshalError(t *testing.T) {
+	yamlContent := "log_level: invalid_log_level"
+	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("unexpected error while writing yaml: %s", err)
+	}
+	defer func() {
+		if err := os.Remove(yamlPath); err != nil {
+			panic(fmt.Errorf("unexpected error when removing file: %w", err))
+		}
+	}()
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Errorf("expected error, got none")
+	}
+}
+
+func TestEnvVars_InvalidLogLevel(t *testing.T) {
+	os.Setenv(logLevelEnvVar, "invalid_log_level")
+	defer os.Unsetenv(logLevelEnvVar)
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Errorf("expected error, got none")
+	}
+}
+
+func TestEnvVars_InvalidPort(t *testing.T) {
+	os.Setenv(portEnvVar, "invalid_port")
+	defer os.Unsetenv(portEnvVar)
+
+	_, err := LoadConfig()
+	if err == nil {
+		t.Errorf("expected error, got none")
 	}
 }
