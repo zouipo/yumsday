@@ -46,11 +46,9 @@ func newConfig() Config {
 // The sources predence is as follow, in decreasing order:
 // environment variable > yaml > default, i.e. env vars overwrite yaml values which overwrite defaults.
 func LoadConfig() (Config, error) {
-	yamlPath := configPath()
-
 	cfg := newConfig()
 
-	if err := readConfigFile(&cfg, yamlPath); err != nil {
+	if err := readConfigFile(&cfg, configPath()); err != nil {
 		return cfg, err
 	}
 
