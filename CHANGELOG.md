@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/zouipo/yumsday/compare/v0.2.2...v0.3.0) (2026-09-26)
+
+
+### Features
+
+* **config:** handle configuration without vipercobra ([#129](https://github.com/zouipo/yumsday/issues/129)) ([#133](https://github.com/zouipo/yumsday/issues/133)) ([da90645](https://github.com/zouipo/yumsday/commit/da90645bf8d822703af50bd63376d97e34cb9388))
+* switch to `modernc.org/sqlite` ([#131](https://github.com/zouipo/yumsday/issues/131)) ([1833609](https://github.com/zouipo/yumsday/commit/18336092163f26d0f5852aada3be570089f54614))
+
+
+### Bug Fixes
+
+* `comparefieldsbyname` ([#124](https://github.com/zouipo/yumsday/issues/124)) ([#125](https://github.com/zouipo/yumsday/issues/125)) ([89006ba](https://github.com/zouipo/yumsday/commit/89006bac3a98ce5c5fff7fa76b294adfb201afb9))
+* redeclare docs for swaggerUI ([#132](https://github.com/zouipo/yumsday/issues/132)) ([d1b92f0](https://github.com/zouipo/yumsday/commit/d1b92f0d165e669baebcc5133e7135366ed363ae))
+
 ## [0.2.2](https://github.com/zouipo/yumsday/compare/v0.2.1...v0.2.2) (2026-09-12)
 
 
