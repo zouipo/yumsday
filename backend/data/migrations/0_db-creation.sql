@@ -9,6 +9,17 @@ CREATE TABLE IF NOT EXISTS groups (
     created_at TIMESTAMP NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS unit_systems (
+    id INTEGER PRIMARY KEY NOT NULL UNIQUE,
+    name VARCHAR NOT NULL
+);
+
+-- Populate unit_systems table
+INSERT INTO unit_systems (id, name) VALUES
+(1, 'METRIC'),
+(2, 'US'),
+(3, 'UK');
+
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     username VARCHAR NOT NULL UNIQUE,
@@ -19,10 +30,12 @@ CREATE TABLE IF NOT EXISTS users (
     language VARCHAR NOT NULL,
     app_theme VARCHAR NOT NULL,
     last_visited_group_id INTEGER,
+    unit_system_id INTEGER NOT NULL,
     FOREIGN KEY (last_visited_group_id) REFERENCES groups(id)
+    FOREIGN KEY (unit_system_id) REFERENCES unit_systems(id)
 );
 
-INSERT INTO users (username, password, app_admin, created_at, language, app_theme) VALUES (
+INSERT INTO users (username, password, app_admin, created_at, language, app_theme, unit_system_id) VALUES (
     "admin",
     "$2a$12$L4zK2tkbTZFR37/jFJvbgObzhyqoogNuLaLUatMfGH3QGRKBnLrNS",
     true,
@@ -30,6 +43,7 @@ INSERT INTO users (username, password, app_admin, created_at, language, app_them
     "/static/assets/avatar1.jpg",
     "EN",
     "SYSTEM",
+    1
 );
 
 -- Many-to-Many relationship between users and groups
@@ -53,17 +67,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX idx_session_id ON sessions (id);
-
-CREATE TABLE IF NOT EXISTS unit_systems (
-    id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    name VARCHAR NOT NULL
-);
-
--- Populate unit_systems table
-INSERT INTO unit_systems (id, name) VALUES
-(1, 'METRIC'),
-(2, 'US'),
-(3, 'UK');
 
 CREATE TABLE IF NOT EXISTS units (
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,

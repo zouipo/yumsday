@@ -78,8 +78,8 @@ entity ingredients {
     quantity: float
     --
     * <i>recipe_id</i>: integer <<FK>>
-    <i>item_id</i>: integer <<FK>>
-    * <i>unit_id</i> : integer <<FK>>
+    * <i>item_id</i>: integer <<FK>>
+    <i>unit_id</i> : integer <<FK>>
 }
 
 entity dishes {
@@ -120,6 +120,7 @@ entity users {
     * app_them: varchar
     --
     * <i>last_visited_group_id</i>: integer <<FK>>
+    * <i>unit_system_id</i>: integer <<FK>>
 }
 
 entity sessions {
@@ -153,9 +154,9 @@ entity group_members {
 
 units ||--|{ units_systems_junction
 unit_systems ||--|{ units_systems_junction
-units ||..o{ ingredients
+units |o..o{ ingredients
 
-groceries }o..|| units
+groceries }o..o| units
 groceries |o..|| items
 
 items }o..|| item_categories
@@ -169,6 +170,7 @@ recipes_categories ||--o{ recipes_categories_junction
 
 dishes ||--o{ recipes_dishes_junction
 
+users }o--|| unit_systems
 users |o..o{ sessions
 users ||--o{ group_members
 
