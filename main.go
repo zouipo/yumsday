@@ -9,13 +9,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/zouipo/yumsday/backend"
 	"github.com/zouipo/yumsday/internal/config"
 	"github.com/zouipo/yumsday/internal/dbutils"
@@ -30,27 +27,7 @@ var migrationsFs embed.FS
 // @host 			localhost:8080
 // @BasePath 		/
 
-var cmd = &cobra.Command{
-	Use:   "yumsday",
-	Short: "yumsday",
-	Run:   run,
-}
-
-func init() {
-	// Define cli flags
-	cmd.PersistentFlags().String("host", "[::0]", "Server host")
-	cmd.PersistentFlags().Int("port", 8080, "Server port")
-	cmd.PersistentFlags().String("db-path", "yumsday.db", "Path to the sqlite database")
-	cmd.PersistentFlags().String("log-level", "info", "Log level")
-
-	// Bind cli flags to viper values
-	_ = viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
-	_ = viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
-	_ = viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
-	_ = viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
-}
-
-func run(cmd *cobra.Command, args []string) {
+func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		slog.Error(
@@ -60,20 +37,8 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	level := slog.LevelWarn
-	switch strings.ToLower(cfg.LogLevel) {
-	case "debug":
-		level = slog.LevelDebug
-	case "info":
-		level = slog.LevelInfo
-	case "warn":
-		level = slog.LevelWarn
-	case "error":
-		level = slog.LevelError
-	}
-
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: level,
+		Level: cfg.LogLevel,
 	}))
 	// Generalize the above configuration of the logger to all the project.
 	slog.SetDefault(logger)
@@ -139,10 +104,4 @@ func run(cmd *cobra.Command, args []string) {
 
 	<-ctx.Done()
 	tasksWG.Wait()
-}
-
-func main() {
-	if err := cmd.Execute(); err != nil {
-		slog.Error("failed to execute main command", "error", err)
-	}
 }
