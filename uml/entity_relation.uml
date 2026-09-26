@@ -4,10 +4,10 @@ skinparam linetype ortho
 entity units {
     * **id**: integer <<generated>>
     --
-    * name: varchar(100)
-    * abbreviation: varchar(50)
+    * name: varchar
+    * abbreviation: varchar
     * factor: float
-    * unit_type: varchar(50)
+    * unit_type: varchar
 }
 
 entity unit_systems {
@@ -27,7 +27,7 @@ entity items {
     * name: varchar
     description: varchar
     average_market_price: float
-    * unit_type: varchar(50)
+    * unit_type: varchar
     --
     * <i>item_category_id</i>: integer <<FK>>
     * <i>group_id</i>: integer <<FK>>
