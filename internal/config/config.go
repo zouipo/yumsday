@@ -2,48 +2,126 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"log/slog"
 	"os"
+	"strconv"
 
-	"github.com/spf13/viper"
+	"go.yaml.in/yaml/v4"
 )
 
 const (
-	CONFIG_PATH_ENV_VAR = "YUMSDAY_CONFIG_PATH"
+	envVarPrefix     = "YUMSDAY_"
+	configPathEnvVar = envVarPrefix + "CONFIG_PATH"
+	logLevelEnvVar   = envVarPrefix + "LOG_LEVEL"
+	hostEnvVar       = envVarPrefix + "HOST"
+	portEnvVar       = envVarPrefix + "PORT"
+	dbPathEnvVar     = envVarPrefix + "DB_PATH"
+)
+
+var (
+	// create a logger just to get the same formatting as the rest of the program
+	// when logging that we parse the yaml config in readConfigFile()
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 )
 
 type Config struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	DBPath   string `mapstructure:"db_path"`
-	LogLevel string `mapstructure:"log_level"`
+	LogLevel slog.Level `yaml:"log_level"`
+	Host     string     `yaml:"host"`
+	Port     uint       `yaml:"port"`
+	DBPath   string     `yaml:"db_path"`
 }
 
-func LoadConfig() (*Config, error) {
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(os.Getenv(CONFIG_PATH_ENV_VAR))
-	viper.AddConfigPath(".")
+func newConfig() Config {
+	// default values
+	return Config{
+		LogLevel: slog.LevelInfo,
+		Host:     "[::0]",
+		Port:     8080,
+		DBPath:   "yumsday.db",
+	}
+}
 
-	err := viper.ReadInConfig()
+// LoadConfig returns the configuration, with the overwrites from the yaml file and environment variables applied.
+// The sources predence is as follow, in decreasing order:
+// environment variable > yaml > default, i.e. env vars overwrite yaml values which overwrite defaults.
+func LoadConfig() (Config, error) {
+	yamlPath := configPath()
+
+	cfg := newConfig()
+
+	if err := readConfigFile(&cfg, yamlPath); err != nil {
+		return cfg, err
+	}
+
+	if err := readEnvVars(&cfg); err != nil {
+		return cfg, err
+	}
+
+	return cfg, nil
+}
+
+func configPath() string {
+	yamlPath := "./config.yaml"
+
+	if yamlPathEnvVar := os.Getenv(configPathEnvVar); yamlPathEnvVar != "" {
+		yamlPath = yamlPathEnvVar
+	}
+
+	return yamlPath
+}
+
+// readConfigFile parses the yaml config file and overwrite the default configuration with its content.
+// If the config file doesn't exist, then the default config is returned.
+func readConfigFile(cfg *Config, yamlPath string) error {
+	logger.Info("loading yaml configuration", "path", yamlPath)
+
+	f, err := os.Open(yamlPath)
 	if err != nil {
-		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); !ok {
-			return nil, err
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		} else {
+			return fmt.Errorf("failed to open config file '%s': %w'", yamlPath, err)
 		}
 	}
 
-	viper.SetEnvPrefix("YUMSDAY")
-	// Check for environment variables following
-	// the pattern YUMSDAY_<viper>_<key>_<name>
-	// e.g. YUMSDAY_DB_PATH
-	viper.AutomaticEnv()
-
-	var config Config
-	// Assign values to the Config struct following the names
-	// given by the mapstructure attributes
-	err = viper.Unmarshal(&config)
+	// read at most 1MB
+	buf := make([]byte, 1_000_000)
+	n, err := f.Read(buf)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to read config file '%s', %w", yamlPath, err)
 	}
 
-	return &config, nil
+	if err := yaml.Unmarshal(buf[:n], &cfg); err != nil {
+		return fmt.Errorf("failed to parse yaml config: %w", err)
+	}
+
+	return nil
+}
+
+func readEnvVars(cfg *Config) error {
+	if logLevel := os.Getenv(logLevelEnvVar); logLevel != "" {
+		if err := cfg.LogLevel.UnmarshalText([]byte(logLevel)); err != nil {
+			return fmt.Errorf("failed to parse log level '%s' from environment variable: %w", logLevel, err)
+		}
+	}
+
+	if host := os.Getenv(hostEnvVar); host != "" {
+		cfg.Host = host
+	}
+
+	if portStr := os.Getenv(portEnvVar); portStr != "" {
+		port, err := strconv.ParseUint(portStr, 10, 16)
+		if err != nil {
+			return fmt.Errorf("failed to parse port '%s' from environment variable: %w", portStr, err)
+		}
+
+		cfg.Port = uint(port)
+	}
+
+	if dbPath := os.Getenv(dbPathEnvVar); dbPath != "" {
+		cfg.DBPath = dbPath
+	}
+
+	return nil
 }

@@ -15,7 +15,7 @@ SWAGGER_OUT=docs/docs.go
 all: $(BACKEND_OUT)
 
 $(BACKEND_OUT): $(BACKEND_SOURCES) $(FRONT_OUT) $(SWAGGER_OUT)
-	@go build -trimpath -ldflags="-s -w" -o $(BACKEND_OUT) $(MAIN)
+	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BACKEND_OUT) $(MAIN)
 
 $(FRONT_OUT): $(FRONT_SOURCES)
 	@cd front && \
