@@ -33,6 +33,7 @@ type Config struct {
 }
 
 func newConfig() Config {
+	// default values
 	return Config{
 		LogLevel: slog.LevelInfo,
 		Host:     "[::0]",
@@ -93,7 +94,9 @@ func readConfigFile(cfg *Config, yamlPath string) error {
 
 func readEnvVars(cfg *Config) error {
 	if logLevel := os.Getenv(logLevelEnvVar); logLevel != "" {
-		cfg.LogLevel.UnmarshalText([]byte(logLevel))
+		if err := cfg.LogLevel.UnmarshalText([]byte(logLevel)); err != nil {
+			return fmt.Errorf("failed to parse log level '%s' from environment variable: %w", logLevel, err)
+		}
 	}
 
 	if host := os.Getenv(hostEnvVar); host != "" {
