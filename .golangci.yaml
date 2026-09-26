@@ -1,0 +1,8 @@
+version: "2"
+linters:
+  exclusions:
+    paths: front/.*\.go
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck

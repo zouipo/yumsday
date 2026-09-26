@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,10 +10,9 @@ import (
 	"time"
 
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
+	"github.com/zouipo/yumsday/internal/dbutils"
 
-	"github.com/mattn/go-sqlite3"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/zouipo/yumsday/backend/internal/migration"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
@@ -133,7 +133,7 @@ func compareUsers(actual, expected *model.User) error {
 
 // setupUserTestDB initializes an in-memory SQLite database with test data for testing.
 func setupUserTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", "file::memory:?_foreign_keys=on")
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
@@ -299,7 +299,7 @@ func TestGetByUsername(t *testing.T) {
 		{
 			name:     "non-existing user",
 			username: invalidUsername,
-			wantErr:  customErrors.NewNotFoundError("users", fmt.Sprintf("%s", invalidUsername), sql.ErrNoRows),
+			wantErr:  customErrors.NewNotFoundError("users", invalidUsername, sql.ErrNoRows),
 		},
 	}
 
@@ -370,7 +370,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:    "create duplicate username",
 			user:    &expectedUsers[0],
-			wantErr: customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique),
+			wantErr: customErrors.NewConflictError("User", "already exists", errors.New("user already exists")),
 		},
 	}
 
@@ -431,7 +431,7 @@ func TestUpdate(t *testing.T) {
 				AppTheme:           enum.Dark,
 				LastVisitedGroupID: expectedUsers[1].LastVisitedGroupID,
 			},
-			wantErr: customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique),
+			wantErr: customErrors.NewConflictError("User", "already exists", errors.New("user already exists")),
 		},
 		{
 			name: "update non-existing user",

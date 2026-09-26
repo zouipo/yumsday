@@ -50,6 +50,7 @@ func (r *GroupRepository) fetchGroups(clauses string, values ...any) ([]model.Gr
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch groups", err)
 	}
+	defer CloseRows(rows)
 
 	ret := []model.Group{}
 

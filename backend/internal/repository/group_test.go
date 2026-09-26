@@ -7,11 +7,9 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
-
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 )
 
 var (

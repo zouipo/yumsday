@@ -2,9 +2,12 @@ services:
   yumsday:
     build:
       context: ..
+      dockerfile: docker/Dockerfile
       target: runtime
+    pull_policy: build
     container_name: yumsday
-    image: zouipo/yumsday:latest
+    image: yumsday:latest
+    user: 1000:1000
     ports:
       - 8080:8080
     volumes:

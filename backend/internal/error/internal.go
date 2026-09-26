@@ -13,7 +13,7 @@ type InternalError struct {
 
 func NewInternalError(message string, err error) error {
 	if err == nil {
-		slog.Error(fmt.Sprintf("%s", message))
+		slog.Error(message)
 	} else {
 		slog.Error(fmt.Sprintf("%s: %v", message, err))
 	}

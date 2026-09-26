@@ -26,7 +26,7 @@ func (u UnitType) String() string {
 func (u *UnitType) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
-		return err
+		return fmt.Errorf("unit_type: %w", err)
 	}
 
 	switch s {

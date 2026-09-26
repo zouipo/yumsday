@@ -1,0 +1,178 @@
+@startuml
+skinparam linetype polyline
+skinparam nodesep 100
+
+package Enums {
+    enum Avatar {
+        url_image1
+        url_image2
+        url_image3
+        url_image4
+        url_image5
+    }
+
+    enum UnitType {
+        undefined
+        volume
+        weight
+        numeric
+    }
+
+    enum Language {
+        en
+        fr
+    }
+
+    enum AppTheme {
+        light
+        dark
+        UnitSystem
+    }
+}
+
+class UnitSystem {
+    id: int
+    name: string
+}
+
+class Unit {
+    id: int
+    name: string
+    abbreviation: string
+    factor: float
+    unit_type: UnitType
+    system: UnitSystem
+}
+
+class Grocery {
+    id: int
+    quantity_bought: float
+    user_quantity: float
+    item: Item
+    unit: Unit
+    group: Group
+}
+
+package "Recipe management" {
+    class Recipe {
+        id: int
+        name: string
+        description: string
+        image_url: string
+        original_link: string
+        preparation_time_min: int
+        cooking_time_min: int
+        servings: int
+        instructions: string
+        created_at: timestamp
+        public: boolean
+        comment: string
+        group: Group
+    }
+
+    class Ingredient {
+        id: int
+        quantity: float
+        unit: Unit
+        item: Item
+        recipe: Recipe
+    }
+
+    class RecipeCategory {
+        id: int
+        name: string
+        group: Group
+    }
+}
+
+class Dish {
+    id: int
+    portion: int
+    bought: boolean
+    datetime: timestamp
+    group: Group
+}
+
+package "Item management" {
+    class Item {
+        id: int
+        name: string
+        description: string
+        average_market_price: float
+        item_category: ItemCategory
+        unit_type: UnitType
+        group: Group
+    }
+
+    class ItemCategory {
+        id: int
+        name: string
+        group: Group
+    }
+}
+
+package "User management" {
+    class Group {
+        id: int
+        name: string
+        image_url: string
+        created_at: timestamp
+    }
+
+    class User {
+        id: int
+        username: string
+        password: string
+        app_admin: boolean
+        created_at: timestamp
+        avatar: Avatar
+        language: Language
+        app_theme: AppTheme
+        last_visiter_group: Group
+        unit_system: UnitSystem
+    }
+
+    class Session {
+        id: string
+        created_at: timestamp
+        last_activity: timestamp
+        ip_address: string
+        user_agent: string
+        user: User
+    }
+
+    class GroupMember {
+        user: User
+        Group: Group
+        admin: boolean
+        joined_at: timestamp
+    }
+}
+
+Unit "1" - "0..*" Grocery: Quantifies
+Unit "1" --o "0..*" Ingredient: Quantifies
+Unit "1..*" - "1..*" UnitSystem: Belongs to
+
+Grocery "0..*" -- "1" Group: Made for
+Grocery "0..1" -- "1" Item: To buy
+
+RecipeCategory "0..*" -- "1" Group: Belongs to
+RecipeCategory "0..*" -- "0..*" Recipe: Classify
+
+Recipe "0..*" - "1" Group: Belongs to
+Recipe "0..*" -- "0..*" Dish: Composed by
+Recipe "1" *-- "1..*" Ingredient: Is used in
+
+Item "1" --o "0..*" Ingredient: Is part of
+Item "0..*" - "1" Group: Belongs to
+Item "0..*" -- "1" ItemCategory: Classify
+
+User "1" - "0..*" Session: Linked to
+User "0..*" -- "0..1" Group: Last visited
+User "1" -- "0..*" GroupMember: Is member of
+User "0..*" - "0..1" UnitSystem
+
+Group "1" -- "0..*" Dish: Planned for
+Group "1" - "1..*" GroupMember: Belongs to
+
+@enduml

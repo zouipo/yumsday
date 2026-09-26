@@ -9,7 +9,7 @@ import (
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/model/enum"
-	"github.com/zouipo/yumsday/backend/internal/pkg/utils"
+	"github.com/zouipo/yumsday/backend/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -146,7 +146,7 @@ func TestAuthenticate_Success(t *testing.T) {
 	}
 
 	if *session.UserID != testUser.ID {
-		t.Errorf("Authenticate() session UserID = %d, want %d", session.UserID, testUser.ID)
+		t.Errorf("Authenticate() session UserID = %d, want %d", *session.UserID, testUser.ID)
 	}
 
 	if len(mockSessionService.savedSessions) != 1 {
@@ -209,7 +209,7 @@ func TestAuthenticate_BadUsername_ReturnsUnauthorizedError(t *testing.T) {
 	}
 
 	if session.UserID != nil {
-		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
+		t.Errorf("Authenticate() session UserID = %d, want 0", *session.UserID)
 	}
 
 	if len(mockSessionService.savedSessions) != 0 {
@@ -241,7 +241,7 @@ func TestAuthenticate_WrongPassword(t *testing.T) {
 	}
 
 	if session.UserID != nil {
-		t.Errorf("Authenticate() session UserID = %d, want 0", session.UserID)
+		t.Errorf("Authenticate() session UserID = %d, want 0", *session.UserID)
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 )
 
 // mockHandler is a simple handler that writes the value from context
@@ -22,18 +24,18 @@ func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type testCase struct {
 	name           string
 	pathValues     map[string]string
-	valueNames     []string
+	keys           []ctxkey.Key
 	expectedStatus int
 	expectNext     bool
 }
 
 // typeValidator is a function that validates the type of a value in the context
-type typeValidator func(t *testing.T, valueName string, value any)
+type typeValidator func(t *testing.T, key ctxkey.Key, value any)
 
 // runPathValueTests is a generic test runner for path value middleware
 func runPathValueTests(
 	t *testing.T,
-	middlewareFunc func(...string) Middleware,
+	middlewareFunc func(...ctxkey.Key) Middleware,
 	tests []testCase,
 	validator typeValidator,
 ) {
@@ -43,7 +45,7 @@ func runPathValueTests(
 			mockNext := &mockHandler{}
 
 			// Create the middleware
-			middleware := middlewareFunc(tt.valueNames...)
+			middleware := middlewareFunc(tt.keys...)
 			handler := middleware(mockNext)
 
 			// Create a request with path values
@@ -74,13 +76,13 @@ func runPathValueTests(
 				if mockNext.request == nil {
 					t.Fatal("expected request to be captured in mock handler")
 				}
-				for _, valueName := range tt.valueNames {
-					value := mockNext.request.Context().Value(valueName)
+				for _, key := range tt.keys {
+					value := mockNext.request.Context().Value(key)
 					if value == nil {
-						t.Errorf("expected value for %s to be in context", valueName)
+						t.Errorf("expected value for %s to be in context", key)
 						continue
 					}
-					validator(t, valueName, value)
+					validator(t, key, value)
 				}
 			}
 		})
@@ -95,17 +97,17 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "123",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
 		{
 			name: "multiple valid integers",
 			pathValues: map[string]string{
-				"id":     "123",
-				"userId": "456",
+				"id":   "123",
+				"user": "456",
 			},
-			valueNames:     []string{"id", "userId"},
+			keys:           []ctxkey.Key{ctxkey.Id{}, ctxkey.User{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -114,7 +116,7 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "-42",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -123,7 +125,7 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "0",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -132,7 +134,7 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "9223372036854775807",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -142,7 +144,7 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "abc",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
@@ -151,7 +153,7 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				// id is not provided
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
@@ -160,15 +162,15 @@ func TestIntPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"id": "123.45",
 			},
-			valueNames:     []string{"id"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
 	}
 
-	validator := func(t *testing.T, valueName string, value any) {
+	validator := func(t *testing.T, key ctxkey.Key, value any) {
 		if _, ok := value.(int64); !ok {
-			t.Errorf("expected value for %s to be int64, got %T", valueName, value)
+			t.Errorf("expected value for %s to be int64, got %T", key, value)
 		}
 	}
 
@@ -183,7 +185,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "19.99",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -193,7 +195,7 @@ func TestFloatPathValues(t *testing.T) {
 				"price":  "19.99",
 				"weight": "5.5",
 			},
-			valueNames:     []string{"price", "weight"},
+			keys:           []ctxkey.Key{ctxkey.Price{}, ctxkey.Weight{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -202,7 +204,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "42",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -211,7 +213,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "-3.14",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -220,7 +222,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "1.23e-4",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -229,7 +231,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "0.0",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -239,7 +241,7 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"price": "not-a-number",
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
@@ -248,15 +250,15 @@ func TestFloatPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				// price is not provided
 			},
-			valueNames:     []string{"price"},
+			keys:           []ctxkey.Key{ctxkey.Price{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
 	}
 
-	validator := func(t *testing.T, valueName string, value any) {
+	validator := func(t *testing.T, key ctxkey.Key, value any) {
 		if _, ok := value.(float64); !ok {
-			t.Errorf("expected value for %s to be float64, got %T", valueName, value)
+			t.Errorf("expected value for %s to be float64, got %T", key, value)
 		}
 	}
 
@@ -271,7 +273,7 @@ func TestStringPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"username": "john_doe",
 			},
-			valueNames:     []string{"username"},
+			keys:           []ctxkey.Key{ctxkey.Username{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -281,25 +283,25 @@ func TestStringPathValues(t *testing.T) {
 				"username": "john_doe",
 				"category": "food",
 			},
-			valueNames:     []string{"username", "category"},
+			keys:           []ctxkey.Key{ctxkey.Username{}, ctxkey.Category{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
 		{
 			name: "string with special characters",
 			pathValues: map[string]string{
-				"slug": "hello-world-2024",
+				"username": "hello-world-2024",
 			},
-			valueNames:     []string{"slug"},
+			keys:           []ctxkey.Key{ctxkey.Username{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
 		{
 			name: "numeric string",
 			pathValues: map[string]string{
-				"code": "12345",
+				"id": "12345",
 			},
-			valueNames:     []string{"code"},
+			keys:           []ctxkey.Key{ctxkey.Id{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -309,7 +311,7 @@ func TestStringPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"name": "café",
 			},
-			valueNames:     []string{"name"},
+			keys:           []ctxkey.Key{ctxkey.Name{}},
 			expectedStatus: http.StatusOK,
 			expectNext:     true,
 		},
@@ -319,7 +321,7 @@ func TestStringPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				// username is not provided
 			},
-			valueNames:     []string{"username"},
+			keys:           []ctxkey.Key{ctxkey.Username{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
@@ -328,15 +330,15 @@ func TestStringPathValues(t *testing.T) {
 			pathValues: map[string]string{
 				"name": "",
 			},
-			valueNames:     []string{"name"},
+			keys:           []ctxkey.Key{ctxkey.Name{}},
 			expectedStatus: http.StatusBadRequest,
 			expectNext:     false,
 		},
 	}
 
-	validator := func(t *testing.T, valueName string, value any) {
+	validator := func(t *testing.T, key ctxkey.Key, value any) {
 		if _, ok := value.(string); !ok {
-			t.Errorf("expected value for %s to be string, got %T", valueName, value)
+			t.Errorf("expected value for %s to be string, got %T", key, value)
 		}
 	}
 

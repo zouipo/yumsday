@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -15,11 +14,11 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/zouipo/yumsday/backend"
 	"github.com/zouipo/yumsday/internal/config"
+	"github.com/zouipo/yumsday/internal/dbutils"
 )
 
 //go:embed backend/data/migrations
@@ -45,10 +44,10 @@ func init() {
 	cmd.PersistentFlags().String("log-level", "info", "Log level")
 
 	// Bind cli flags to viper values
-	viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
-	viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
-	viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
-	viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
+	_ = viper.BindPFlag("host", cmd.PersistentFlags().Lookup("host"))
+	_ = viper.BindPFlag("port", cmd.PersistentFlags().Lookup("port"))
+	_ = viper.BindPFlag("db_path", cmd.PersistentFlags().Lookup("db-path"))
+	_ = viper.BindPFlag("log_level", cmd.PersistentFlags().Lookup("log-level"))
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -80,15 +79,12 @@ func run(cmd *cobra.Command, args []string) {
 	slog.SetDefault(logger)
 	defer slog.Debug("Closing app")
 
-	// SQLite DSN (data source name) format: "file:path/to/database.db?_foreign_keys=on".
-	// The query parameter "_foreign_keys=on" is required to enable foreign key constraints in SQLite.
-	dsn := fmt.Sprintf("file:%s?_foreign_keys=on", cfg.DBPath)
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := dbutils.OpenDb(cfg.DBPath)
 	if err != nil {
 		slog.Error("Failed to open sqlite db", "error", err)
 		return
 	}
-	slog.Info("Opened db", "db_path", cfg.DBPath, "dsn", dsn)
+	slog.Info("Opened db", "db_path", cfg.DBPath)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -146,5 +142,7 @@ func run(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		slog.Error("failed to execute main command", "error", err)
+	}
 }

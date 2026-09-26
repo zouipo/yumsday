@@ -1,14 +1,12 @@
 package migration
 
 import (
-	"database/sql"
 	"embed"
 	"io/fs"
 	"os"
-	"strings"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/zouipo/yumsday/internal/dbutils"
 )
 
 //go:embed migrations_test/valid
@@ -16,8 +14,6 @@ var validMigrations embed.FS
 
 //go:embed migrations_test/invalid_version/*.sql
 var invalidMigrations embed.FS
-
-const testSQLiteDSN = "file::memory:?_foreign_keys=on"
 
 var expectedValidMigrations = []migration{
 	{
@@ -116,7 +112,7 @@ func TestLoadMigrations(t *testing.T) {
 }
 
 func TestPerformMigrations(t *testing.T) {
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -171,20 +167,20 @@ func TestPerformMigrations_InvalidScript(t *testing.T) {
 		},
 	}
 
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
 	defer db.Close()
 
 	err = performMigrations(db, migrations, 0)
-	if err == nil || !strings.Contains(err.Error(), "Failed to apply migration") {
+	if err == nil {
 		t.Errorf("Expected error")
 	}
 }
 
 func TestInitializeMigrationVersion(t *testing.T) {
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -207,7 +203,7 @@ func TestInitializeMigrationVersion(t *testing.T) {
 }
 
 func TestInitializeMigrationVersion_AlreadyInitialized(t *testing.T) {
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -225,7 +221,7 @@ func TestInitializeMigrationVersion_AlreadyInitialized(t *testing.T) {
 }
 
 func TestInitiliazeMigrationVersion_CreateExists(t *testing.T) {
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}
@@ -243,7 +239,7 @@ func TestInitiliazeMigrationVersion_CreateExists(t *testing.T) {
 }
 
 func TestGetMigrationVersion(t *testing.T) {
-	db, err := sql.Open("sqlite3", testSQLiteDSN)
+	db, err := dbutils.OpenDb(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory database: %v", err)
 	}

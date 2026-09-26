@@ -13,10 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
-	"github.com/zouipo/yumsday/backend/internal/constant"
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	customErrors "github.com/zouipo/yumsday/backend/internal/error"
+	"github.com/zouipo/yumsday/backend/internal/http_header"
 
 	"github.com/zouipo/yumsday/backend/internal/dto"
 	"github.com/zouipo/yumsday/backend/internal/mapper"
@@ -182,7 +181,7 @@ func createTestUser(id int64, username, password string) *model.User {
 	}
 }
 
-// setupUserTestData creates a fresh mock repository with predefined test users for test independence.
+// setupUserTestData creates a fresh mock service with predefined test users for test independence.
 // It is run at the start of each test to ensure a consistent state and avoid test interference.
 func setupUserTestData() *MockUserService {
 	mockService := NewMockUserService()
@@ -292,9 +291,9 @@ func TestGetUsersAll_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	var users []dto.UserDto
@@ -450,7 +449,7 @@ func TestGetUserByID_Success(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(expected.ID, 10), nil)
 	// Add the ID to the context as the middleware would do
-	ctx := context.WithValue(r.Context(), "id", expected.ID)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, expected.ID)
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -460,9 +459,9 @@ func TestGetUserByID_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	var actual dto.UserDto
@@ -483,7 +482,7 @@ func TestGetUserByID_NotFound(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(invalidUserId))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -511,7 +510,7 @@ func TestAuthMe_Success(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctx.UserCtxKey{}, authenticatedUser))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.User{}, authenticatedUser))
 	w := httptest.NewRecorder()
 
 	handler.authMe(w, r)
@@ -520,12 +519,12 @@ func TestAuthMe_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusOK, w.Code)
 	}
 
-	if w.Header().Get(constant.CONTENT_TYPE_HEADER) != constant.CONTENT_TYPE_VALUE {
+	if w.Header().Get(http_header.CONTENT_TYPE_HEADER) != http_header.APPLICATION_JSON {
 		t.Errorf(
 			"expected header %q to be %q instead of %q",
-			constant.CONTENT_TYPE_HEADER,
-			constant.CONTENT_TYPE_VALUE,
-			w.Header().Get(constant.CONTENT_TYPE_HEADER),
+			http_header.CONTENT_TYPE_HEADER,
+			http_header.APPLICATION_JSON,
+			w.Header().Get(http_header.CONTENT_TYPE_HEADER),
 		)
 	}
 
@@ -562,7 +561,7 @@ func TestAuthMe_InvalidUserTypeInContext(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodGet, "/user/me", nil)
-	r = r.WithContext(context.WithValue(r.Context(), ctx.UserCtxKey{}, "not-a-user"))
+	r = r.WithContext(context.WithValue(r.Context(), ctxkey.User{}, "not-a-user"))
 	w := httptest.NewRecorder()
 
 	handler.authMe(w, r)
@@ -599,7 +598,7 @@ func TestCreateUser_Success(t *testing.T) {
 	body, _ := json.Marshal(newUser)
 	// Create a POST request with the JSON body
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -608,9 +607,9 @@ func TestCreateUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusCreated, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	var result map[string]int
@@ -657,7 +656,7 @@ func TestCreateUser_Success_AvatarNil(t *testing.T) {
 	body, _ := json.Marshal(newUser)
 	// Create a POST request with the JSON body
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -666,9 +665,9 @@ func TestCreateUser_Success_AvatarNil(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusCreated, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	var result map[string]int
@@ -702,7 +701,7 @@ func TestCreateUser_InvalidBody(t *testing.T) {
 	usersNb := len(mockService.users)
 
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -740,7 +739,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -762,7 +761,7 @@ func TestCreateUser_ValidationError(t *testing.T) {
 
 func TestCreateUser_ConflictError(t *testing.T) {
 	mockService := setupUserTestData()
-	mockService.createErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+	mockService.createErr = customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 
 	handler := NewUserHandler(mockService)
 
@@ -780,7 +779,7 @@ func TestCreateUser_ConflictError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -820,7 +819,7 @@ func TestCreateUser_RepoError(t *testing.T) {
 
 	body, _ := json.Marshal(newUser)
 	r := httptest.NewRequest(http.MethodPost, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.createUser(w, r)
@@ -855,7 +854,7 @@ func TestUpdateUser_Success(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -864,9 +863,9 @@ func TestUpdateUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -884,7 +883,7 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 	handler := NewUserHandler(mockService)
 
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -900,7 +899,7 @@ func TestUpdateUser_InvalidBody(t *testing.T) {
 
 func TestUpdateUser_ConflictError(t *testing.T) {
 	mockService := setupUserTestData()
-	mockService.updateErr = customErrors.NewConflictError("User", "already exists", sqlite3.ErrConstraintUnique)
+	mockService.updateErr = customErrors.NewConflictError("User", "already exists", errors.New("user already exists"))
 
 	handler := NewUserHandler(mockService)
 
@@ -909,7 +908,7 @@ func TestUpdateUser_ConflictError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -944,7 +943,7 @@ func TestUpdateUser_ValidationError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -985,7 +984,7 @@ func TestUpdateUser_RepoError(t *testing.T) {
 
 	body, _ := json.Marshal(user)
 	r := httptest.NewRequest(http.MethodPut, "/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w := httptest.NewRecorder()
 
 	handler.updateUser(w, r)
@@ -1021,8 +1020,8 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1032,9 +1031,9 @@ func TestUpdateUserAdminRole_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -1054,8 +1053,8 @@ func TestUpdateUserAdminRole_InvalidBody(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1093,8 +1092,8 @@ func TestUpdateUserAdminRole_RepoError(t *testing.T) {
 	body, _ := json.Marshal(rolePayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/role", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1133,8 +1132,8 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1144,9 +1143,9 @@ func TestUpdateUserPassword_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	actual, err := mockService.GetByID(user.ID)
@@ -1166,8 +1165,8 @@ func TestUpdateUserPassword_InvalidBody(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader([]byte("invalid json")))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1206,8 +1205,8 @@ func TestUpdateUserPassword_ValidationError(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1249,8 +1248,8 @@ func TestUpdateUserPassword_RepoError(t *testing.T) {
 	body, _ := json.Marshal(passwordPayload)
 
 	r := httptest.NewRequest(http.MethodPatch, "/user/"+strconv.FormatInt(user.ID, 10)+"/password", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1286,7 +1285,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1296,9 +1295,9 @@ func TestDeleteUser_Success(t *testing.T) {
 		t.Errorf("expected status %d instead of %d", http.StatusNoContent, w.Code)
 	}
 
-	contentType := w.Header().Get(constant.CONTENT_TYPE_HEADER)
-	if contentType != constant.CONTENT_TYPE_VALUE {
-		t.Errorf("expected content type %s instead of %s", constant.CONTENT_TYPE_VALUE, contentType)
+	contentType := w.Header().Get(http_header.CONTENT_TYPE_HEADER)
+	if contentType != http_header.APPLICATION_JSON {
+		t.Errorf("expected content type %s instead of %s", http_header.APPLICATION_JSON, contentType)
 	}
 
 	if len(mockService.users) != usersNb-1 {
@@ -1318,7 +1317,7 @@ func TestDeleteUser_NotFound(t *testing.T) {
 	usersNb := len(mockService.users)
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(int64(invalidUserId), 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(invalidUserId))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(invalidUserId))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1344,7 +1343,7 @@ func TestDeleteUser_RepoError(t *testing.T) {
 	user := mockService.users[0]
 
 	r := httptest.NewRequest(http.MethodDelete, "/user/"+strconv.FormatInt(user.ID, 10), nil)
-	ctx := context.WithValue(r.Context(), "id", int64(user.ID))
+	ctx := context.WithValue(r.Context(), ctxkey.Id{}, int64(user.ID))
 	r = r.WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -1397,7 +1396,7 @@ func TestRegisterRoutes_Success(t *testing.T) {
 	}
 	body, _ := json.Marshal(newUser)
 	r = httptest.NewRequest(http.MethodPost, "/test/api/user", bytes.NewReader(body))
-	r.Header.Set(constant.CONTENT_TYPE_HEADER, constant.CONTENT_TYPE_VALUE)
+	r.Header.Set(http_header.CONTENT_TYPE_HEADER, http_header.APPLICATION_JSON)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 

@@ -13,7 +13,7 @@ import (
 type ItemRepositoryInterface interface {
 	GetByGroupID(groupID int64, sort string, desc bool) ([]model.Item, error)
 	GetByID(id int64) (*model.Item, error)
-	GetByName(name string, desc bool) ([]model.Item, error)
+	GetByName(groupID int64, name, sort string, desc bool) ([]model.Item, error)
 	Create(item *model.Item) (int64, error)
 	Update(item *model.Item) error
 	Delete(id int64) error
@@ -37,7 +37,7 @@ func (r *ItemRepository) GetByGroupID(groupID int64, sort string, desc bool) ([]
 		return nil, err
 	}
 
-	clauses := "WHERE items.group_id = ? ORDER by " + sortKey
+	clauses := "WHERE items.group_id = ? ORDER BY " + sortKey
 
 	if desc {
 		clauses += " DESC"
@@ -66,14 +66,19 @@ func (r *ItemRepository) GetByID(id int64) (*model.Item, error) {
 }
 
 // GetByName retrieves an item from the database by its name.
-func (r *ItemRepository) GetByName(name string, desc bool) ([]model.Item, error) {
-	clauses := "WHERE items.name LIKE concat('%', ?, '%') ORDER BY items.name"
+func (r *ItemRepository) GetByName(groupID int64, name, sort string, desc bool) ([]model.Item, error) {
+	sortKey, err := r.mapSortKey(sort)
+	if err != nil {
+		return nil, err
+	}
+
+	clauses := "WHERE items.group_id = ? AND items.name LIKE concat('%', ?, '%') ORDER BY " + sortKey
 
 	if desc {
 		clauses += " DESC"
 	}
 
-	items, err := r.fetchItems(clauses, name)
+	items, err := r.fetchItems(clauses, groupID, name, sortKey)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +194,7 @@ func (r *ItemRepository) fetchItems(clauses string, values ...any) ([]model.Item
 	if err != nil {
 		return nil, customErrors.NewInternalError("failed to fetch items", err)
 	}
+	defer CloseRows(rows)
 
 	items := []model.Item{}
 

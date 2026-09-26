@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/zouipo/yumsday/backend/internal/ctx"
+	"github.com/zouipo/yumsday/backend/internal/ctxkey"
 	"github.com/zouipo/yumsday/backend/internal/model"
 	"github.com/zouipo/yumsday/backend/internal/service"
 )
@@ -18,7 +18,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 				return
 			}
 
-			s, ok := r.Context().Value(ctx.SessionCtxKey{}).(*model.Session)
+			s, ok := r.Context().Value(ctxkey.Session{}).(*model.Session)
 			if !ok || s == nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
@@ -42,7 +42,7 @@ func UserInjector(userService service.UserServiceInterface) Middleware {
 
 			r = r.WithContext(context.WithValue(
 				r.Context(),
-				ctx.UserCtxKey{},
+				ctxkey.User{},
 				user,
 			))
 
