@@ -41,6 +41,9 @@ func newConfig() Config {
 	}
 }
 
+// LoadConfig returns the configuration, with the overwrites from the yaml file and environment variables applied.
+// The sources predence is as follow, in decreasing order:
+// environment variable > yaml > default, i.e. env vars overwrite yaml values which overwrite defaults.
 func LoadConfig() (Config, error) {
 	yamlPath := configPath()
 
