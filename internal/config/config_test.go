@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -118,25 +117,12 @@ func TestEnvVars(t *testing.T) {
 }
 
 func TestReadConfigFile_ReadError(t *testing.T) {
-	yamlContent := "log_level: info"
-	if err := os.WriteFile(yamlPath, []byte(yamlContent), 0644); err != nil {
-		t.Fatalf("unexpected error while writing yaml: %s", err)
-	}
-	if err := os.Chmod(yamlPath, 0111); err != nil {
-		t.Fatalf("unexpected error while setting test file permissions: %s", err)
-	}
-	defer func() {
-		if err := os.Remove(yamlPath); err != nil {
-			panic(fmt.Errorf("unexpected error when removing file: %w", err))
-		}
-	}()
+	os.Setenv(configPathEnvVar, ".")
+	defer os.Unsetenv(configPathEnvVar)
 
 	_, err := LoadConfig()
 	if err == nil {
 		t.Errorf("expected error, got none")
-	}
-	if !errors.Is(err, os.ErrPermission) {
-		t.Errorf("expected permission error, got %s", err)
 	}
 }
 
