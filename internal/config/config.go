@@ -74,18 +74,25 @@ func configPath() string {
 // readConfigFile parses the yaml config file and overwrite the default configuration with its content.
 // If the config file doesn't exist, then the default config is returned.
 func readConfigFile(cfg *Config, yamlPath string) error {
-	buf, err := os.ReadFile(yamlPath)
+	logger.Info("loading yaml configuration", "path", yamlPath)
+
+	f, err := os.Open(yamlPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		} else {
-			return fmt.Errorf("failed to read config file: %w", err)
+			return fmt.Errorf("failed to open config file '%s': %w'", yamlPath, err)
 		}
 	}
 
-	logger.Info("loading yaml configuration", "path", yamlPath)
+	// read at most 1MB
+	buf := make([]byte, 1_000_000)
+	n, err := f.Read(buf)
+	if err != nil {
+		return fmt.Errorf("failed to read config file '%s', %w", yamlPath, err)
+	}
 
-	if err := yaml.Unmarshal(buf, &cfg); err != nil {
+	if err := yaml.Unmarshal(buf[:n], &cfg); err != nil {
 		return fmt.Errorf("failed to parse yaml config: %w", err)
 	}
 
