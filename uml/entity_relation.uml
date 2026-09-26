@@ -78,7 +78,7 @@ entity ingredients {
     quantity: float
     --
     * <i>recipe_id</i>: integer <<FK>>
-    * <i>item_id</i>: integer <<FK>>
+    <i>item_id</i>: integer <<FK>>
     * <i>unit_id</i> : integer <<FK>>
 }
 
