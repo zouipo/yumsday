@@ -32,18 +32,6 @@ INSERT INTO sessions (id, created_at, last_activity, ip_address, user_agent, use
     ('session789ghi', 0, datetime('now', '-1 day', '+2 hours'), '192.168.1.102', 'Safari/17.0', (SELECT id FROM users WHERE username = 'testuser3')),
     ('session999xyz', 0, datetime('now', '-1 day', '+3 hours'), '192.168.1.103', NULL, (SELECT id FROM users WHERE username = 'testuser4'));
 
-INSERT INTO units (name, factor, unit_type) VALUES
-    ('Kilogram', 1000.0, 'WEIGHT'),
-    ('Gram', 1.0, 'WEIGHT'),
-    ('Liter', 1000.0, 'VOLUME'),
-    ('Milliliter', 1.0, 'VOLUME'),
-    ('Cup', 240.0, 'VOLUME'),
-    ('Tablespoon', 15.0, 'VOLUME'),
-    ('Teaspoon', 5.0, 'VOLUME'),
-    ('Piece', 1.0, 'PIECE'),
-    ('Count', 1.0, 'NUMERIC'),
-    ('Undefined', 1.0, 'UNDEFINED');
-
 INSERT INTO item_categories (name, group_id) VALUES
     ('GRAINS AND PASTA', (SELECT id FROM groups WHERE name = 'Family')),
     ('BAKED GOODS', (SELECT id FROM groups WHERE name = 'Family')),
@@ -99,23 +87,23 @@ INSERT INTO recipes_categories_junction (recipe_id, category_id) VALUES
 
 INSERT INTO ingredients (quantity, item_id, unit_id, recipe_id) VALUES
     -- Grilled Chicken ingredients
-    (4.0, 7, 8, 1),      -- 4 pieces chicken breast
-    (2.0, 10, 2, 1),     -- 2 cloves garlic
-    (0.5, 3, 7, 1),      -- 0.5 tsp salt
+    (4.0, 7, 22, 1),      -- 4 pieces chicken breast
+    (2.0, 10, 23, 1),     -- 2 cloves garlic
+    (0.5, 3, 10, 1),      -- 0.5 tsp salt
     -- Chocolate Chip Cookies ingredients
-    (2.0, 1, 1, 2),      -- 2 cups flour
-    (1.0, 2, 1, 2),      -- 1 cup sugar
-    (0.5, 6, 1, 2),      -- 0.5 cup butter
-    (2.0, 4, 8, 2),      -- 2 eggs
+    (2.0, 1, 13, 2),      -- 2 cups flour
+    (1.0, 2, 13, 2),      -- 1 cup sugar
+    (0.5, 6, 13, 2),      -- 0.5 cup butter
+    (2.0, 4, 20, 2),      -- 2 eggs
     -- Tomato Soup ingredients
-    (6.0, 8, 8, 3),      -- 6 tomatoes
-    (1.0, 9, 8, 3),      -- 1 onion
-    (2.0, 10, 2, 3),     -- 2 cloves garlic
-    (1.0, 3, 7, 3),      -- 1 tsp salt
+    (6.0, 8, 20, 3),      -- 6 tomatoes
+    (1.0, 9, 20, 3),      -- 1 onion
+    (2.0, 10, 23, 3),     -- 2 cloves garlic
+    (1.0, 3, 10, 3),      -- 1 tsp salt
     -- Quick Salad ingredients
-    (NULL, 8, 8, 4),     -- Tomatoes with NULL quantity (to taste)
-    (1.0, 13, 11, 4),    -- Olive oil with undefined unit
-    (NULL, 12, 11, 4);   -- Pepper with NULL quantity and undefined unit
+    (NULL, 8, 20, 4),     -- Tomatoes with NULL quantity
+    (1.0, 13, 7, 4),    -- 1 cL of olive oil
+    (NULL, 12, NULL, 4);   -- Pepper with NULL quantity and NULL unit
 
 -- Dishes
 INSERT INTO dishes (portion, bought, datetime, group_id) VALUES
@@ -130,11 +118,11 @@ INSERT INTO recipes_dishes_junction (recipe_id, dish_id) VALUES
 
 -- Grocery List
 INSERT INTO groceries (quantity_bought, user_quantity, item_id, unit_id, group_id) VALUES
-    (0.0, 2.0, 1, 1, 1),    -- 2 kg flour
-    (0.5, 1.0, 2, 1, 1),    -- 1 kg sugar (half bought)
-    (12.0, 12.0, 4, 8, 1),  -- 12 eggs (all bought)
-    (0.0, 2.0, 5, 3, 1),    -- 2 liters milk
-    (0.0, 1.0, 7, 1, 2),    -- 1 kg chicken breast
-    (2.0, 4.0, 8, 8, 2),    -- 4 tomatoes (2 bought)
-    (0.0, 1.0, 12, 11, 1),  -- Pepper with undefined unit
-    (0.0, 3.0, 11, 11, 2);  -- Water with undefined unit
+    (0.0, 2.0, 1, 3, 1),    -- 2 kg flour
+    (0.5, 1.0, 2, 3, 1),    -- 1 kg sugar (half bought)
+    (12.0, 12.0, 4, 20, 1),  -- 12 eggs (all bought)
+    (0.0, 2.0, 5, 9, 1),    -- 2 liters milk
+    (0.0, 1.0, 7, 3, 2),    -- 1 kg chicken breast
+    (2.0, 4.0, 8, 20, 2),    -- 4 tomatoes (2 bought)
+    (0.0, 1.0, 12, NULL, 1),  -- Pepper with undefined unit
+    (0.0, 3.0, 11, NULL, 2);  -- Water with undefined unit
