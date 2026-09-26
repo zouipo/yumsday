@@ -123,7 +123,6 @@ CREATE TABLE IF NOT EXISTS units_systems_junction (
 );
 
 INSERT INTO units_systems_junction (unit_id, system_id) VALUES
-
 -- Populate the units_systems_junction joint table
 -- WEIGHT
 (1, 1),   -- milligram -> METRIC
