@@ -8,8 +8,6 @@ entity units {
     * abbreviation: varchar(50)
     * factor: float
     * unit_type: varchar(50)
-    --
-    * <i>system_id</i>: integer <<FK>>
 }
 
 entity unit_systems {
